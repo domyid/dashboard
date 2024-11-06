@@ -1,0 +1,57 @@
+.table-wrapper {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  table-layout: fixed; /* Ensure table fits the container */
+}
+th,
+td {
+  word-wrap: break-word; /* Ensure content wraps within cells */
+  white-space: normal; /* Ensure content wraps within cells */
+}
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reveal-text {
+  cursor: pointer;
+  color: blue;
+}
+
+.code-box {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+code {
+  color: #1e1e1e;
+  background: transparent;
+}
+
+.code-box .copy-btn {
+  display: none;
+}
+
+.code-box:hover .copy-btn {
+  display: inline-block; /* Show button on hover */
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.btn-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.field label {
+  float: left;
+}

@@ -1,0 +1,58 @@
+/* Ensure the chat container covers the full viewport height */
+body {
+  background: #fff;
+}
+
+.container.chat-container {
+  min-height: 100vh; /* Minimum height to cover the viewport */
+  min-width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 2rem;
+  padding: 3rem; /* Add padding for spacing */
+}
+
+.chat-message {
+  display: block;
+  margin-bottom: 10px;
+  padding: 10px;
+  width: fit-content; /* Maximum width of the message bubble */
+  max-width: 70%;
+  word-wrap: break-word; /* Ensure long words break and wrap correctly */
+  white-space: pre-wrap; /* Ensure long words break and wrap correctly */
+  color: black; /* Set font color to black */
+  text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff,
+    -1px 1px 0 #fff; /* White border */
+  border-radius: 10px 0 10px 10px;
+}
+
+.chat-message.user {
+  background-color: #d1e7dd; /* Different color for user messages */
+  align-self: flex-end; /* Align user messages to the right */
+  text-align: right; /* Align text to the right */
+  margin-left: auto; /* Ensure user messages align to the right */
+}
+
+.chat-message.other {
+  background-color: #f8d7da; /* Different color for other messages */
+  align-self: flex-start; /* Align other messages to the left */
+  border-radius: 0 10px 10px 10px;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd; /* Add a border to separate input area from messages */
+}
+
+#msg {
+  flex-grow: 1; /* Take up all available space */
+  padding: 10px; /* Padding inside the input */
+  border-radius: 5px; /* Rounded corners */
+  border: 1px solid #ddd; /* Border color */
+}

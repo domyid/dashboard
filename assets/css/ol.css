@@ -1,0 +1,9 @@
+@import "https://cdn.skypack.dev/ol/ol.css";
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  height: 40vh;
+  width: 40vw;
+}

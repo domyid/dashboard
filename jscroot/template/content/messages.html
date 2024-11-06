@@ -1,0 +1,30 @@
+<section class="hero is-primary">
+  <div class="hero-body">
+    <p class="title">ChatGPL: Chat Gak Pake Lama</p>
+  </div>
+</section>
+
+<section
+  class="section is-flex is-flex-direction-column is-justify-content-space-between"
+  style="height: calc(100vh - 56px)"
+>
+  <div class="container">
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input
+          class="input"
+          type="text"
+          placeholder="Ketik pesan..."
+          id="msg"
+        />
+      </div>
+      <div class="control">
+        <button class="button is-primary" id="sendbutton">Kirim</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container chat-container">
+    <div class="box chat-messages" id="log"></div>
+  </div>
+</section>

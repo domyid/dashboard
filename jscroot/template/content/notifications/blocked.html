@@ -1,0 +1,69 @@
+<h1>Meeting</h1>
+      <div class="field">
+        <label class="label">Pilih Proyek</label>
+        <div class="control">
+            <div class="select">
+                <select id="kode" name="projectName" required>
+                    <!-- Options akan diisi melalui JavaScript -->
+                </select>
+            </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Judul Meeting</label>
+        <div class="control">
+          <input class="input" type="text" id="summary" placeholder="Judul Pertemuan" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Lokasi/Link Zoom</label>
+        <div class="control">
+          <input class="input" type="text" id="location" placeholder="Lokasi atau URL Link Zoom" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Tahun-Bulan-Tanggal</label>
+        <div class="control">
+          <input class="input" type="text" id="date" placeholder="2024-06-14" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Jam Mulai</label>
+        <div class="control">
+          <input class="input" type="text" id="timeStart" placeholder="09:00:00" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Jam Selesai</label>
+        <div class="control">
+          <input class="input" type="text" id="timeEnd" placeholder="17:00:00" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Agenda Pertemuan</label>
+        <div class="control">
+          <textarea class="textarea" id="description" placeholder="List dari sprint backlog" required></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">URL PDF dari GDrive(pastikan sudah di share sebagai editor ke domyikado@gmail.com):</label>
+        <div class="control">
+          <input class="input" type="text" id="attachments" placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing,https://drive.google.com/file/d/FILE_ID/view?usp=sharing">
+        </div>
+      </div>
+
+      <div class="field is-grouped">
+        <div class="control">
+          <button class="button is-link" id="tombolmeet">Kirim</button>
+        </div>
+        <div class="control">
+          <button class="button is-link is-light" id="tombolcancelmeet">Batal</button>
+        </div>
+      </div>
