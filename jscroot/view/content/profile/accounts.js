@@ -17,7 +17,9 @@ function actionfunctionname(){
         email:getValue("email"),
         githubusername:getValue("githubusername"),
         gitlabusername:getValue("gitlabusername"),
-        githostusername:getValue("githostusername")
+        githostusername:getValue("githostusername"),
+        parentname:getValue("parentname"),
+        parentphonenumber:getValue("parentphonenumber")
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -42,6 +44,8 @@ function responseFunction(result){
           setValue("githubusername",result.data.githubusername);
           setValue("gitlabusername",result.data.gitlabusername);
           setValue("githostusername",result.data.githostusername); 
+          setValue("parentname",result.data.parentname);
+          setValue("parentphonenumber",result.data.parentphonenumber);
           show("buttonkirimaccount");
     }else{
         Swal.fire({
@@ -63,5 +67,7 @@ function getUserFunction(result){
     setValue("githubusername",result.data.githubusername);
     setValue("gitlabusername",result.data.gitlabusername);
     setValue("githostusername",result.data.githostusername); 
+    setValue("parentname",result.data.parentname);
+    setValue("parentphonenumber",result.data.parentphonenumber);
   }
 }
