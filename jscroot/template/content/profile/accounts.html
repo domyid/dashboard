@@ -48,9 +48,10 @@
       </div>
       
       <div class="field">
-        <label class="label">Nomor WA Orang Tua/Wali</label>
+        <label class="label">Nomor WA Orang Tua/Wali (diawali dengan 62)</label>
         <div class="control">
-          <input class="input" id="parentphonenumber" name="parentphonenumber" type="tel" placeholder="Masukkan nomor WA orang tua/wali">
+          <input class="input" id="parentphonenumber" name="parentphonenumber" type="tel" placeholder="Contoh: 628123456789" pattern="^62\d+" title="Nomor harus diawali dengan 62">
+          <p class="help">Format: 62 diikuti nomor tanpa tanda + atau 0 di depan. Contoh: 628123456789</p>
         </div>
       </div>
 
