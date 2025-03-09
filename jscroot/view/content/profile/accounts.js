@@ -19,7 +19,8 @@ function actionfunctionname(){
         gitlabusername:getValue("gitlabusername"),
         githostusername:getValue("githostusername"),
         parentname:getValue("parentname"),
-        parentphonenumber:getValue("parentphonenumber")
+        parentphonenumber:getValue("parentphonenumber"),
+        stravaprofilepicture:getValue("stravaprofilepicture")
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -46,6 +47,7 @@ function responseFunction(result){
           setValue("githostusername",result.data.githostusername); 
           setValue("parentname",result.data.parentname);
           setValue("parentphonenumber",result.data.parentphonenumber);
+          setValue("stravaprofilepicture",result.data.stravaprofilepicture);
           show("buttonkirimaccount");
     }else{
         Swal.fire({
@@ -69,5 +71,6 @@ function getUserFunction(result){
     setValue("githostusername",result.data.githostusername); 
     setValue("parentname",result.data.parentname);
     setValue("parentphonenumber",result.data.parentphonenumber);
+    setValue("stravaprofilepicture",result.data.stravaprofilepicture);
   }
 }
