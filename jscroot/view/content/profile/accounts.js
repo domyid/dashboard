@@ -21,7 +21,8 @@ function actionfunctionname(){
         sponsorname:getValue("sponsorname"),
         sponsorphonenumber:getValue("sponsorphonenumber"),
         stravaprofilepicture:getValue("stravaprofilepicture"),
-        npm:getValue("npm")
+        npm:getValue("npm"),
+        Wonpaywallet:getValue("wonpaywallet")
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -50,6 +51,7 @@ function responseFunction(result){
           setValue("sponsorphonenumber",result.data.sponsorphonenumber);
           setValue("stravaprofilepicture",result.data.stravaprofilepicture);
           setValue("npm",result.data.npm);
+          setValue("wonpaywallet",result.data.wonpaywallet);
           show("buttonkirimaccount");
     }else{
         Swal.fire({
@@ -75,5 +77,6 @@ function getUserFunction(result){
     setValue("sponsorphonenumber",result.data.sponsorphonenumber);
     setValue("stravaprofilepicture",result.data.stravaprofilepicture);
     setValue("npm",result.data.npm);
+    setValue("wonpaywallet",result.data.wonpaywallet);
   }
 }
