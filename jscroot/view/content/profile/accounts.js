@@ -22,7 +22,7 @@ function actionfunctionname(){
         sponsorphonenumber:getValue("sponsorphonenumber"),
         stravaprofilepicture:getValue("stravaprofilepicture"),
         npm:getValue("npm"),
-        Wonpaywallet:getValue("wonpaywallet")
+        wonpaywallet:getValue("wonpaywallet")
     };
     if (getCookie("login")===""){
         redirect("/signin");
