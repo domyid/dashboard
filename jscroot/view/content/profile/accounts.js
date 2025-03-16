@@ -13,16 +13,17 @@ export async function main(){
 }
 
 function actionfunctionname(){
-    let user={
-        email:getValue("email"),
-        githubusername:getValue("githubusername"),
-        gitlabusername:getValue("gitlabusername"),
-        githostusername:getValue("githostusername"),
-        sponsorname:getValue("sponsorname"),
-        sponsorphonenumber:getValue("sponsorphonenumber"),
-        stravaprofilepicture:getValue("stravaprofilepicture"),
-        npm:getValue("npm"),
-        wonpaywallet:getValue("wonpaywallet")
+    let user = {
+        email: getValue('email'),
+        githubusername: getValue('githubusername'),
+        gitlabusername: getValue('gitlabusername'),
+        githostusername: getValue('githostusername'),
+        sponsorname: getValue('sponsorname'),
+        sponsorphonenumber: getValue('sponsorphonenumber'),
+        stravaprofilepicture: getValue('stravaprofilepicture'),
+        athleteid: getValue('athleteid'),
+        npm: getValue('npm'),
+        wonpaywallet: getValue('wonpaywallet'),
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -50,6 +51,7 @@ function responseFunction(result){
           setValue("sponsorname",result.data.sponsorname);
           setValue("sponsorphonenumber",result.data.sponsorphonenumber);
           setValue("stravaprofilepicture",result.data.stravaprofilepicture);
+          setValue("athleteid",result.data.athleteid);
           setValue("npm",result.data.npm);
           setValue("wonpaywallet",result.data.wonpaywallet);
           show("buttonkirimaccount");
@@ -76,6 +78,7 @@ function getUserFunction(result){
     setValue("sponsorname",result.data.sponsorname);
     setValue("sponsorphonenumber",result.data.sponsorphonenumber);
     setValue("stravaprofilepicture",result.data.stravaprofilepicture);
+    setValue("athleteid",result.data.athleteid);
     setValue("npm",result.data.npm);
     setValue("wonpaywallet",result.data.wonpaywallet);
   }
