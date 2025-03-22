@@ -203,6 +203,12 @@ document.getElementById("addButton").addEventListener("click", () => {
                 </div>
             </div>
             <div class="field">
+                <label class="label">Enroll ID</label>
+                <div class="control">
+                    <input class="input" type="text" id="enroll" placeholder="Kode Enroll Proyek atau Kelas">
+                </div>
+            </div>
+            <div class="field">
                 <label class="label">WhatsApp Group ID</label>
                 <div class="control">
                     <input class="input" type="text" id="wagroupid" placeholder="minta group id ke bot">
@@ -232,6 +238,7 @@ document.getElementById("addButton").addEventListener("click", () => {
     cancelButtonText: "Cancel",
     preConfirm: () => {
       const name = Swal.getPopup().querySelector("#name").value;
+      const enroll = Swal.getPopup().querySelector("#enroll").value;
       const wagroupid = Swal.getPopup().querySelector("#wagroupid").value;
       const description = Swal.getPopup().querySelector("#description").value;
       const repoOrg = Swal.getPopup().querySelector("#repoorg").value;
@@ -247,6 +254,7 @@ document.getElementById("addButton").addEventListener("click", () => {
       } else {
         return {
           name: name,
+          enroll: enroll,
           wagroupid: wagroupid,
           description: description,
           repoorg: repoOrg,
@@ -258,6 +266,7 @@ document.getElementById("addButton").addEventListener("click", () => {
     if (result.isConfirmed) {
       let resultData = {
         name: getValue("name"),
+        enroll: getValue("enroll"),
         wagroupid: getValue("wagroupid"),
         description: getValue("description"),
         repoorg: getValue("repoorg"),
