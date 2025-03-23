@@ -99,7 +99,7 @@ function getResponseFunction(result) {
             <button class="button is-danger removeProjectButton" data-project-name="${project.name}">
               <i class="bx bx-trash"></i>          
             </button>
-            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-repoorg="${project.repoorg}" data-project-repologname="${project.repologname}" data-project-description="${project.description}">
+            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-enroll="${project.enroll}" data-project-repoorg="${project.repoorg}" data-project-repologname="${project.repologname}" data-project-description="${project.description}">
               <i class="bx bx-edit"></i>
             </button>
           </td>
@@ -461,6 +461,7 @@ function addEditProjectButtonListeners() {
     button.addEventListener("click", async (event) => {
       const projectId = button.getAttribute("data-project-id");
       const projectName = button.getAttribute("data-project-name");
+      const projectEnroll = button.getAttribute("data-project-enroll");
       const projectWagroupid = button.getAttribute("data-project-wagroupid");
       const projectRepoorg = button.getAttribute("data-project-repoorg");
       const projectRepologname = button.getAttribute(
@@ -477,6 +478,12 @@ function addEditProjectButtonListeners() {
             <label class="label">Project Name</label>
             <div class="control">
               <input class="input" type="text" id="name" value="${projectName}" disabled>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Enroll ID</label>
+            <div class="control">
+              <input class="input" type="text" id="enroll" value="${projectEnroll}" disabled>
             </div>
           </div>
           <div class="field">
