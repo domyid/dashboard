@@ -6,19 +6,11 @@ import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
-export async function main() {
+export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
-    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
-    getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
-    onClick("tombolaksesmember", actionfunctionname);
-    
-    // Tambahkan event listener untuk perubahan pada input nomor telepon
-    document.getElementById('phonenumber').addEventListener('change', function() {
-        const phoneNumber = getValue("phonenumber");
-        if (validatePhoneNumber(phoneNumber)) {
-            fetchPomokitData(phoneNumber);
-        }
-    });
+    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
+    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    onClick("tombolaksesmember",actionfunctionname);
 }
 
 function actionfunctionname(){
@@ -75,53 +67,4 @@ function postResponseFunction(result){
           show("tombolbuatproyek");
     }
     console.log(result);
-}
-
-function fetchPomokitData(phoneNumber) {
-    // Gunakan endpoint Pomokit
-    const pomokitUrl = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/report/pomokit/total?phonenumber=${phoneNumber}&send=false`;
-    
-    // Lakukan fetch data
-    fetch(pomokitUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "Success") {
-                // Parse respons untuk mendapatkan jumlah sesi
-                const responseText = data.response;
-                
-                // Ekstrak jumlah sesi dan poin dari respons
-                // Format respons: "Total Akumulasi Poin Pomokit untuk Rafi\n\n Rafi (628225187308): 18 sesi (+360 poin)..."
-                const sessionMatch = responseText.match(/(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/);
-                
-                if (sessionMatch && sessionMatch.length >= 3) {
-                    const sessions = parseInt(sessionMatch[1], 10);
-                    const points = parseInt(sessionMatch[2], 10);
-                    
-                    // Perbarui tabel
-                    updatePomokitRow(sessions, points);
-                }
-            } else {
-                console.error("Gagal mengambil data Pomokit:", data);
-            }
-        })
-        .catch(error => {
-            console.error("Error saat mengambil data Pomokit:", error);
-        });
-}
-
-function updatePomokitRow(quantity, points) {
-    // Cari baris Pomokit (indeks 4 berdasarkan HTML yang diberikan, karena baris dimulai dari 0)
-    const tableRows = document.querySelectorAll("table.table tbody tr");
-    const pomokitRow = tableRows[3]; // Baris ke-4 (indeks 3)
-    
-    if (pomokitRow) {
-        // Perbarui kolom kuantitas (kolom ke-3) dan poin (kolom ke-4)
-        const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
-        const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
-        
-        if (quantityCell && pointsCell) {
-            quantityCell.textContent = quantity;
-            pointsCell.textContent = points;
-        }
-    }
 }
