@@ -97,72 +97,50 @@ function getResponseFunctionTracker(result){
     }
 }
 
-async function fetchPomokitData() {
-    const token = getCookie('login');
+function fetchPomokitData() {
+    // Gunakan getJSON seperti pada fungsi lainnya
+    getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);
+}
+
+function processPomokitResponse(result) {
+    console.log("Pomokit API response:", result);
     
-    const parts = token.split('.');
-    if (parts.length < 3) {
-        console.error("Invalid token format");
-        return;
-    }
-  
-    const idPattern = /\b(62\d{10,12})\b/;
-    const match = token.match(idPattern);
-    
-    if (!match) {
-        console.error("Could not find phone number pattern in token");
-        return;
-    }
-    
-    const phoneNumber = match[1];
-    console.log(`Extracted phone number from token: ${phoneNumber}`);
-    
-    try {
-        // Panggil API Pomokit dengan parameter phoneNumber dan send=false
-        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phoneNumber}&send=false`);
+    // Periksa apakah permintaan berhasil
+    if (result && result.count !== undefined) {
+        // Ambil nilai count
+        const count = result.count;
+        // Hitung poin (1 count = 20 poin)
+        const points = count * 20;
         
-        const data = await response.json();
-        console.log("Pomokit API response:", data);
-        
-        if (data.status === "Success") {
-            updatePomokitTable(data.response);
-        } else {
-            console.error("Failed to get Pomokit data:", data);
-        }
-    } catch (error) {
-        console.error("Error fetching Pomokit data:", error);
+        // Update tabel Pomokit (baris ke-4, indeks 3)
+        updatePomokitTable(count, points);
+    } else {
+        console.error("Failed to get Pomokit data count:", result);
     }
 }
 
-function updatePomokitTable(response) {
-    console.log("Processing Pomokit response:", response);
+// Fungsi ini tidak lagi diperlukan karena kita menggunakan getJSON dengan token langsung
+
+function updatePomokitTable(count, points) {
+    console.log(`Updating Pomokit table with: ${count} sessions, ${points} points`);
     
-    // Regex untuk mengekstrak jumlah sesi dan poin dari respons API
-    const regex = /:\s*(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
-    const match = response.match(regex);
+    // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
+    const tableRows = document.querySelectorAll("table.table tbody tr");
+    const pomokitRow = tableRows[3]; // Baris Pomokit (indeks ke-3)
     
-    if (match) {
-        const sesi = match[1];   // Jumlah sesi
-        const poin = match[2];   // Jumlah poin
+    if (pomokitRow) {
+        // Perbarui sel kuantitas dan poin
+        const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
+        const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
         
-        console.log(`Extracted: ${sesi} sesi, ${poin} poin`);
-        
-        // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
-        const tableRows = document.querySelectorAll("table.table tbody tr");
-        const pomokitRow = tableRows[3]; // Baris Pomokit
-        
-        if (pomokitRow) {
-            // Perbarui sel kuantitas dan poin
-            const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
-            const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
-            
-            if (quantityCell && pointsCell) {
-                quantityCell.textContent = sesi;
-                pointsCell.textContent = poin;
-                console.log("Updated Pomokit row in table");
-            }
+        if (quantityCell && pointsCell) {
+            quantityCell.textContent = count;
+            pointsCell.textContent = points;
+            console.log("Updated Pomokit row in table");
+        } else {
+            console.error("Could not find quantity or points cells in the Pomokit row");
         }
     } else {
-        console.error("Could not extract session and point data from response");
+        console.error("Could not find Pomokit row in the table");
     }
 }
