@@ -20,11 +20,11 @@ export function getContentURL(){
             return url.template.content+"proyek/lihat.html";    
         case "proyek/anggota":
             return url.template.content+"proyek/anggota.html";   
-        case "proyek/buat":
-            return url.template.content+"proyek/buat.html";
-        case "proyek/akses":
-            return url.template.content+"proyek/akses.html";
-            case "notifications/blocked":
+        case "proyek/assessment":
+            return url.template.content+"proyek/assessment.html";
+        case "proyek/bimbingan":
+            return url.template.content+"proyek/bimbingan.html";
+        case "notifications/blocked":
             return url.template.content+"notifications/blocked.html";
         case "notifications/silenced":
             return url.template.content+"notifications/silenced.html";
@@ -63,10 +63,10 @@ export function getURLContentJS(){
             return url.view.content+"proyek/lihat.js";
         case "proyek/anggota":
             return url.view.content+"proyek/anggota.js";
-        case "proyek/buat":
-            return url.view.content+"proyek/buat.js";
-        case "proyek/akses":
-            return url.view.content+"proyek/akses.js";
+        case "proyek/assessment":
+            return url.view.content+"proyek/assessment.js";
+        case "proyek/bimbingan":
+            return url.view.content+"proyek/bimbingan.js";
         case "notifications/blocked":
             return url.view.content+"notifications/blocked.js";
         case "notifications/silenced":
