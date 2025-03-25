@@ -12,6 +12,7 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick("tombolaksesmember",actionfunctionname);
     fetchTrackerData();
+    await updatePomokitData();
 }
 
 function actionfunctionname(){
@@ -93,5 +94,70 @@ function getResponseFunctionTracker(result){
 
     }else{
         console.log(result.data.message)
+    }
+}
+
+// Modifikasi getResponseFunction untuk memanggil updatePomokitData
+function getResponseFunctionWithPomokit(result){
+    console.log(result);
+    if (result.status===200){
+        result.data.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project._id;
+            option.textContent = project.name;
+            document.getElementById('project-name').appendChild(option);
+        });
+        
+        // Setelah data project dimuat, update data Pomokit
+        if(result.user && result.user.phonenumber) {
+            updatePomokitData(result.user.phonenumber);
+        }
+    } else {
+        Swal.fire({
+            icon: "error",
+            title: result.data.status,
+            text: result.data.response
+        });
+    }
+}
+
+async function updatePomokitData(phonenumber) {
+    const loginToken = getCookie('login');
+    if (!loginToken || !phonenumber) return;
+    
+    try {
+        // Gunakan URL dari config dan tambahkan phonenumber
+        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phonenumber}&send=false`, {
+            headers: {
+                'Authorization': `Bearer ${loginToken}`
+            }
+        });
+        const data = await response.json();
+        
+        if (data.status === "Success") {
+            updatePomokitTable(data.response);
+        }
+    } catch (error) {
+        console.error("Error fetching Pomokit data:", error);
+    }
+}
+
+function updatePomokitTable(response) {
+    const regex = /(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
+    const match = response.match(regex);
+    
+    if (match) {
+        const kuantitas = match[1];
+        const poin = match[2];
+        
+        const table = document.querySelector("table tbody");
+        const pomokitRow = Array.from(table.rows).find(row => 
+            row.cells[1].textContent.trim() === "Pomokit"
+        );
+        
+        if (pomokitRow) {
+            pomokitRow.cells[2].textContent = kuantitas;
+            pomokitRow.cells[3].textContent = poin;
+        }
     }
 }
