@@ -9,10 +9,10 @@ import { id,backend } from "/dashboard/jscroot/url/config.js";
 export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
-    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction,getResponseFunctionWithPomokit);
+    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick("tombolaksesmember",actionfunctionname);
     fetchTrackerData();
-    await updatePomokitData();
+    fetchPomokitData();
 }
 
 function actionfunctionname(){
@@ -97,44 +97,23 @@ function getResponseFunctionTracker(result){
     }
 }
 
-// Modifikasi getResponseFunction untuk memanggil updatePomokitData
-function getResponseFunctionWithPomokit(result){
-    console.log(result);
-    if (result.status===200){
-        result.data.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project._id;
-            option.textContent = project.name;
-            document.getElementById('project-name').appendChild(option);
-        });
-        
-        // Setelah data project dimuat, update data Pomokit
-        if(result.user && result.user.phonenumber) {
-            updatePomokitData(result.user.phonenumber);
-        }
-    } else {
-        Swal.fire({
-            icon: "error",
-            title: result.data.status,
-            text: result.data.response
-        });
-    }
-}
-
-async function updatePomokitData(phonenumber) {
-    const loginToken = getCookie('login');
-    if (!loginToken || !phonenumber) return;
-    
+async function fetchPomokitData() {
     try {
-        // Gunakan URL dari config dan tambahkan phonenumber
-        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phonenumber}&send=false`, {
+        const loginToken = getCookie('login');
+        if (!loginToken) return;
+        
+        // Panggil API Pomokit dengan send=false
+        const response = await fetch(`${backend.user.pomokit}?send=false`, {
             headers: {
                 'Authorization': `Bearer ${loginToken}`
             }
         });
+        
         const data = await response.json();
+        console.log("Pomokit data:", data);
         
         if (data.status === "Success") {
+            // Update tabel dengan data Pomokit
             updatePomokitTable(data.response);
         }
     } catch (error) {
@@ -143,21 +122,27 @@ async function updatePomokitData(phonenumber) {
 }
 
 function updatePomokitTable(response) {
-    const regex = /(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
+
+    const regex = /:\s*(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
     const match = response.match(regex);
     
     if (match) {
-        const kuantitas = match[1];
-        const poin = match[2];
+        const sesi = match[1];   // Jumlah sesi
+        const poin = match[2];   // Jumlah poin
         
-        const table = document.querySelector("table tbody");
-        const pomokitRow = Array.from(table.rows).find(row => 
-            row.cells[1].textContent.trim() === "Pomokit"
-        );
+        // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
+        const tableRows = document.querySelectorAll("table.table tbody tr");
+        const pomokitRow = tableRows[3]; // Baris Pomokit
         
         if (pomokitRow) {
-            pomokitRow.cells[2].textContent = kuantitas;
-            pomokitRow.cells[3].textContent = poin;
+            // Perbarui sel kuantitas dan poin
+            const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
+            const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
+            
+            if (quantityCell && pointsCell) {
+                quantityCell.textContent = sesi;
+                pointsCell.textContent = poin;
+            }
         }
     }
 }
