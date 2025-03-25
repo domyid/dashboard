@@ -102,28 +102,22 @@ function fetchPomokitData() {
 }
 
 function processPomokitResponse(result) {
-    console.log("Pomokit API response:", result);
-    
     // Periksa apakah permintaan berhasil
     if (result && result.status === 200 && result.data && result.data.count !== undefined) {
         // Ambil nilai count dari properti data
         const count = result.data.count;
         // Hitung poin (1 count = 20 poin)
         const points = count * 20;
-        
-        console.log(`Pomokit data: count=${count}, points=${points}`);
-        
+                
         // Update tabel Pomokit (baris ke-4, indeks 3)
         updatePomokitTable(count, points);
     } else {
-        console.error("Failed to get Pomokit data count:", result);
+        console.error("Failed to get Pomokit data count");
     }
 }
 
 
 function updatePomokitTable(count, points) {
-    console.log(`Updating Pomokit table with: ${count} sessions, ${points} points`);
-    
     // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
     const tableRows = document.querySelectorAll("table.table tbody tr");
     const pomokitRow = tableRows[3]; // Baris Pomokit (indeks ke-3)
@@ -136,7 +130,6 @@ function updatePomokitTable(count, points) {
         if (quantityCell && pointsCell) {
             quantityCell.textContent = count;
             pointsCell.textContent = points;
-            console.log("Updated Pomokit row in table");
         } else {
             console.error("Could not find quantity or points cells in the Pomokit row");
         }
