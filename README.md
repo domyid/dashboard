@@ -5,7 +5,7 @@ Cara menambahkan menu:
 Tambakan menu di navbar.html  
 ![image](https://github.com/user-attachments/assets/25b6aa06-d73a-4e8c-9f67-44bb4095930d)
 
-Buat file dengan nama yang sesuai dengan hash menu di template dan view
+Buat file dengan nama yang sesuai dengan hash menu di template dan view  
 ![image](https://github.com/user-attachments/assets/c3e2b690-e9bf-4ede-a123-daee8b598dcc)
 
 ![image](https://github.com/user-attachments/assets/323cf13c-8856-4929-a7ee-50da8184b9f1)
