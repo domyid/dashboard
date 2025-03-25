@@ -97,28 +97,34 @@ function getResponseFunctionTracker(result){
     }
 }
 
-async function fetchPomokitData(phoneNumber) {
+async function fetchPomokitData() {
+    const token = getCookie('login');
+    
+    const parts = token.split('.');
+    if (parts.length < 3) {
+        console.error("Invalid token format");
+        return;
+    }
+  
+    const idPattern = /\b(62\d{10,12})\b/;
+    const match = token.match(idPattern);
+    
+    if (!match) {
+        console.error("Could not find phone number pattern in token");
+        return;
+    }
+    
+    const phoneNumber = match[1];
+    console.log(`Extracted phone number from token: ${phoneNumber}`);
+    
     try {
-        const loginToken = getCookie('login');
-        if (!loginToken || !phoneNumber) {
-            console.log("Missing login token or phone number");
-            return;
-        }
-        
-        console.log(`Fetching Pomokit data for phone: ${phoneNumber}`);
-        
         // Panggil API Pomokit dengan parameter phoneNumber dan send=false
-        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phoneNumber}&send=false`, {
-            headers: {
-                'Authorization': `Bearer ${loginToken}`
-            }
-        });
+        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phoneNumber}&send=false`);
         
         const data = await response.json();
-        console.log("Pomokit data:", data);
+        console.log("Pomokit API response:", data);
         
         if (data.status === "Success") {
-            // Update tabel dengan data Pomokit
             updatePomokitTable(data.response);
         } else {
             console.error("Failed to get Pomokit data:", data);
@@ -129,6 +135,8 @@ async function fetchPomokitData(phoneNumber) {
 }
 
 function updatePomokitTable(response) {
+    console.log("Processing Pomokit response:", response);
+    
     // Regex untuk mengekstrak jumlah sesi dan poin dari respons API
     const regex = /:\s*(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
     const match = response.match(regex);
@@ -154,5 +162,7 @@ function updatePomokitTable(response) {
                 console.log("Updated Pomokit row in table");
             }
         }
+    } else {
+        console.error("Could not extract session and point data from response");
     }
 }
