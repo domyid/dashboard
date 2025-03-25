@@ -71,7 +71,7 @@ function postResponseFunction(result){
 }
 
 function fetchTrackerData() {
-    getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunctionTracker);
+    getJSON(backend.tracker.data, 'login', getCookie('login'), getResponseFunctionTracker);
 }
 
 function getResponseFunctionTracker(result){
