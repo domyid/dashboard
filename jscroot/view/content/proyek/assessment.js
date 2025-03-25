@@ -97,13 +97,18 @@ function getResponseFunctionTracker(result){
     }
 }
 
-async function fetchPomokitData() {
+async function fetchPomokitData(phoneNumber) {
     try {
         const loginToken = getCookie('login');
-        if (!loginToken) return;
+        if (!loginToken || !phoneNumber) {
+            console.log("Missing login token or phone number");
+            return;
+        }
         
-        // Panggil API Pomokit dengan send=false
-        const response = await fetch(`${backend.user.pomokit}?send=false`, {
+        console.log(`Fetching Pomokit data for phone: ${phoneNumber}`);
+        
+        // Panggil API Pomokit dengan parameter phoneNumber dan send=false
+        const response = await fetch(`${backend.user.pomokit}?phonenumber=${phoneNumber}&send=false`, {
             headers: {
                 'Authorization': `Bearer ${loginToken}`
             }
@@ -115,6 +120,8 @@ async function fetchPomokitData() {
         if (data.status === "Success") {
             // Update tabel dengan data Pomokit
             updatePomokitTable(data.response);
+        } else {
+            console.error("Failed to get Pomokit data:", data);
         }
     } catch (error) {
         console.error("Error fetching Pomokit data:", error);
@@ -122,13 +129,15 @@ async function fetchPomokitData() {
 }
 
 function updatePomokitTable(response) {
-
+    // Regex untuk mengekstrak jumlah sesi dan poin dari respons API
     const regex = /:\s*(\d+)\s+sesi\s+\(\+(\d+)\s+poin\)/;
     const match = response.match(regex);
     
     if (match) {
         const sesi = match[1];   // Jumlah sesi
         const poin = match[2];   // Jumlah poin
+        
+        console.log(`Extracted: ${sesi} sesi, ${poin} poin`);
         
         // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
         const tableRows = document.querySelectorAll("table.table tbody tr");
@@ -142,6 +151,7 @@ function updatePomokitTable(response) {
             if (quantityCell && pointsCell) {
                 quantityCell.textContent = sesi;
                 pointsCell.textContent = poin;
+                console.log("Updated Pomokit row in table");
             }
         }
     }
