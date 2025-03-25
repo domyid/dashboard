@@ -21,7 +21,7 @@ function actionfunctionname(){
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
-        postJSON(backend.project.anggota,"login",getCookie("login"),idprjusr,postResponseFunction);
+        postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
         hide("tombolbuatproyek");
     }  
 }
