@@ -98,7 +98,6 @@ function getResponseFunctionTracker(result){
 }
 
 function fetchPomokitData() {
-    // Gunakan getJSON seperti pada fungsi lainnya
     getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);
 }
 
@@ -106,11 +105,13 @@ function processPomokitResponse(result) {
     console.log("Pomokit API response:", result);
     
     // Periksa apakah permintaan berhasil
-    if (result && result.count !== undefined) {
-        // Ambil nilai count
-        const count = result.count;
+    if (result && result.status === 200 && result.data && result.data.count !== undefined) {
+        // Ambil nilai count dari properti data
+        const count = result.data.count;
         // Hitung poin (1 count = 20 poin)
         const points = count * 20;
+        
+        console.log(`Pomokit data: count=${count}, points=${points}`);
         
         // Update tabel Pomokit (baris ke-4, indeks 3)
         updatePomokitTable(count, points);
@@ -119,7 +120,6 @@ function processPomokitResponse(result) {
     }
 }
 
-// Fungsi ini tidak lagi diperlukan karena kita menggunakan getJSON dengan token langsung
 
 function updatePomokitTable(count, points) {
     console.log(`Updating Pomokit table with: ${count} sessions, ${points} points`);
