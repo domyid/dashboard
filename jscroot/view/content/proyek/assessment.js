@@ -9,7 +9,7 @@ import { id,backend } from "/dashboard/jscroot/url/config.js";
 export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
-    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction,getResponseFunctionWithPomokit);
     onClick("tombolaksesmember",actionfunctionname);
     fetchTrackerData();
     await updatePomokitData();
