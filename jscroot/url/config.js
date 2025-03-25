@@ -25,6 +25,9 @@ export const backend={
         laporan:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postlaporan",
         rating:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/rating",
         meeting:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postmeeting",
+    },
+    tracker:{
+        data:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/ambildatatracker",
     }
 }
 
