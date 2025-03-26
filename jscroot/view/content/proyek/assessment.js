@@ -72,8 +72,8 @@ function postResponseFunction(result){
 }
 
 function fetchActivityScore() {
-    getJSON(backend.activityscore.data, 'login', getCookie('login'), getResponseFunctionTracker);
-    getJSON(backend.activityscore.data, 'login', getCookie('login'), getResponseFunctionStravaPoin);
+    getJSON(backend.activityscore.all, 'login', getCookie('login'), getResponseFunctionTracker);
+    getJSON(backend.activityscore.all, 'login', getCookie('login'), getResponseFunctionStravaPoin);
 }
 
 // function handleActivityScoreResponse(result) {
