@@ -35,7 +35,7 @@ export const backend = {
     },
     activityscore: {
         all: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscore',
-        lastWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscoreweekly',
+        // lastWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscoreweekly',
     },
 };
 
