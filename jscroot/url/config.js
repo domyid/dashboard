@@ -4,33 +4,40 @@ import {folderPath} from "https://cdn.jsdelivr.net/gh/jscroot/url@0.0.9/croot.js
 //never use slash in front of file or directory
 //u might change croot parameter based on your path
 
-export const backend={
-    user:{
-        data:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user",
-        todo:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/todo",
-        doing:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/doing",
-        done:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/done",
-        pomokit:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/report/pomokit/user",
+export const backend = {
+    user: {
+        data: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user',
+        todo: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/todo',
+        doing: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/doing',
+        done: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/done',
+        pomokit:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/report/pomokit/user',
     },
-    wa:{
-        text:"https://api.wa.my.id/api/v2/send/message/text",
-        device:"https://api.wa.my.id/api/device/",
+    wa: {
+        text: 'https://api.wa.my.id/api/v2/send/message/text',
+        device: 'https://api.wa.my.id/api/device/',
     },
-    project:{
-        data:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek",
-        anggota:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/anggota",
-        assessment:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/assessment",
+    project: {
+        data: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek',
+        anggota:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/anggota',
+        assessment:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/assessment',
     },
-    ux:{
-        feedback:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postfeedback",
-        laporan:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postlaporan",
-        rating:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/rating",
-        meeting:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postmeeting",
+    ux: {
+        feedback:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postfeedback',
+        laporan:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postlaporan',
+        rating: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/rating',
+        meeting:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/notif/ux/postmeeting',
     },
-    activityscore:{
-        data:"https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscore",
-    }
-}
+    activityscore: {
+        all: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscore',
+        lastWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api//activityscoreweekly',
+    },
+};
 
 export const croot = folderPath()+"jscroot/";
 

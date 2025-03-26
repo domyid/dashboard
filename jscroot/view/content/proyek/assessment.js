@@ -72,7 +72,7 @@ function postResponseFunction(result){
 }
 
 function fetchActivityScore() {
-    getJSON(backend.activityscore.data, 'login', getCookie('login'), handleActivityScoreResponse);
+    getJSON(backend.activityscore.all, 'login', getCookie('login'), handleActivityScoreResponse);
 }
 
 function handleActivityScoreResponse(result) {
@@ -97,49 +97,6 @@ function updateTableRow(rowIndex, quantity, points) {
         }
     }
 }
-
-// function getResponseFunctionTracker(result){
-//     if (result.status===200){
-//         const tableRows = document.querySelectorAll("table.table tbody tr");
-//         const trackerRow = tableRows[6];
-        
-//         if (trackerRow) {
-//             const quantityCell = trackerRow.querySelector("td:nth-child(3)");
-//             const pointsCell = trackerRow.querySelector("td:nth-child(4)");
-            
-//             if (quantityCell && pointsCell) {
-//                 const quantity = result.data.trackerdata;
-//                 const points = result.data.tracker;
-//                 quantityCell.textContent = quantity;
-//                 pointsCell.textContent = points;
-//             }
-//         }
-
-//     }else{
-//         console.log(result.data.message)
-//     }
-// }
-
-// function getResponseFunctionStravaPoin(result) {
-//     if (result.status === 200) {
-//         const tableRows = document.querySelectorAll('table.table tbody tr');
-//         const stravaRow = tableRows[1];
-
-//         if (stravaRow) {
-//             const quantityCell = stravaRow.querySelector('td:nth-child(3)');
-//             const pointsCell = stravaRow.querySelector('td:nth-child(4)');
-
-//             if (quantityCell && pointsCell) {
-//                 const quantity = result.data.stravakm;
-//                 const points = result.data.strava;
-//                 quantityCell.textContent = quantity;
-//                 pointsCell.textContent = points;
-//             }
-//         }
-//     } else {
-//         console.log(result.data.message);
-//     }
-// }
 
 function fetchPomokitData() {
     getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);
