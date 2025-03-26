@@ -11,7 +11,7 @@ export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick("tombolaksesmember",actionfunctionname);
-    fetchTrackerData();
+    fetchActivityScore();
     fetchPomokitData();
 }
 
@@ -71,22 +71,22 @@ function postResponseFunction(result){
     console.log(result);
 }
 
-function fetchTrackerData() {
-    getJSON(backend.tracker.data, 'login', getCookie('login'), getResponseFunctionTracker);
+function fetchActivityScore() {
+    getJSON(backend.activityscore.data, 'login', getCookie('login'), getResponseFunctionTracker);
 }
 
 function getResponseFunctionTracker(result){
     if (result.status===200){
         const tableRows = document.querySelectorAll("table.table tbody tr");
-        const pomokitRow = tableRows[6];
+        const trackerRow = tableRows[6];
         
-        if (pomokitRow) {
-            const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
-            const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
+        if (trackerRow) {
+            const quantityCell = trackerRow.querySelector("td:nth-child(3)");
+            const pointsCell = trackerRow.querySelector("td:nth-child(4)");
             
             if (quantityCell && pointsCell) {
-                const quantity = result.data.response;
-                const points = quantity * 10;
+                const quantity = result.data.trackerdata;
+                const points = result.data.tracker;
                 quantityCell.textContent = quantity;
                 pointsCell.textContent = points;
             }
