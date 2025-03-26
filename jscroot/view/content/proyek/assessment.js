@@ -12,7 +12,7 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
-    fetchPomokitData();
+    // fetchPomokitData();
 }
 
 function actionfunctionname(){
@@ -78,8 +78,10 @@ function fetchActivityScore() {
 function handleActivityScoreResponse(result) {
     console.log({result});
     if (result.status === 200) {
-        updateTableRow(6, result.data.trackerdata, result.data.tracker);
         updateTableRow(1, result.data.stravakm, result.data.strava);
+        updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
+        updateTableRow(6, result.data.trackerdata, result.data.tracker);
+        updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
     } else {
         console.log(result.data.message);
     }
@@ -99,43 +101,43 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-function fetchPomokitData() {
-    getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);
-}
+// function fetchPomokitData() {
+//     getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);
+// }
 
-function processPomokitResponse(result) {
-    // Periksa apakah permintaan berhasil
-    if (result && result.status === 200 && result.data && result.data.count !== undefined) {
-        // Ambil nilai count dari properti data
-        const count = result.data.count;
-        // Hitung poin (1 count = 20 poin)
-        const points = count * 20;
+// function processPomokitResponse(result) {
+//     // Periksa apakah permintaan berhasil
+//     if (result && result.status === 200 && result.data && result.data.count !== undefined) {
+//         // Ambil nilai count dari properti data
+//         const count = result.data.count;
+//         // Hitung poin (1 count = 20 poin)
+//         const points = count * 20;
                 
-        // Update tabel Pomokit (baris ke-4, indeks 3)
-        updatePomokitTable(count, points);
-    } else {
-        console.error("Failed to get Pomokit data count");
-    }
-}
+//         // Update tabel Pomokit (baris ke-4, indeks 3)
+//         updatePomokitTable(count, points);
+//     } else {
+//         console.error("Failed to get Pomokit data count");
+//     }
+// }
 
 
-function updatePomokitTable(count, points) {
-    // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
-    const tableRows = document.querySelectorAll("table.table tbody tr");
-    const pomokitRow = tableRows[3]; // Baris Pomokit (indeks ke-3)
+// function updatePomokitTable(count, points) {
+//     // Dapatkan baris Pomokit (indeks 3 - baris ke-4)
+//     const tableRows = document.querySelectorAll("table.table tbody tr");
+//     const pomokitRow = tableRows[3]; // Baris Pomokit (indeks ke-3)
     
-    if (pomokitRow) {
-        // Perbarui sel kuantitas dan poin
-        const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
-        const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
+//     if (pomokitRow) {
+//         // Perbarui sel kuantitas dan poin
+//         const quantityCell = pomokitRow.querySelector("td:nth-child(3)");
+//         const pointsCell = pomokitRow.querySelector("td:nth-child(4)");
         
-        if (quantityCell && pointsCell) {
-            quantityCell.textContent = count;
-            pointsCell.textContent = points;
-        } else {
-            console.error("Could not find quantity or points cells in the Pomokit row");
-        }
-    } else {
-        console.error("Could not find Pomokit row in the table");
-    }
-}
+//         if (quantityCell && pointsCell) {
+//             quantityCell.textContent = count;
+//             pointsCell.textContent = points;
+//         } else {
+//             console.error("Could not find quantity or points cells in the Pomokit row");
+//         }
+//     } else {
+//         console.error("Could not find Pomokit row in the table");
+//     }
+// }
