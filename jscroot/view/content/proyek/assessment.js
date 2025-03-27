@@ -97,8 +97,8 @@ function updateTableRow(rowIndex, quantity, points) {
         const pointsCell = row.querySelector('td:nth-child(4)');
 
         if (quantityCell && pointsCell) {
-            quantityCell.textContent = quantity;
-            pointsCell.textContent = points;
+            quantityCell.textContent = quantity || 0;
+            pointsCell.textContent = points || 0;
         }
     }
 }
