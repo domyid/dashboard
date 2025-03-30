@@ -79,7 +79,7 @@ function handleActivityScoreResponse(result) {
     console.log({result});
     if (result.status === 200) {
         updateTableRow(1, result.data.stravakm, result.data.strava);
-        updateTableRow(3, result.data.iqresult, result.data.iq);
+        updateTableRow(2, result.data.iq, result.data.iqresult);
         // updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
         // updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
