@@ -51,16 +51,16 @@ function getResponseFunction(result){
 
 function postResponseFunction(result){
     if(result.status === 200){
-        const katakata = "Berhasil memasukkan member baru ke project "+result.data.name;
+        // const katakata = "Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.";
         Swal.fire({
-            icon: "success",
-            title: "Berhasil",
-            text: "Selamat kak proyek "+result.data.name+" dengan ID: "+result.data._id+" sudah mendapat member baru",
-            footer: '<a href="https://wa.me/62895601060000?text='+katakata+'" target="_blank">Verifikasi Proyek</a>',
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
-                setValue("phonenumber","");
-            }
-          });
+                setValue('project-name', '');
+                setValue('phonenumber', '');
+            },
+        });
     }else{
         Swal.fire({
             icon: "error",
