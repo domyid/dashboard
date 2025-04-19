@@ -26,7 +26,7 @@ function actionfunctionname(){
         redirect("/signin");
     }else{
         postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        hide("tombolbuatproyek");    
+        // hide("tombolbuatproyek");    
     }  
 }
 
@@ -50,7 +50,6 @@ function getResponseFunction(result){
 
 
 function postResponseFunction(result){
-    console.log({result});
     if(result.status === 200){
         const katakata = "Berhasil memasukkan member baru ke project "+result.data.name;
         Swal.fire({
@@ -68,7 +67,7 @@ function postResponseFunction(result){
             title: result.data.status,
             text: result.data.response
           });
-          show("tombolbuatproyek");
+        //   show("tombolbuatproyek");
     }
     console.log(result);
 }
