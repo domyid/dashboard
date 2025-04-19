@@ -42,7 +42,7 @@ function getResponseFunction(result){
         Swal.fire({
             icon: "error",
             title: result.data.status,
-            text: result.data.response
+            text: result.data.response + " " + result.data.info,
           });
     }
 }
