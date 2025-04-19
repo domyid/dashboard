@@ -16,9 +16,9 @@ export async function main(){
 }
 
 function actionfunctionname(){
-    let idprjusr={
-        _id:getValue("project-name"),
-        phonenumber:getValue("phonenumber")
+    let idprjusr = {
+        _id: getValue('project-name'),
+        'asesor.phonenumber': getValue('phonenumber'),
     };
     if (getCookie("login")===""){
         redirect("/signin");
