@@ -17,7 +17,7 @@ export async function main(){
 
 function actionfunctionname(){
     let idprjusr = {
-        _id: getValue('project-name'),
+        // _id: getValue('project-name'),
         asesor: {
             phonenumber: getValue('phonenumber'),
         },
@@ -57,7 +57,6 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
-                setValue('project-name', '');
                 setValue('phonenumber', '');
             },
         });
