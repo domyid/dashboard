@@ -18,7 +18,9 @@ export async function main(){
 function actionfunctionname(){
     let idprjusr = {
         _id: getValue('project-name'),
-        'asesor.phonenumber': getValue('phonenumber'),
+        asesor: {
+            phonenumber: getValue('phonenumber'),
+        },
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -76,7 +78,6 @@ function fetchActivityScore() {
 }
 
 function handleActivityScoreResponse(result) {
-    console.log({result});
     if (result.status === 200) {
         updateTableRow(1, result.data.stravakm, result.data.strava);
         updateTableRow(2, result.data.iqresult, result.data.iq);
