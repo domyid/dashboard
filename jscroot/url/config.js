@@ -22,7 +22,8 @@ export const backend = {
         anggota:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/anggota',
         assessment:
-            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/assessment',
+            // 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/assessment',
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/bimbingan'
     },
     ux: {
         feedback:
