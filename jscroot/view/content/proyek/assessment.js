@@ -24,12 +24,11 @@ function actionfunctionname(){
         redirect("/signin");
     }else{
         postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        // hide("tombolbuatproyek");
+        // hide("tombolbuatproyek");    
     }  
 }
 
 function getResponseFunction(result){
-    console.log(result);
     if (result.status===200){
         result.data.forEach(project => {
             const option = document.createElement('option');
@@ -42,7 +41,7 @@ function getResponseFunction(result){
         Swal.fire({
             icon: "error",
             title: result.data.status,
-            text: result.data.response + " " + result.data.info,
+            text: result.data.response,
           });
     }
 }
