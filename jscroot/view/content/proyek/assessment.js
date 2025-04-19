@@ -49,6 +49,7 @@ function getResponseFunction(result){
 
 
 function postResponseFunction(result){
+    console.log({result});
     if(result.status === 200){
         const katakata = "Berhasil memasukkan member baru ke project "+result.data.name;
         Swal.fire({
