@@ -12,7 +12,7 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick('tombolmintaapproval', actionfunctionname);
     fetchActivityScore();
-    checkApprovalStatus();
+    // checkApprovalStatus();
     // fetchPomokitData();
 }
 
@@ -106,15 +106,15 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-function checkApprovalStatus() {
-    const url = "https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan/" + getHash();
-    get(url, function(result) {
-      if (result.status === 200 || result.Approved !== undefined) {
-        const checkbox = document.getElementById("checkbox-approved");
-        checkbox.checked = result.Approved === true;
-      }
-    });
-  }
+// function checkApprovalStatus() {
+//     const url = "https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan/" + getHash();
+//     get(url, function(result) {
+//       if (result.status === 200 || result.Approved !== undefined) {
+//         const checkbox = document.getElementById("checkbox-approved");
+//         checkbox.checked = result.Approved === true;
+//       }
+//     });
+//   }
 
 // function fetchPomokitData() {
 //     getJSON(backend.user.pomokit, 'login', getCookie('login'), processPomokitResponse);

@@ -361,7 +361,7 @@ img {
   }
 }
 
-#checkbox-approved:checked + label {
+/* #checkbox-approved:checked + label {
   color: green;
   font-weight: bold;
-}
+} */
