@@ -83,10 +83,13 @@ function handleActivityScoreResponse(result) {
         updateTableRow(1, result.data.stravakm, result.data.strava);
         updateTableRow(2, result.data.iqresult, result.data.iq);
         updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
+        updateTableRow(4, result.data.mbcAmount || "-", result.data.blockchainmbc);
+        updateTableRow(5, result.data.qrisAmount || "-", result.data.qris);
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
         updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
         updateTableRow(10, result.data.webhookpush, result.data.webhook);
         updateTableRow(11, result.data.presensihari, result.data.presensi);
+        updateTableRow(12, result.data.ravencoinAmount || "-", result.data.blockchainrvc);
     } else {
         console.log(result.data.message);
     }
