@@ -16,14 +16,14 @@ export async function main(){
 
 function actionfunctionname(){
     let idprjusr={
-        // _id:getValue("project-name"),
+        _id:getValue("project-name"),
         phonenumber:getValue("phonenumber")
     };
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
         postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        // hide("tombolbuatproyek");
+        hide("tombolbuatproyek");
     }  
 }
 
@@ -71,7 +71,7 @@ function postResponseFunction(result){
 }
 
 function fetchActivityScore() {
-    getJSON(backend.activityscore.all, 'login', getCookie('login'), handleActivityScoreResponse);
+    getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
 }
 
 function handleActivityScoreResponse(result) {
