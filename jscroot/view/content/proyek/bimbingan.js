@@ -16,14 +16,14 @@ export async function main(){
 
 function actionfunctionname(){
     let idprjusr={
-        _id:getValue("project-name"),
+        // _id:getValue("project-name"),
         phonenumber:getValue("phonenumber")
     };
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
         postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        hide("tombolbuatproyek");
+        // hide("tombolbuatproyek");
     }  
 }
 
@@ -71,16 +71,18 @@ function postResponseFunction(result){
 }
 
 function fetchActivityScore() {
-    getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
+    getJSON(backend.activityscore.all, 'login', getCookie('login'), handleActivityScoreResponse);
 }
 
 function handleActivityScoreResponse(result) {
     console.log({result});
     if (result.status === 200) {
+        updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
+        updateTableRow(2, result.data.iqresult, result.data.iq);
         updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
-        // updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
+        updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
         updateTableRow(10, result.data.webhookpush, result.data.webhook);
         updateTableRow(11, result.data.presensihari, result.data.presensi);
     } else {
