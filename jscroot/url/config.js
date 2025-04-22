@@ -10,8 +10,6 @@ export const backend = {
         todo: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/todo',
         doing: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/doing',
         done: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/user/task/done',
-        pomokit:
-            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/report/pomokit/user',
     },
     wa: {
         text: 'https://api.wa.my.id/api/v2/send/message/text',
