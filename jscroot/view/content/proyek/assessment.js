@@ -86,7 +86,7 @@ function handleActivityScoreResponse(result) {
         updateTableRow(4, result.data.mbc, result.data.mbcPoints || result.data.blockchain); 
         updateTableRow(5, result.data.rupiah, result.data.qrisPoints || result.data.qris);     
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
-        updateTableRow(7, result.data.bukukatalog || result.data.bukped);
+        updateTableRow(7, result.data.bukukatalog, result.data.bukped);
         updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
         updateTableRow(10, result.data.webhookpush, result.data.webhook);
         updateTableRow(11, result.data.presensihari, result.data.presensi);
