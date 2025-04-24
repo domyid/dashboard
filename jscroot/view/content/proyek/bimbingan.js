@@ -10,7 +10,7 @@ export async function main(){
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    onClick("tombolaksesmember",actionfunctionname);
+    // onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
     // Ambil data bimbingan untuk minggu pertama (default)
     fetchBimbinganData(1);
