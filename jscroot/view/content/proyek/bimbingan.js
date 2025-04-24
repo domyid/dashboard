@@ -11,79 +11,9 @@ export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick("tombolaksesmember",actionfunctionname);
-    setupWeekSelection();
     fetchActivityScore();
-}
-
-// Menambahkan fungsi untuk menangani pemilihan minggu
-function setupWeekSelection() {
-    const weekSelect = document.getElementById('week-select');
-    if (weekSelect) {
-        weekSelect.addEventListener('change', function () {
-            const selectedWeek = weekSelect.value;
-            fetchBimbinganData(selectedWeek);
-        });
-    }
-}
-
-// Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
-async function fetchBimbinganData(selectedWeek) {
-    if (!selectedWeek || isNaN(selectedWeek) || selectedWeek < 1) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Input Minggu Tidak Valid',
-            text: 'Pastikan minggu yang dimasukkan adalah angka valid.',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    try {
-        const bimbinganWeekly = backend.project.assessment + "weekly?week=" + selectedWeek;
-        const response = await fetch(bimbinganWeekly);
-
-        if (!response.ok) {
-            throw new Error(`Gagal memuat data bimbingan minggu ke-${selectedWeek}`);
-        }
-
-        const data = await response.json();
-
-        // Menampilkan data bimbingan di UI
-        displayBimbinganData(data);
-    } catch (error) {
-        console.error("Terjadi kesalahan saat memuat data bimbingan:", error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal Memuat Data',
-            text: error.message,
-            confirmButtonText: 'OK'
-        });
-    }
-}
-
-// Fungsi untuk menampilkan data bimbingan di UI
-function displayBimbinganData(data) {
-    // Ambil elemen tabel untuk menampilkan data
-    const tableBody = document.querySelector('table tbody');
-    tableBody.innerHTML = '';  // Clear previous data
-
-    // Jika data kosong
-    if (data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="4" class="has-text-centered">Tidak ada data untuk minggu ini</td></tr>`;
-        return;
-    }
-
-    // Iterasi dan masukkan data ke dalam tabel
-    data.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${item.kegiatan}</td>
-            <td>${item.kuantitas}</td>
-            <td>${item.poin}</td>
-        `;
-        tableBody.appendChild(row);
-    });
+    // Ambil data bimbingan untuk minggu pertama (default)
+    fetchBimbinganData(1);
 }
 
 function actionfunctionname(){
@@ -180,5 +110,28 @@ function updateTableRow(rowIndex, quantity, points) {
             quantityCell.textContent = quantity || 0;
             pointsCell.textContent = points || 0;
         }
+    }
+}
+
+// Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
+function fetchBimbinganData(selectedWeek) {
+    // Mengambil data bimbingan berdasarkan minggu yang dipilih
+    getJSON(`${backend.project.assessment}weekly?week=${selectedWeek}`, 'login', getCookie('login'), handleBimbinganResponse);
+}
+
+// Fungsi untuk menangani response data bimbingan
+function handleBimbinganResponse(result) {
+    console.log(result);
+    if (result.status === 200) {
+        updateTableRow(0, result.data.stravakm, result.data.strava);
+        updateTableRow(1, result.data.iqresult, result.data.iq);
+        updateTableRow(2, result.data.pomokitsesi, result.data.pomokit);
+        updateTableRow(3, result.data.mbc, result.data.mbcPoints);
+        updateTableRow(4, result.data.rvn, result.data.ravencoinPoints);
+        updateTableRow(5, result.data.trackerdata, result.data.tracker);
+        updateTableRow(6, result.data.gtmetrixresult, result.data.gtmetrix);
+        updateTableRow(7, result.data.webhookpush, result.data.webhook);
+    } else {
+        console.log(result.data.message);
     }
 }
