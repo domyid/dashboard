@@ -117,7 +117,7 @@ function updateTableRow(rowIndex, quantity, points) {
 // Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
 function fetchBimbinganData(selectedWeek) {
     // Mengambil data bimbingan berdasarkan minggu yang dipilih
-    getJSON(`${backend.project.assessment}weekly?week=${selectedWeek}`, 'login', getCookie('login'), handleBimbinganResponse);
+    getJSON(backend.project.assessment + "/weekly?week=" + selectedWeek,'login',getCookie('login'));
 }
 
 // Fungsi untuk menangani response data bimbingan
