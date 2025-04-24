@@ -12,8 +12,6 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     onClick('tombolmintaapproval', actionfunctionname);
     fetchActivityScore();
-    // checkApprovalStatus();
-    // fetchPomokitData();
 }
 
 function actionfunctionname(){
@@ -26,7 +24,8 @@ function actionfunctionname(){
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
-        postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
+        const bimbinganPerdana = backend.project.assessment + "/perdana"
+        postJSON(bimbinganPerdana,"login",getCookie("login"),idprjusr,postResponseFunction);
         // hide("tombolbuatproyek");    
     }  
 }
