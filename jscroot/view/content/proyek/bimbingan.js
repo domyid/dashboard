@@ -23,7 +23,7 @@ function actionfunctionname(){
         redirect("/signin");
     }else{
         postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        hide("tombolbuatproyek");
+        // hide("tombolbuatproyek");
     }  
 }
 
@@ -59,13 +59,19 @@ function postResponseFunction(result){
                 setValue("phonenumber","");
             }
           });
-    }else{
+    }else if (result.data.status.startsWith("Info : ")) {
         Swal.fire({
-            icon: "error",
+            icon: 'info',
             title: result.data.status,
-            text: result.data.response
-          });
-          show("tombolbuatproyek");
+            text: result.data.response,
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status,
+            text: result.data.response,
+        });
+        // show("tombolmintaapproval");
     }
     console.log(result);
 }
