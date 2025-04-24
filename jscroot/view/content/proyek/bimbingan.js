@@ -10,15 +10,17 @@ export async function main(){
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    fetchBimbinganData();
     // onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
     // Ambil data bimbingan untuk minggu pertama (default)
         // Tambahkan event listener untuk memilih minggu
-        document.getElementById('week-select').addEventListener('change', function () {
-            const selectedWeek = this.value; // Ambil nilai minggu yang dipilih
-            fetchBimbinganData(selectedWeek); // Panggil fungsi dengan nilai minggu yang dipilih
-        });
+        // document.getElementById('week-select').addEventListener('change', function () {
+            // const selectedWeek = this.value; // Ambil nilai minggu yang dipilih
+            // fetchBimbinganData(selectedWeek); // Panggil fungsi dengan nilai minggu yang dipilih
+        // });
     // getJSON(backend.project.assessment + "weekly?week=" + selectedWeek,'login',getCookie('login'),fetchBimbinganData);
+    populateWeekOptions();
 }
 
 function actionfunctionname(){
@@ -118,25 +120,58 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
+// Fungsi untuk mendapatkan nomor minggu berdasarkan Senin jam 5 sore
+Date.prototype.getWeekNumber = function() {
+    var date = new Date(this.getFullYear(), this.getMonth(), this.getDate());
+    // Mengatur waktu ke Senin jam 5 sore (17:00)
+    date.setHours(17, 0, 0, 0);
+    
+    // Menentukan hari Senin untuk minggu ini
+    var day = date.getDay();
+    if (day == 0) { // Jika hari Minggu, ubah menjadi Senin
+        day = 7;
+    }
+    date.setDate(date.getDate() - day + 1); // Menyesuaikan ke Senin
+
+    // Tentukan minggu pertama (Minggu ke-1)
+    var week1 = new Date(date.getFullYear(), 0, 4);
+    return Math.ceil((((date - week1) / 86400000) + 1) / 7);
+};
+
+// Fungsi untuk mengisi daftar minggu (week)
+function populateWeekOptions() {
+    const currentWeek = new Date().getWeekNumber(); // Ambil minggu saat ini berdasarkan Senin jam 5 sore
+    const weekSelectElement = document.getElementById("week-select");
+
+    // Tambahkan pilihan minggu (week) secara dinamis
+    for (let week = 1; week <= currentWeek; week++) {
+        const option = document.createElement('option');
+        option.value = week;
+        option.textContent = `Minggu ${week}`;
+        weekSelectElement.appendChild(option);
+    }
+}
+
 // Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
 function fetchBimbinganData(selectedWeek) {
     // Mengambil data bimbingan berdasarkan minggu yang dipilih
-    getJSON(backend.project.assessment + "/weekly?week=" + selectedWeek,'login',getCookie('login'));
+    getJSON(backend.project.assessment + "/weekly?week=" + selectedWeek,'login',getCookie('login'), handleBimbinganResponse);
 }
 
-// Fungsi untuk menangani response data bimbingan
+// Fungsi untuk menangani response dari API setelah mengambil data bimbingan
 function handleBimbinganResponse(result) {
     console.log(result);
     if (result.status === 200) {
-        updateTableRow(0, result.data.stravakm, result.data.strava);
-        updateTableRow(1, result.data.iqresult, result.data.iq);
-        updateTableRow(2, result.data.pomokitsesi, result.data.pomokit);
-        updateTableRow(3, result.data.mbc, result.data.mbcPoints);
-        updateTableRow(4, result.data.rvn, result.data.ravencoinPoints);
-        updateTableRow(5, result.data.trackerdata, result.data.tracker);
-        updateTableRow(6, result.data.gtmetrixresult, result.data.gtmetrix);
-        updateTableRow(7, result.data.webhookpush, result.data.webhook);
+        // Handle the result to populate bimbingan data
+        result.data.forEach(bimbingan => {
+            // Populate bimbingan data in table or other parts of UI
+            console.log("Bimbingan Data: ", bimbingan);
+        });
     } else {
-        console.log(result.data.message);
+        Swal.fire({
+            icon: "error",
+            title: result.data.status,
+            text: result.data.response
+        });
     }
 }
