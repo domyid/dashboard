@@ -13,7 +13,11 @@ export async function main(){
     // onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
     // Ambil data bimbingan untuk minggu pertama (default)
-    fetchBimbinganData(1);
+        // Tambahkan event listener untuk memilih minggu
+        document.getElementById('week-select').addEventListener('change', function () {
+            const selectedWeek = this.value; // Ambil nilai minggu yang dipilih
+            fetchBimbinganData(selectedWeek); // Panggil fungsi dengan nilai minggu yang dipilih
+        });
     // getJSON(backend.project.assessment + "weekly?week=" + selectedWeek,'login',getCookie('login'),fetchBimbinganData);
 }
 
