@@ -10,7 +10,10 @@ export async function main(){
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    // Memanggil fungsi fetchBimbinganData() saat minggu dipilih
+    document.getElementById('week-select').addEventListener('change', function() {
     fetchBimbinganData();
+    });
     // onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
     // Ambil data bimbingan untuk minggu pertama (default)
@@ -153,9 +156,22 @@ function populateWeekOptions() {
 }
 
 // Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
-function fetchBimbinganData(selectedWeek) {
-    // Mengambil data bimbingan berdasarkan minggu yang dipilih
-    getJSON(backend.project.assessment + "/weekly?week=" + selectedWeek,'login',getCookie('login'), handleBimbinganResponse);
+function fetchBimbinganData() {
+    // Ambil nilai minggu yang dipilih
+    const selectedWeek = document.getElementById('week-select').value;
+    
+    // Pastikan selectedWeek bukan undefined atau kosong
+    if (selectedWeek) {
+        const bimbinganWeekly = backend.project.assessment + "weekly?week=" + selectedWeek;
+        console.log("Fetching data for week: " + selectedWeek); // Log untuk debugging
+        getJSON(bimbinganWeekly, 'login', getCookie('login'), handleBimbinganResponse);
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Pilih minggu terlebih dahulu!',
+            text: 'Anda harus memilih minggu sebelum melanjutkan.'
+        });
+    }
 }
 
 // Fungsi untuk menangani response dari API setelah mengambil data bimbingan
