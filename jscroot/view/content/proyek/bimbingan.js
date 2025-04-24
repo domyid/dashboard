@@ -13,7 +13,8 @@ export async function main(){
     onClick("tombolaksesmember",actionfunctionname);
     fetchActivityScore();
     // Ambil data bimbingan untuk minggu pertama (default)
-    fetchBimbinganData(1);
+    // fetchBimbinganData(1);
+    getJSON(backend.project.assessment + "weekly?week=" + selectedWeek,'login',getCookie('login'),fetchBimbinganData);
 }
 
 function actionfunctionname(){
