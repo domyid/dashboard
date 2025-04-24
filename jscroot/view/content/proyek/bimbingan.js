@@ -84,7 +84,7 @@ function postResponseFunction(result){
 }
 
 function fetchActivityScore() {
-    getJSON(backend.project.assessment + "weekly?week=" + selectedWeek,'login',getCookie('login'),handleActivityScoreResponse);
+        getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
 }
 
 function handleActivityScoreResponse(result) {
