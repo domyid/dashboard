@@ -162,7 +162,7 @@ function fetchBimbinganData() {
     
     // Pastikan selectedWeek bukan undefined atau kosong
     if (selectedWeek) {
-        const bimbinganWeekly = backend.project.assessment + "weekly?week=" + selectedWeek;
+        const bimbinganWeekly = backend.project.assessment + "/weekly?week=" + selectedWeek;
         console.log("Fetching data for week: " + selectedWeek); // Log untuk debugging
         getJSON(bimbinganWeekly, 'login', getCookie('login'), handleBimbinganResponse);
     } else {
