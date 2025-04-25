@@ -10,9 +10,6 @@ export async function main() {
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     onInput('phonenumber', validatePhoneNumber);
     
-    // Populate the week selector
-    populateWeekOptions();
-    
     // Add event listener for the week selector
     document.getElementById('week-select').addEventListener('change', function() {
         fetchBimbinganWeeklyData();
@@ -57,46 +54,71 @@ function handleAllWeeksResponse(result) {
             weekSelect.appendChild(option);
         });
         
-        // If no weeks available, show default option
-        if (result.length === 0) {
-            addDefaultWeekOption();
-        } else {
-            // Select the latest week by default
+        // If there are weeks available, select the latest week
+        if (result.length > 0) {
             const latestWeek = result[result.length - 1];
             weekSelect.value = latestWeek.weeknumber;
             
             // Load data for the selected week
             fetchBimbinganWeeklyData();
+        } else {
+            // If no data, fetch current week data
+            fetchCurrentWeekData();
         }
     } else {
-        // No weeks found or error, show default week option
-        addDefaultWeekOption();
-        fetchBimbinganWeeklyData(); // Try to fetch week 1 data
+        // No weeks found or error, fetch current week data
+        fetchCurrentWeekData();
     }
 }
 
-// Function to add default week option
-function addDefaultWeekOption() {
-    const weekSelect = document.getElementById('week-select');
-    const option = document.createElement('option');
-    option.value = "1";
-    option.textContent = "Minggu 1";
-    weekSelect.appendChild(option);
-}
-
-// Function to populate week dropdown options
-function populateWeekOptions() {
-    // This is now handled by loadAllWeeks which gets actual data from the server
-    // We'll keep this as a fallback in case loadAllWeeks fails
-    const weekSelect = document.getElementById('week-select');
-    if (weekSelect.options.length === 0) {
-        addDefaultWeekOption();
-    }
+// Function to fetch current week data when no weeks are available
+function fetchCurrentWeekData() {
+    console.log("Fetching current week status to get default week");
+    // Make an API call to get the current week status
+    getJSON(
+        backend.bimbingan.status, // Endpoint to get current week status
+        'login',
+        getCookie('login'),
+        (data) => {
+            if (data && data.currentweek) {
+                console.log("Retrieved current week data:", data);
+                
+                // Add the current week to the dropdown
+                const weekSelect = document.getElementById('week-select');
+                weekSelect.innerHTML = ''; // Clear any existing options
+                
+                const option = document.createElement('option');
+                option.value = data.currentweek;
+                option.textContent = `Minggu ${data.currentweek} (${data.weeklabel})`;
+                weekSelect.appendChild(option);
+                
+                // Then fetch data for this week
+                fetchBimbinganWeeklyData();
+            } else {
+                console.warn("No current week data available, using week 1 as fallback");
+                // As a last resort, manually add week 1
+                const weekSelect = document.getElementById('week-select');
+                const option = document.createElement('option');
+                option.value = "1";
+                option.textContent = "Minggu 1 (week1)";
+                weekSelect.appendChild(option);
+                
+                fetchBimbinganWeeklyData();
+            }
+        }
+    );
 }
 
 // Function to fetch weekly bimbingan data
 function fetchBimbinganWeeklyData() {
-    const selectedWeek = document.getElementById('week-select').value || "1";
+    const weekSelect = document.getElementById('week-select');
+    // Check if there are any options in the select
+    if (weekSelect.options.length === 0) {
+        console.warn("No week options available in the dropdown");
+        return;
+    }
+    
+    const selectedWeek = weekSelect.value;
     
     // Show loading indicator
     document.getElementById('loading-indicator').style.display = 'block';
@@ -155,10 +177,18 @@ function handleBimbinganWeeklyResponse(result) {
         document.getElementById('tombolmintaapproval').disabled = false;
         
         // Get week number from select
-        const weekNumber = document.getElementById('week-select').value || "1";
-        const weekLabel = `week${weekNumber}`;
-        document.getElementById('current-week-label').textContent = 
-            `Minggu ${weekNumber} (${weekLabel})`;
+        const weekSelect = document.getElementById('week-select');
+        if (weekSelect.options.length > 0) {
+            const weekNumber = weekSelect.value;
+            const option = weekSelect.options[weekSelect.selectedIndex];
+            const label = option.textContent.split('(')[1]?.split(')')[0] || `week${weekNumber}`;
+            
+            document.getElementById('current-week-label').textContent = 
+                `Minggu ${weekNumber} (${label})`;
+        } else {
+            document.getElementById('current-week-label').textContent = 
+                'Tidak ada data minggu tersedia';
+        }
     }
 }
 

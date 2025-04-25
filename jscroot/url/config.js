@@ -43,6 +43,7 @@ export const backend = {
         request: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/request',
         approve: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/approve',
         changeWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/admin/bimbingan/changeweek',
+        status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/status',
     },
 };
 
