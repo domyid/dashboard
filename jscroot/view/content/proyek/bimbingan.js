@@ -100,9 +100,9 @@ function fetchBimbinganWeeklyData() {
     // Show loading indicator
     document.getElementById('loading-indicator').style.display = 'block';
     
-    // Fetch data from API
+    // Fetch data from API backend.project.assessment + "weekly?week="
     getJSON(
-        backend.project.weeklyassessment + "?week=" + selectedWeek,
+        backend.project.assessment + "weekly?week=" + selectedWeek,
         'login',
         getCookie('login'),
         handleBimbinganWeeklyResponse
