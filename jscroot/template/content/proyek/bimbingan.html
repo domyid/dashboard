@@ -1,7 +1,11 @@
 <section class="section">
     <div class="container">
         <h1 class="title">Bimbingan Mingguan</h1>
-        <p class="subtitle">Laporan dan rekapitulasi aktivitas mingguan</p>
+        <p class="subtitle" id="current-week-label">Loading...</p>
+
+        <div class="notification is-info is-light">
+            <p><strong>Catatan:</strong> Sistem bimbingan mingguan otomatis berganti setiap hari Senin pukul 17:00. Data setiap minggu disimpan secara terpisah.</p>
+        </div>
 
         <div class="columns">
             <div class="column is-half">
@@ -27,6 +31,13 @@
                     <p id="asesor-comment" style="display: none; margin-top: 5px;"></p>
                 </div>
             </div>
+        </div>
+
+        <div id="loading-indicator" class="has-text-centered" style="display: none;">
+            <span class="icon is-large">
+                <i class="fas fa-spinner fa-pulse fa-2x"></i>
+            </span>
+            <p>Memuat data...</p>
         </div>
 
         <div class="box">
@@ -82,8 +93,17 @@
             </div>
         </div>
 
-        <div class="notification is-info is-light">
-            <p><strong>Catatan:</strong> Sistem bimbingan mingguan otomatis berganti setiap hari Senin pukul 17:00. Pastikan Anda mengajukan bimbingan sebelum waktu tersebut.</p>
+        <div class="content">
+            <h3>Petunjuk Penggunaan</h3>
+            <ol>
+                <li>Pilih minggu yang ingin Anda lihat dari dropdown di atas</li>
+                <li>Data aktivitas mingguan Anda akan ditampilkan dalam tabel</li>
+                <li>Masukkan nomor telepon dosen asesor Anda untuk meminta persetujuan</li>
+                <li>Klik tombol "Minta Approval" untuk mengirim permintaan persetujuan</li>
+                <li>Dosen akan menerima notifikasi dan dapat memberikan persetujuan</li>
+                <li>Setelah disetujui, status akan berubah menjadi "Disetujui"</li>
+                <li>Data untuk setiap minggu disimpan secara terpisah dan tidak saling menimpa</li>
+            </ol>
         </div>
     </div>
 </section>

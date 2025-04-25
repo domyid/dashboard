@@ -26,38 +26,70 @@ export async function main() {
     // Add event listener for the submit button
     onClick("tombolmintaapproval", submitBimbinganRequest);
     
-    // Fetch initial weekly data (for week 1)
-    fetchBimbinganWeeklyData();
+    // Initialize by loading all weeks for this student
+    loadAllWeeks();
 }
 
-// Function to calculate current week number
-function calculateCurrentWeekNumber() {
-    // Define semester start date (adjust as needed)
-    const startDate = new Date(2025, 0, 6); // January 6, 2025
-    const today = new Date();
+// Function to load all weeks for this student
+function loadAllWeeks() {
+    getJSON(
+        backend.project.weeklyassessment + "/all",
+        'login',
+        getCookie('login'),
+        handleAllWeeksResponse
+    );
+}
+
+// Function to handle all weeks response
+function handleAllWeeksResponse(result) {
+    console.log("All weeks data:", result);
     
-    // Calculate difference in days
-    const diffTime = Math.abs(today - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Calculate week number (1-indexed)
-    return Math.floor(diffDays / 7) + 1;
+    if (result.status === 200 && Array.isArray(result.data)) {
+        // Populate the week selector with available weeks
+        const weekSelect = document.getElementById('week-select');
+        weekSelect.innerHTML = ''; // Clear existing options
+        
+        result.data.forEach(weekly => {
+            const option = document.createElement('option');
+            option.value = weekly.weeknumber;
+            option.textContent = `Minggu ${weekly.weeknumber} (${weekly.weeklabel})`;
+            weekSelect.appendChild(option);
+        });
+        
+        // If no weeks available, show default option
+        if (result.data.length === 0) {
+            addDefaultWeekOption();
+        } else {
+            // Select the latest week by default
+            const latestWeek = result.data[result.data.length - 1];
+            weekSelect.value = latestWeek.weeknumber;
+            
+            // Load data for the selected week
+            fetchBimbinganWeeklyData();
+        }
+    } else {
+        // No weeks found or error, show default week option
+        addDefaultWeekOption();
+        fetchBimbinganWeeklyData(); // Try to fetch week 1 data
+    }
+}
+
+// Function to add default week option
+function addDefaultWeekOption() {
+    const weekSelect = document.getElementById('week-select');
+    const option = document.createElement('option');
+    option.value = "1";
+    option.textContent = "Minggu 1";
+    weekSelect.appendChild(option);
 }
 
 // Function to populate week dropdown options
 function populateWeekOptions() {
+    // This is now handled by loadAllWeeks which gets actual data from the server
+    // We'll keep this as a fallback in case loadAllWeeks fails
     const weekSelect = document.getElementById('week-select');
-    const currentWeek = calculateCurrentWeekNumber();
-    
-    // Clear existing options
-    weekSelect.innerHTML = '';
-    
-    // Add options for all weeks up to current
-    for (let i = 1; i <= currentWeek; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Minggu ${i}`;
-        weekSelect.appendChild(option);
+    if (weekSelect.options.length === 0) {
+        addDefaultWeekOption();
     }
 }
 
@@ -65,9 +97,12 @@ function populateWeekOptions() {
 function fetchBimbinganWeeklyData() {
     const selectedWeek = document.getElementById('week-select').value || "1";
     
+    // Show loading indicator
+    document.getElementById('loading-indicator').style.display = 'block';
+    
     // Fetch data from API
     getJSON(
-        backend.project.assessment + "/weekly?week=" + selectedWeek,
+        backend.project.weeklyassessment + "?week=" + selectedWeek,
         'login',
         getCookie('login'),
         handleBimbinganWeeklyResponse
@@ -76,7 +111,10 @@ function fetchBimbinganWeeklyData() {
 
 // Function to handle weekly bimbingan API response
 function handleBimbinganWeeklyResponse(result) {
-    console.log(result);
+    console.log("Week data:", result);
+    
+    // Hide loading indicator
+    document.getElementById('loading-indicator').style.display = 'none';
     
     if (result.status === 200) {
         // Update the activity score table
@@ -84,6 +122,10 @@ function handleBimbinganWeeklyResponse(result) {
         
         // Update approval status
         updateApprovalStatus(result.data);
+        
+        // Update week label display
+        document.getElementById('current-week-label').textContent = 
+            `Minggu ${result.data.weeknumber} (${result.data.weeklabel})`;
         
         // If approved, disable the approval button
         document.getElementById('tombolmintaapproval').disabled = result.data.approved;
@@ -98,12 +140,18 @@ function handleBimbinganWeeklyResponse(result) {
         document.getElementById('approval-status').textContent = 'Belum ada bimbingan';
         document.getElementById('approval-status').className = 'tag is-warning';
         document.getElementById('tombolmintaapproval').disabled = false;
+        
+        // Get week number from select
+        const weekNumber = document.getElementById('week-select').value || "1";
+        const weekLabel = `week${weekNumber}`;
+        document.getElementById('current-week-label').textContent = 
+            `Minggu ${weekNumber} (${weekLabel})`;
     } else {
         // Error
         Swal.fire({
             icon: 'error',
-            title: 'Error fetching data',
-            text: result.response || 'Failed to fetch weekly bimbingan data'
+            title: 'Error mengambil data',
+            text: result.response || 'Gagal mengambil data bimbingan mingguan'
         });
     }
 }
@@ -120,8 +168,8 @@ function updateActivityScoreTable(activityScore) {
     updateTableRow(4, activityScore.mbc, activityScore.blockchain);
     updateTableRow(5, activityScore.rupiah, activityScore.qris);
     updateTableRow(6, activityScore.trackerdata, activityScore.tracker);
-    updateTableRow(7, '', activityScore.bukped); // BukPed doesn't have quantity
-    updateTableRow(8, '', activityScore.jurnal); // Jurnal doesn't have quantity
+    updateTableRow(7, activityScore.bukukatalog || '', activityScore.bukped);
+    updateTableRow(8, activityScore.jurnalweb || '', activityScore.jurnal);
     updateTableRow(9, activityScore.gtmetrixresult, activityScore.gtmetrix);
     updateTableRow(10, activityScore.webhookpush, activityScore.webhook);
     updateTableRow(11, activityScore.presensihari, activityScore.presensi);
@@ -195,7 +243,7 @@ function updateApprovalStatus(data) {
         statusElement.textContent = 'Menunggu Persetujuan';
         statusElement.className = 'tag is-warning';
         document.getElementById('asesor-info').textContent = 
-            `Submitted to: ${data.asesor.name || data.asesor.phonenumber}`;
+            `Diajukan ke: ${data.asesor.name || data.asesor.phonenumber}`;
         document.getElementById('asesor-info').style.display = 'block';
     } else {
         statusElement.textContent = 'Belum Diajukan';
