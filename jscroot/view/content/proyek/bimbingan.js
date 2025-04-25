@@ -218,72 +218,22 @@ function updateActivityScoreTable(activityScore) {
         return;
     }
     
-    // Dapatkan semua baris tabel terlebih dahulu
-    const tableRows = document.querySelectorAll('table.table tbody tr');
-    console.log("Total table rows:", tableRows.length);
-    
-    // Cek jumlah baris yang tersedia
-    if (tableRows.length < 10) {
-        console.warn(`Table only has ${tableRows.length} rows, expected 10`);
-    }
-    
-    // Sponsor data
-    if (tableRows.length > 0) updateRowCells(tableRows[0], activityScore.sponsordata, activityScore.sponsor);
-    
-    // Strava
-    if (tableRows.length > 1) updateRowCells(tableRows[1], activityScore.stravakm, activityScore.strava);
-    
-    // IQ
-    if (tableRows.length > 2) updateRowCells(tableRows[2], activityScore.iqresult, activityScore.iq);
-    
-    // Pomokit
-    if (tableRows.length > 3) updateRowCells(tableRows[3], activityScore.pomokitsesi, activityScore.pomokit);
-    
-    // Blockchain (MBC)
-    if (tableRows.length > 4) updateRowCells(tableRows[4], activityScore.mbc, activityScore.blockchain);
-    
-    // QRIS
-    if (tableRows.length > 5) updateRowCells(tableRows[5], activityScore.rupiah, activityScore.qris);
-    
-    // Web Tracker
-    if (tableRows.length > 6) updateRowCells(tableRows[6], activityScore.trackerdata, activityScore.tracker);
-    
-    // // Buku
-    // if (tableRows.length > 7) updateRowCells(tableRows[7], activityScore.bukukatalog || '', activityScore.bukped);
-    
-    // // Jurnal
-    // if (tableRows.length > 8) updateRowCells(tableRows[8], activityScore.jurnalweb || '', activityScore.jurnal);
-    
-    // GTMetrix - urutan berbeda dengan indeks di kode asli (9 -> 9)
-    if (tableRows.length > 9) updateRowCells(tableRows[9], activityScore.gtmetrixresult, activityScore.gtmetrix);
-    
-    // WebHook - urutan berbeda dengan indeks di kode asli (10 -> 10)
-    if (tableRows.length > 10) updateRowCells(tableRows[10], activityScore.webhookpush, activityScore.webhook);
-    
-    // Presensi
-    if (tableRows.length > 11) updateRowCells(tableRows[11], activityScore.presensihari, activityScore.presensi);
+    // Update each row in the table
+    updateTableRow(0, activityScore.sponsordata, activityScore.sponsor);
+    updateTableRow(1, activityScore.stravakm, activityScore.strava);
+    updateTableRow(2, activityScore.iqresult, activityScore.iq);
+    updateTableRow(3, activityScore.pomokitsesi, activityScore.pomokit);
+    updateTableRow(4, activityScore.mbc, activityScore.blockchain);
+    updateTableRow(5, activityScore.rupiah, activityScore.qris);
+    updateTableRow(6, activityScore.trackerdata, activityScore.tracker);
+    updateTableRow(7, activityScore.gtmetrixresult, activityScore.gtmetrix);
+    updateTableRow(8, activityScore.webhookpush, activityScore.webhook);
+    updateTableRow(9, activityScore.presensihari, activityScore.presensi);
     
     // Update total score
     document.getElementById('total-score').textContent = activityScore.total || 0;
 }
 
-// Helper function untuk update sel
-function updateRowCells(row, quantity, points) {
-    if (!row) {
-        console.warn("Row is undefined");
-        return;
-    }
-    
-    const quantityCell = row.querySelector('td:nth-child(3)');
-    const pointsCell = row.querySelector('td:nth-child(4)');
-    
-    if (quantityCell && pointsCell) {
-        quantityCell.textContent = quantity !== undefined ? quantity : '0';
-        pointsCell.textContent = points !== undefined ? points : '0';
-    } else {
-        console.warn("Could not find cells in row");
-    }
-}
 // Function to reset the activity score table
 function resetActivityScoreTable() {
     console.log("Resetting activity score table");
