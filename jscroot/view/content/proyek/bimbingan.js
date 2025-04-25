@@ -32,6 +32,7 @@ export async function main() {
 
 // Function to load all weeks for this student
 function loadAllWeeks() {
+    console.log("Fetching all weeks from:", backend.bimbingan.all);
     getJSON(
         backend.bimbingan.all,
         'login',
@@ -100,6 +101,9 @@ function fetchBimbinganWeeklyData() {
     // Show loading indicator
     document.getElementById('loading-indicator').style.display = 'block';
     
+    // Debug log
+    console.log(`Fetching data for week ${selectedWeek} from: ${backend.bimbingan.weekly}?week=${selectedWeek}`);
+    
     // Fetch data from API
     getJSON(
         `${backend.bimbingan.weekly}?week=${selectedWeek}`,
@@ -111,14 +115,22 @@ function fetchBimbinganWeeklyData() {
 
 // Function to handle weekly bimbingan API response
 function handleBimbinganWeeklyResponse(result) {
-    console.log("Week data:", result);
+    console.log("Week data response:", result);
     
     // Hide loading indicator
     document.getElementById('loading-indicator').style.display = 'none';
     
     if (result) {
+        // Debug log to see all properties
+        console.log("Available properties:", Object.keys(result));
+        
         // Update the activity score table
-        updateActivityScoreTable(result.activityscore);
+        if (result.activityscore) {
+            updateActivityScoreTable(result.activityscore);
+        } else {
+            console.warn("No activityscore data found in the response");
+            resetActivityScoreTable();
+        }
         
         // Update approval status
         updateApprovalStatus(result);
@@ -135,6 +147,7 @@ function handleBimbinganWeeklyResponse(result) {
             setValue('phonenumber', result.asesor.phonenumber);
         }
     } else {
+        console.warn("No data received from server or error occurred");
         // No data found for this week, show initial state
         resetActivityScoreTable();
         document.getElementById('approval-status').textContent = 'Belum ada bimbingan';
@@ -151,7 +164,12 @@ function handleBimbinganWeeklyResponse(result) {
 
 // Function to update the activity score table
 function updateActivityScoreTable(activityScore) {
-    if (!activityScore) return;
+    console.log("Updating activity score table with data:", activityScore);
+    
+    if (!activityScore) {
+        console.warn("Activity score data is null or undefined");
+        return;
+    }
     
     // Update each row in the table
     updateTableRow(0, activityScore.sponsordata, activityScore.sponsor);
@@ -173,6 +191,8 @@ function updateActivityScoreTable(activityScore) {
 
 // Function to reset the activity score table
 function resetActivityScoreTable() {
+    console.log("Resetting activity score table");
+    
     const tableRows = document.querySelectorAll('table.table tbody tr');
     tableRows.forEach(row => {
         const quantityCell = row.querySelector('td:nth-child(3)');
@@ -191,6 +211,12 @@ function resetActivityScoreTable() {
 // Function to update a single table row
 function updateTableRow(rowIndex, quantity, points) {
     const tableRows = document.querySelectorAll('table.table tbody tr');
+    
+    if (rowIndex >= tableRows.length) {
+        console.warn(`Row index ${rowIndex} is out of bounds`);
+        return;
+    }
+    
     const row = tableRows[rowIndex]; // Get row by index
     
     if (row) {
@@ -200,13 +226,27 @@ function updateTableRow(rowIndex, quantity, points) {
         if (quantityCell && pointsCell) {
             quantityCell.textContent = quantity !== undefined ? quantity : '0';
             pointsCell.textContent = points !== undefined ? points : '0';
+        } else {
+            console.warn(`Could not find cells for row ${rowIndex}`);
         }
+    } else {
+        console.warn(`Could not find row at index ${rowIndex}`);
     }
 }
 
 // Function to update approval status display
 function updateApprovalStatus(data) {
+    console.log("Updating approval status with data:", data);
+    
     const statusElement = document.getElementById('approval-status');
+    const asesorInfo = document.getElementById('asesor-info');
+    const validasiScore = document.getElementById('validasi-score');
+    const asesorComment = document.getElementById('asesor-comment');
+    
+    // Reset display
+    asesorInfo.style.display = 'none';
+    validasiScore.style.display = 'none';
+    asesorComment.style.display = 'none';
     
     if (data.approved) {
         statusElement.textContent = 'Disetujui';
@@ -214,36 +254,33 @@ function updateApprovalStatus(data) {
         
         // Show asesor information if available
         if (data.asesor && data.asesor.name) {
-            document.getElementById('asesor-info').textContent = 
+            asesorInfo.textContent = 
                 `Disetujui oleh: ${data.asesor.name} (${data.asesor.phonenumber})`;
-            document.getElementById('asesor-info').style.display = 'block';
+            asesorInfo.style.display = 'block';
             
             // Show validation score if available
             if (data.validasi) {
-                document.getElementById('validasi-score').textContent = 
+                validasiScore.textContent = 
                     `Validasi: ${data.validasi}/5`;
-                document.getElementById('validasi-score').style.display = 'block';
+                validasiScore.style.display = 'block';
             }
             
             // Show comment if available
             if (data.komentar) {
-                document.getElementById('asesor-comment').textContent = 
+                asesorComment.textContent = 
                     `Komentar: ${data.komentar}`;
-                document.getElementById('asesor-comment').style.display = 'block';
+                asesorComment.style.display = 'block';
             }
         }
     } else if (data.asesor && data.asesor.phonenumber) {
         statusElement.textContent = 'Menunggu Persetujuan';
         statusElement.className = 'tag is-warning';
-        document.getElementById('asesor-info').textContent = 
+        asesorInfo.textContent = 
             `Diajukan ke: ${data.asesor.name || data.asesor.phonenumber}`;
-        document.getElementById('asesor-info').style.display = 'block';
+        asesorInfo.style.display = 'block';
     } else {
         statusElement.textContent = 'Belum Diajukan';
         statusElement.className = 'tag is-danger';
-        document.getElementById('asesor-info').style.display = 'none';
-        document.getElementById('validasi-score').style.display = 'none';
-        document.getElementById('asesor-comment').style.display = 'none';
     }
 }
 
@@ -267,6 +304,9 @@ function submitBimbinganRequest() {
         weekNumber: parseInt(selectedWeek)
     };
     
+    console.log("Sending request to:", backend.bimbingan.request);
+    console.log("Request body:", requestBody);
+    
     // Show loading indicator
     Swal.fire({
         title: 'Mengirim permintaan...',
@@ -288,7 +328,7 @@ function submitBimbinganRequest() {
 
 // Function to handle bimbingan submit response
 function handleBimbinganSubmitResponse(result) {
-    console.log(result);
+    console.log("Submit response:", result);
     
     // Close loading indicator
     Swal.close();
