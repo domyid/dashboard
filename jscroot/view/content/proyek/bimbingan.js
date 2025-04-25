@@ -229,6 +229,7 @@ function updateActivityScoreTable(activityScore) {
     updateTableRow(7, activityScore.gtmetrixresult, activityScore.gtmetrix);
     updateTableRow(8, activityScore.webhookpush, activityScore.webhook);
     updateTableRow(9, activityScore.presensihari, activityScore.presensi);
+    updateTableRow(10, activityScore.rvn, activityScore.ravencoinPoints);
     
     // Update total score
     document.getElementById('total-score').textContent = activityScore.total || 0;
