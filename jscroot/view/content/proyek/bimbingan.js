@@ -1,193 +1,286 @@
-import { onClick,getValue,setValue,onInput,hide,show } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
-import {validatePhoneNumber} from "https://cdn.jsdelivr.net/gh/jscroot/validate@0.0.2/croot.js";
-import {postJSON,getJSON} from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
-import {getCookie} from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
+import { onClick, getValue, setValue, onInput, hide, show } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
+import { validatePhoneNumber } from "https://cdn.jsdelivr.net/gh/jscroot/validate@0.0.2/croot.js";
+import { postJSON, getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
-import { id,backend } from "/dashboard/jscroot/url/config.js";
+import { id, backend } from "/dashboard/jscroot/url/config.js";
 
-export async function main(){    
+export async function main() {
+    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     onInput('phonenumber', validatePhoneNumber);
-    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
-    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    // Memanggil fungsi fetchBimbinganData() saat minggu dipilih
-    document.getElementById('week-select').addEventListener('change', function() {
-    fetchBimbinganData();
-    });
-    // onClick("tombolaksesmember",actionfunctionname);
-    fetchActivityScore();
-    // Ambil data bimbingan untuk minggu pertama (default)
-        // Tambahkan event listener untuk memilih minggu
-        // document.getElementById('week-select').addEventListener('change', function () {
-            // const selectedWeek = this.value; // Ambil nilai minggu yang dipilih
-            // fetchBimbinganData(selectedWeek); // Panggil fungsi dengan nilai minggu yang dipilih
-        // });
-    // getJSON(backend.project.assessment + "weekly?week=" + selectedWeek,'login',getCookie('login'),fetchBimbinganData);
+    
+    // Populate the week selector
     populateWeekOptions();
+    
+    // Add event listener for the week selector
+    document.getElementById('week-select').addEventListener('change', function() {
+        fetchBimbinganWeeklyData();
+    });
+    
+    // Enable the submit button if there's a phone number
+    document.getElementById('phonenumber').addEventListener('input', function() {
+        document.getElementById('tombolmintaapproval').disabled = !this.value;
+    });
+    
+    // Add event listener for the submit button
+    onClick("tombolmintaapproval", submitBimbinganRequest);
+    
+    // Fetch initial weekly data (for week 1)
+    fetchBimbinganWeeklyData();
 }
 
-function actionfunctionname(){
-    let idprjusr={
-        _id:getValue("project-name"),
-        phonenumber:getValue("phonenumber")
-    };
-    if (getCookie("login")===""){
-        redirect("/signin");
-    }else{
-        postJSON(backend.project.assessment,"login",getCookie("login"),idprjusr,postResponseFunction);
-        // hide("tombolbuatproyek");
-    }  
+// Function to calculate current week number
+function calculateCurrentWeekNumber() {
+    // Define semester start date (adjust as needed)
+    const startDate = new Date(2025, 0, 6); // January 6, 2025
+    const today = new Date();
+    
+    // Calculate difference in days
+    const diffTime = Math.abs(today - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Calculate week number (1-indexed)
+    return Math.floor(diffDays / 7) + 1;
 }
 
-function getResponseFunction(result){
-    console.log(result);
-    if (result.status===200){
-        result.data.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project._id;
-            option.textContent = project.name;
-            document.getElementById('project-name').appendChild(option);
-        });
-
-    }else{
-        Swal.fire({
-            icon: "error",
-            title: result.data.status,
-            text: result.data.response
-          });
+// Function to populate week dropdown options
+function populateWeekOptions() {
+    const weekSelect = document.getElementById('week-select');
+    const currentWeek = calculateCurrentWeekNumber();
+    
+    // Clear existing options
+    weekSelect.innerHTML = '';
+    
+    // Add options for all weeks up to current
+    for (let i = 1; i <= currentWeek; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `Minggu ${i}`;
+        weekSelect.appendChild(option);
     }
 }
 
+// Function to fetch weekly bimbingan data
+function fetchBimbinganWeeklyData() {
+    const selectedWeek = document.getElementById('week-select').value || "1";
+    
+    // Fetch data from API
+    getJSON(
+        backend.project.assessment + "/weekly?week=" + selectedWeek,
+        'login',
+        getCookie('login'),
+        handleBimbinganWeeklyResponse
+    );
+}
 
-function postResponseFunction(result){
-    if(result.status === 200){
-        const katakata = "Berhasil memasukkan member baru ke project "+result.data.name;
-        Swal.fire({
-            icon: "success",
-            title: "Berhasil",
-            text: "Selamat kak proyek "+result.data.name+" dengan ID: "+result.data._id+" sudah mendapat member baru",
-            footer: '<a href="https://wa.me/62895601060000?text='+katakata+'" target="_blank">Verifikasi Proyek</a>',
-            didClose: () => {
-                setValue("phonenumber","");
-            }
-          });
-    }else if (result.data.status.startsWith("Info : ")) {
-        Swal.fire({
-            icon: 'info',
-            title: result.data.status,
-            text: result.data.response,
-        });
+// Function to handle weekly bimbingan API response
+function handleBimbinganWeeklyResponse(result) {
+    console.log(result);
+    
+    if (result.status === 200) {
+        // Update the activity score table
+        updateActivityScoreTable(result.data.activityscore);
+        
+        // Update approval status
+        updateApprovalStatus(result.data);
+        
+        // If approved, disable the approval button
+        document.getElementById('tombolmintaapproval').disabled = result.data.approved;
+        
+        // If we have an assessor already, pre-fill the phone number
+        if (result.data.asesor && result.data.asesor.phonenumber) {
+            setValue('phonenumber', result.data.asesor.phonenumber);
+        }
+    } else if (result.status === 404) {
+        // No data found for this week, show initial state
+        resetActivityScoreTable();
+        document.getElementById('approval-status').textContent = 'Belum ada bimbingan';
+        document.getElementById('approval-status').className = 'tag is-warning';
+        document.getElementById('tombolmintaapproval').disabled = false;
     } else {
+        // Error
         Swal.fire({
             icon: 'error',
-            title: result.data.status,
-            text: result.data.response,
+            title: 'Error fetching data',
+            text: result.response || 'Failed to fetch weekly bimbingan data'
         });
-        // show("tombolmintaapproval");
-    }
-    console.log(result);
-}
-
-function fetchActivityScore() {
-        getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
-}
-
-function handleActivityScoreResponse(result) {
-    console.log({result});
-    if (result.status === 200) {
-        updateTableRow(0, result.data.sponsordata, result.data.sponsor);
-        updateTableRow(1, result.data.stravakm, result.data.strava);
-        updateTableRow(2, result.data.iqresult, result.data.iq);
-        updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
-        updateTableRow(6, result.data.trackerdata, result.data.tracker);
-        updateTableRow(7, result.data.bukped);
-        updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
-        updateTableRow(10, result.data.webhookpush, result.data.webhook);
-        updateTableRow(11, result.data.presensihari, result.data.presensi);
-    } else {
-        console.log(result.data.message);
     }
 }
 
+// Function to update the activity score table
+function updateActivityScoreTable(activityScore) {
+    if (!activityScore) return;
+    
+    // Update each row in the table
+    updateTableRow(0, activityScore.sponsordata, activityScore.sponsor);
+    updateTableRow(1, activityScore.stravakm, activityScore.strava);
+    updateTableRow(2, activityScore.iqresult, activityScore.iq);
+    updateTableRow(3, activityScore.pomokitsesi, activityScore.pomokit);
+    updateTableRow(4, activityScore.mbc, activityScore.blockchain);
+    updateTableRow(5, activityScore.rupiah, activityScore.qris);
+    updateTableRow(6, activityScore.trackerdata, activityScore.tracker);
+    updateTableRow(7, '', activityScore.bukped); // BukPed doesn't have quantity
+    updateTableRow(8, '', activityScore.jurnal); // Jurnal doesn't have quantity
+    updateTableRow(9, activityScore.gtmetrixresult, activityScore.gtmetrix);
+    updateTableRow(10, activityScore.webhookpush, activityScore.webhook);
+    updateTableRow(11, activityScore.presensihari, activityScore.presensi);
+    
+    // Update total score
+    document.getElementById('total-score').textContent = activityScore.total || 0;
+}
+
+// Function to reset the activity score table
+function resetActivityScoreTable() {
+    const tableRows = document.querySelectorAll('table.table tbody tr');
+    tableRows.forEach(row => {
+        const quantityCell = row.querySelector('td:nth-child(3)');
+        const pointsCell = row.querySelector('td:nth-child(4)');
+        
+        if (quantityCell && pointsCell) {
+            quantityCell.textContent = '0';
+            pointsCell.textContent = '0';
+        }
+    });
+    
+    // Reset total score
+    document.getElementById('total-score').textContent = '0';
+}
+
+// Function to update a single table row
 function updateTableRow(rowIndex, quantity, points) {
     const tableRows = document.querySelectorAll('table.table tbody tr');
-    const row = tableRows[rowIndex]; // Ambil baris berdasarkan indeks
+    const row = tableRows[rowIndex]; // Get row by index
+    
     if (row) {
         const quantityCell = row.querySelector('td:nth-child(3)');
         const pointsCell = row.querySelector('td:nth-child(4)');
-
+        
         if (quantityCell && pointsCell) {
-            quantityCell.textContent = quantity || 0;
-            pointsCell.textContent = points || 0;
+            quantityCell.textContent = quantity !== undefined ? quantity : '0';
+            pointsCell.textContent = points !== undefined ? points : '0';
         }
     }
 }
 
-// Fungsi untuk mendapatkan nomor minggu berdasarkan Senin jam 5 sore
-Date.prototype.getWeekNumber = function() {
-    var date = new Date(this.getFullYear(), this.getMonth(), this.getDate());
-    // Mengatur waktu ke Senin jam 5 sore (17:00)
-    date.setHours(17, 0, 0, 0);
+// Function to update approval status display
+function updateApprovalStatus(data) {
+    const statusElement = document.getElementById('approval-status');
     
-    // Menentukan hari Senin untuk minggu ini
-    var day = date.getDay();
-    if (day == 0) { // Jika hari Minggu, ubah menjadi Senin
-        day = 7;
-    }
-    date.setDate(date.getDate() - day + 1); // Menyesuaikan ke Senin
-
-    // Tentukan minggu pertama (Minggu ke-1)
-    var week1 = new Date(date.getFullYear(), 0, 4);
-    return Math.ceil((((date - week1) / 86400000) + 1) / 7);
-};
-
-// Fungsi untuk mengisi daftar minggu (week)
-function populateWeekOptions() {
-    const currentWeek = new Date().getWeekNumber(); // Ambil minggu saat ini berdasarkan Senin jam 5 sore
-    const weekSelectElement = document.getElementById("week-select");
-
-    // Tambahkan pilihan minggu (week) secara dinamis
-    for (let week = 1; week <= currentWeek; week++) {
-        const option = document.createElement('option');
-        option.value = week;
-        option.textContent = `Minggu ${week}`;
-        weekSelectElement.appendChild(option);
+    if (data.approved) {
+        statusElement.textContent = 'Disetujui';
+        statusElement.className = 'tag is-success';
+        
+        // Show asesor information if available
+        if (data.asesor && data.asesor.name) {
+            document.getElementById('asesor-info').textContent = 
+                `Disetujui oleh: ${data.asesor.name} (${data.asesor.phonenumber})`;
+            document.getElementById('asesor-info').style.display = 'block';
+            
+            // Show validation score if available
+            if (data.validasi) {
+                document.getElementById('validasi-score').textContent = 
+                    `Validasi: ${data.validasi}/5`;
+                document.getElementById('validasi-score').style.display = 'block';
+            }
+            
+            // Show comment if available
+            if (data.komentar) {
+                document.getElementById('asesor-comment').textContent = 
+                    `Komentar: ${data.komentar}`;
+                document.getElementById('asesor-comment').style.display = 'block';
+            }
+        }
+    } else if (data.asesor && data.asesor.phonenumber) {
+        statusElement.textContent = 'Menunggu Persetujuan';
+        statusElement.className = 'tag is-warning';
+        document.getElementById('asesor-info').textContent = 
+            `Submitted to: ${data.asesor.name || data.asesor.phonenumber}`;
+        document.getElementById('asesor-info').style.display = 'block';
+    } else {
+        statusElement.textContent = 'Belum Diajukan';
+        statusElement.className = 'tag is-danger';
+        document.getElementById('asesor-info').style.display = 'none';
+        document.getElementById('validasi-score').style.display = 'none';
+        document.getElementById('asesor-comment').style.display = 'none';
     }
 }
 
-// Fungsi untuk mengambil data bimbingan berdasarkan minggu yang dipilih
-function fetchBimbinganData() {
-    // Ambil nilai minggu yang dipilih
+// Function to submit bimbingan request
+function submitBimbinganRequest() {
     const selectedWeek = document.getElementById('week-select').value;
+    const phonenumber = getValue('phonenumber');
     
-    // Pastikan selectedWeek bukan undefined atau kosong
-    if (selectedWeek) {
-        const bimbinganWeekly = backend.project.assessment + "/weekly?week=" + selectedWeek;
-        console.log("Fetching data for week: " + selectedWeek); // Log untuk debugging
-        getJSON(bimbinganWeekly, 'login', getCookie('login'), handleBimbinganResponse);
-    } else {
+    if (!phonenumber) {
         Swal.fire({
             icon: 'error',
-            title: 'Pilih minggu terlebih dahulu!',
-            text: 'Anda harus memilih minggu sebelum melanjutkan.'
+            title: 'Error',
+            text: 'Nomor telepon dosen asesor harus diisi!'
         });
+        return;
     }
+    
+    // Prepare request body
+    const requestBody = {
+        asesor: {
+            phonenumber: phonenumber
+        }
+    };
+    
+    // Determine which endpoint to use based on current week
+    const endpoint = parseInt(selectedWeek) === 1 
+        ? backend.project.assessment + "/perdana" 
+        : backend.project.assessment + "/lanjutan";
+    
+    // Show loading indicator
+    Swal.fire({
+        title: 'Mengirim permintaan...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Send request
+    postJSON(
+        endpoint,
+        'login',
+        getCookie('login'),
+        requestBody,
+        handleBimbinganSubmitResponse
+    );
 }
 
-// Fungsi untuk menangani response dari API setelah mengambil data bimbingan
-function handleBimbinganResponse(result) {
+// Function to handle bimbingan submit response
+function handleBimbinganSubmitResponse(result) {
     console.log(result);
+    
+    // Close loading indicator
+    Swal.close();
+    
     if (result.status === 200) {
-        // Handle the result to populate bimbingan data
-        result.data.forEach(bimbingan => {
-            // Populate bimbingan data in table or other parts of UI
-            console.log("Bimbingan Data: ", bimbingan);
-        });
-    } else {
+        // Success
         Swal.fire({
-            icon: "error",
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Permintaan bimbingan berhasil dikirim!'
+        }).then(() => {
+            // Refresh the data
+            fetchBimbinganWeeklyData();
+        });
+    } else if (result.data && result.data.status && result.data.status.startsWith("Info : ")) {
+        // Info message
+        Swal.fire({
+            icon: 'info',
             title: result.data.status,
             text: result.data.response
+        });
+    } else {
+        // Error
+        Swal.fire({
+            icon: 'error',
+            title: result.data ? result.data.status : 'Error',
+            text: result.data ? result.data.response : 'Gagal mengirim permintaan bimbingan'
         });
     }
 }

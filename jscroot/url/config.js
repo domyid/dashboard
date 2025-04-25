@@ -35,6 +35,10 @@ export const backend = {
         all: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscore',
         weekly: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscoreweekly',
     },
+ bimbinganweekly: {
+    process: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly',
+    force: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly/force',
+},
 };
 
 export const croot = folderPath()+"jscroot/";
