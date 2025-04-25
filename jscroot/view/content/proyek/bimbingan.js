@@ -146,9 +146,26 @@ function handleBimbinganWeeklyResponse(result) {
         // Debug log to see all properties
         console.log("Available properties:", Object.keys(result));
         
-        // Update the activity score table
+        // PERBAIKAN: Cek di semua kemungkinan tempat data aktivitas bisa berada
+        let activityScore = null;
+        
+        // Cek beberapa kemungkinan lokasi data
         if (result.activityscore) {
-            updateActivityScoreTable(result.activityscore);
+            console.log("Found activityscore at root level");
+            activityScore = result.activityscore;
+        } else if (result.data && result.data.activityscore) {
+            console.log("Found activityscore in data property");
+            activityScore = result.data.activityscore;
+        } else {
+            // Cek apakah mungkin data langsung adalah activity score
+            if (result.iq !== undefined || result.mbc !== undefined || result.tracker !== undefined) {
+                console.log("Using root object as activityscore");
+                activityScore = result;
+            }
+        }
+        
+        if (activityScore) {
+            updateActivityScoreTable(activityScore);
         } else {
             console.warn("No activityscore data found in the response");
             resetActivityScoreTable();
