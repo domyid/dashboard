@@ -223,8 +223,8 @@ function updateActivityScoreTable(activityScore) {
     console.log("Total table rows:", tableRows.length);
     
     // Cek jumlah baris yang tersedia
-    if (tableRows.length < 12) {
-        console.warn(`Table only has ${tableRows.length} rows, expected 12`);
+    if (tableRows.length < 10) {
+        console.warn(`Table only has ${tableRows.length} rows, expected 10`);
     }
     
     // Sponsor data
