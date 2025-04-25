@@ -44,12 +44,12 @@ function loadAllWeeks() {
 function handleAllWeeksResponse(result) {
     console.log("All weeks data:", result);
     
-    if (result.status === 200 && Array.isArray(result.data)) {
+    if (result && Array.isArray(result)) {
         // Populate the week selector with available weeks
         const weekSelect = document.getElementById('week-select');
         weekSelect.innerHTML = ''; // Clear existing options
         
-        result.data.forEach(weekly => {
+        result.forEach(weekly => {
             const option = document.createElement('option');
             option.value = weekly.weeknumber;
             option.textContent = `Minggu ${weekly.weeknumber} (${weekly.weeklabel})`;
@@ -57,11 +57,11 @@ function handleAllWeeksResponse(result) {
         });
         
         // If no weeks available, show default option
-        if (result.data.length === 0) {
+        if (result.length === 0) {
             addDefaultWeekOption();
         } else {
             // Select the latest week by default
-            const latestWeek = result.data[result.data.length - 1];
+            const latestWeek = result[result.length - 1];
             weekSelect.value = latestWeek.weeknumber;
             
             // Load data for the selected week
@@ -100,9 +100,9 @@ function fetchBimbinganWeeklyData() {
     // Show loading indicator
     document.getElementById('loading-indicator').style.display = 'block';
     
-    // Fetch data from API backend.project.assessment + "weekly?week="
+    // Fetch data from API
     getJSON(
-        backend.project.weeklyassessment + "?week=" + selectedWeek,
+        `${backend.bimbingan.weekly}?week=${selectedWeek}`,
         'login',
         getCookie('login'),
         handleBimbinganWeeklyResponse
@@ -116,25 +116,25 @@ function handleBimbinganWeeklyResponse(result) {
     // Hide loading indicator
     document.getElementById('loading-indicator').style.display = 'none';
     
-    if (result.status === 200) {
+    if (result) {
         // Update the activity score table
-        updateActivityScoreTable(result.data.activityscore);
+        updateActivityScoreTable(result.activityscore);
         
         // Update approval status
-        updateApprovalStatus(result.data);
+        updateApprovalStatus(result);
         
         // Update week label display
         document.getElementById('current-week-label').textContent = 
-            `Minggu ${result.data.weeknumber} (${result.data.weeklabel})`;
+            `Minggu ${result.weeknumber} (${result.weeklabel})`;
         
         // If approved, disable the approval button
-        document.getElementById('tombolmintaapproval').disabled = result.data.approved;
+        document.getElementById('tombolmintaapproval').disabled = result.approved;
         
         // If we have an assessor already, pre-fill the phone number
-        if (result.data.asesor && result.data.asesor.phonenumber) {
-            setValue('phonenumber', result.data.asesor.phonenumber);
+        if (result.asesor && result.asesor.phonenumber) {
+            setValue('phonenumber', result.asesor.phonenumber);
         }
-    } else if (result.status === 404) {
+    } else {
         // No data found for this week, show initial state
         resetActivityScoreTable();
         document.getElementById('approval-status').textContent = 'Belum ada bimbingan';
@@ -146,13 +146,6 @@ function handleBimbinganWeeklyResponse(result) {
         const weekLabel = `week${weekNumber}`;
         document.getElementById('current-week-label').textContent = 
             `Minggu ${weekNumber} (${weekLabel})`;
-    } else {
-        // Error
-        Swal.fire({
-            icon: 'error',
-            title: 'Error mengambil data',
-            text: result.response || 'Gagal mengambil data bimbingan mingguan'
-        });
     }
 }
 
@@ -257,9 +250,9 @@ function updateApprovalStatus(data) {
 // Function to submit bimbingan request
 function submitBimbinganRequest() {
     const selectedWeek = document.getElementById('week-select').value;
-    const phonenumber = getValue('phonenumber');
+    const asesorPhoneNumber = getValue('phonenumber');
     
-    if (!phonenumber) {
+    if (!asesorPhoneNumber) {
         Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -270,15 +263,9 @@ function submitBimbinganRequest() {
     
     // Prepare request body
     const requestBody = {
-        asesor: {
-            phonenumber: phonenumber
-        }
+        asesorPhoneNumber: asesorPhoneNumber,
+        weekNumber: parseInt(selectedWeek)
     };
-    
-    // Determine which endpoint to use based on current week
-    const endpoint = parseInt(selectedWeek) === 1 
-        ? backend.project.assessment + "/perdana" 
-        : backend.project.assessment + "/lanjutan";
     
     // Show loading indicator
     Swal.fire({
@@ -291,7 +278,7 @@ function submitBimbinganRequest() {
     
     // Send request
     postJSON(
-        endpoint,
+        backend.bimbingan.request,
         'login',
         getCookie('login'),
         requestBody,
@@ -306,7 +293,7 @@ function handleBimbinganSubmitResponse(result) {
     // Close loading indicator
     Swal.close();
     
-    if (result.status === 200) {
+    if (result && result._id) {
         // Success
         Swal.fire({
             icon: 'success',
@@ -316,19 +303,19 @@ function handleBimbinganSubmitResponse(result) {
             // Refresh the data
             fetchBimbinganWeeklyData();
         });
-    } else if (result.data && result.data.status && result.data.status.startsWith("Info : ")) {
+    } else if (result && result.status && result.status.startsWith("Info : ")) {
         // Info message
         Swal.fire({
             icon: 'info',
-            title: result.data.status,
-            text: result.data.response
+            title: result.status,
+            text: result.response
         });
     } else {
         // Error
         Swal.fire({
             icon: 'error',
-            title: result.data ? result.data.status : 'Error',
-            text: result.data ? result.data.response : 'Gagal mengirim permintaan bimbingan'
+            title: result.status || 'Error',
+            text: result.response || 'Gagal mengirim permintaan bimbingan'
         });
     }
 }

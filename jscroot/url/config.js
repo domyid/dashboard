@@ -40,6 +40,9 @@ export const backend = {
         force: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly/force',
         all: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/all',
         weekly: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly',
+        request: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/request',
+        approve: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/approve',
+        changeWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/admin/bimbingan/changeweek',
     },
 };
 
