@@ -102,7 +102,7 @@ function fetchBimbinganWeeklyData() {
     
     // Fetch data from API backend.project.assessment + "weekly?week="
     getJSON(
-        backend.project.assessment + "weekly?week=" + selectedWeek,
+        backend.project.weeklyassessment + "?week=" + selectedWeek,
         'login',
         getCookie('login'),
         handleBimbinganWeeklyResponse
