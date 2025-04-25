@@ -33,7 +33,7 @@ export async function main() {
 // Function to load all weeks for this student
 function loadAllWeeks() {
     getJSON(
-        backend.project.weeklyassessment + "/all",
+        backend.bimbingan.all,
         'login',
         getCookie('login'),
         handleAllWeeksResponse
