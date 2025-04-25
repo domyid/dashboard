@@ -226,8 +226,8 @@ function updateActivityScoreTable(activityScore) {
     updateTableRow(4, activityScore.mbc, activityScore.blockchain);
     updateTableRow(5, activityScore.rupiah, activityScore.qris);
     updateTableRow(6, activityScore.trackerdata, activityScore.tracker);
-    updateTableRow(7, activityScore.bukukatalog || '', activityScore.bukped);
-    updateTableRow(8, activityScore.jurnalweb || '', activityScore.jurnal);
+    // updateTableRow(7, activityScore.bukukatalog || '', activityScore.bukped);
+    // updateTableRow(8, activityScore.jurnalweb || '', activityScore.jurnal);
     updateTableRow(9, activityScore.gtmetrixresult, activityScore.gtmetrix);
     updateTableRow(10, activityScore.webhookpush, activityScore.webhook);
     updateTableRow(11, activityScore.presensihari, activityScore.presensi);
