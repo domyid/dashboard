@@ -1,0 +1,251 @@
+<section class="section">
+    <div class="container">
+        <h1 class="title">Admin Bimbingan Mingguan</h1>
+        <p class="subtitle">Pengaturan Minggu Bimbingan</p>
+
+        <div class="notification is-warning is-light">
+            <p><strong>Perhatian:</strong> Halaman ini hanya diperuntukkan bagi admin. Mengubah minggu aktif akan mempengaruhi seluruh sistem bimbingan.</p>
+        </div>
+
+        <div class="box">
+            <h2 class="title is-4">Status Minggu Aktif</h2>
+            <div id="loading-indicator" class="has-text-centered">
+                <span class="icon is-large">
+                    <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                </span>
+                <p>Memuat data...</p>
+            </div>
+
+            <div id="current-week-info" style="display: none;">
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Minggu Aktif</label>
+                            <div class="control">
+                                <div class="is-size-5" id="current-week-number">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Label Minggu</label>
+                            <div class="control">
+                                <div class="is-size-5" id="current-week-label">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Tanggal Mulai</label>
+                            <div class="control">
+                                <div class="is-size-5" id="current-start-date">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Tanggal Selesai</label>
+                            <div class="control">
+                                <div class="is-size-5" id="current-end-date">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Terakhir Diperbarui</label>
+                    <div class="control">
+                        <div class="is-size-5" id="last-updated">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="title is-4">Ubah Minggu Aktif</h2>
+            <div class="field">
+                <label class="label">Minggu Baru</label>
+                <div class="control">
+                    <input class="input" type="number" id="new-week-number" min="1" value="1">
+                </div>
+                <p class="help">Masukkan nomor minggu baru (angka positif)</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Label Minggu (Opsional)</label>
+                <div class="control">
+                    <input class="input" type="text" id="new-week-label" placeholder="week1">
+                </div>
+                <p class="help">Biarkan kosong untuk menggunakan format default: week[nomor]</p>
+            </div>
+
+            <div class="field">
+                <div class="control">
+                    <button class="button is-primary" id="change-week-button">Ubah Minggu Aktif</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="title is-4">Aksi Tambahan</h2>
+            <div class="buttons">
+                <button class="button is-info" id="refresh-current-week-button">Refresh Data Minggu Ini</button>
+                <button class="button is-warning" id="force-refresh-button">Force Refresh Semua Data</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load current week status
+    fetchCurrentWeekStatus();
+    
+    // Set up event listeners
+    document.getElementById('change-week-button').addEventListener('click', changeWeekNumber);
+    document.getElementById('refresh-current-week-button').addEventListener('click', refreshCurrentWeek);
+    document.getElementById('force-refresh-button').addEventListener('click', forceRefreshAllData);
+});
+
+// Fetch current week status
+function fetchCurrentWeekStatus() {
+    document.getElementById('loading-indicator').style.display = 'block';
+    document.getElementById('current-week-info').style.display = 'none';
+    
+    fetch('/api/bimbingan/weekly/status', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'login': getCookie('login')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loading-indicator').style.display = 'none';
+        document.getElementById('current-week-info').style.display = 'block';
+        
+        if (data) {
+            document.getElementById('current-week-number').textContent = data.currentweek || '-';
+            document.getElementById('current-week-label').textContent = data.weeklabel || '-';
+            
+            // Format dates
+            const startDate = data.startdate ? new Date(data.startdate) : null;
+            const endDate = data.enddate ? new Date(data.enddate) : null;
+            const lastUpdated = data.lastupdated ? new Date(data.lastupdated) : null;
+            
+            document.getElementById('current-start-date').textContent = startDate ? startDate.toLocaleDateString() : '-';
+            document.getElementById('current-end-date').textContent = endDate ? endDate.toLocaleDateString() : '-';
+            document.getElementById('last-updated').textContent = lastUpdated ? 
+                `${lastUpdated.toLocaleDateString()} ${lastUpdated.toLocaleTimeString()} (${data.updatedby || 'unknown'})` : '-';
+            
+            // Pre-fill the new week number with current + 1
+            if (data.currentweek) {
+                document.getElementById('new-week-number').value = data.currentweek + 1;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching week status:', error);
+        document.getElementById('loading-indicator').style.display = 'none';
+        alert('Error fetching current week status. Please try again.');
+    });
+}
+
+// Change week number
+function changeWeekNumber() {
+    const weekNumber = parseInt(document.getElementById('new-week-number').value);
+    const weekLabel = document.getElementById('new-week-label').value.trim();
+    
+    if (isNaN(weekNumber) || weekNumber < 1) {
+        alert('Minggu harus berupa angka positif');
+        return;
+    }
+    
+    if (confirm(`Anda yakin ingin mengubah minggu aktif menjadi Minggu ${weekNumber}?`)) {
+        fetch('/admin/bimbingan/changeweek', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': getCookie('login')
+            },
+            body: JSON.stringify({
+                weeknumber: weekNumber,
+                weeklabel: weekLabel || `week${weekNumber}`,
+                updatedby: 'admin'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.Status === 'Success') {
+                alert('Minggu aktif berhasil diubah!');
+                fetchCurrentWeekStatus();
+            } else {
+                alert(`Error: ${data.Response || 'Gagal mengubah minggu aktif'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error changing week:', error);
+            alert('Error changing week. Please try again.');
+        });
+    }
+}
+
+// Refresh current week data
+function refreshCurrentWeek() {
+    if (confirm('Refresh akan memperbarui data untuk minggu aktif saat ini. Lanjutkan?')) {
+        fetch('/refresh/bimbingan/weekly', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': getCookie('login')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.Status === 'Success') {
+                alert(`Refresh berhasil! ${data.Info}`);
+            } else {
+                alert(`Error: ${data.Response || 'Gagal refresh data'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing data:', error);
+            alert('Error refreshing data. Please try again.');
+        });
+    }
+}
+
+// Force refresh all data
+function forceRefreshAllData() {
+    if (confirm('Force refresh akan memperbarui SELURUH data untuk SEMUA minggu. Ini mungkin memakan waktu lama. Lanjutkan?')) {
+        fetch('/refresh/bimbingan/weekly/force', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': getCookie('login')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.Status === 'Success') {
+                alert(`Force refresh berhasil! ${data.Info}`);
+            } else {
+                alert(`Error: ${data.Response || 'Gagal force refresh data'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error force refreshing data:', error);
+            alert('Error force refreshing data. Please try again.');
+        });
+    }
+}
+
+// Get cookie helper function
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+}
+</script>
