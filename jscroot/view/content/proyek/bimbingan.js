@@ -34,117 +34,15 @@ function loadAllWeeks() {
     // Tampilkan indikator loading
     document.getElementById('loading-indicator').style.display = 'block';
     
-    // PERBAIKAN: Pertama ambil status minggu saat ini 
     getJSON(
-        backend.bimbingan.status, 
+        backend.bimbingan.all,
         'login',
         getCookie('login'),
-        (statusData) => {
-            console.log("Status minggu saat ini:", statusData);
-            
-            // Kemudian ambil data minggu untuk pengguna
-            getJSON(
-                backend.bimbingan.all,
-                'login',
-                getCookie('login'),
-                (weeklyData) => {
-                    handleAllWeeksResponseImproved(weeklyData, statusData);
-                }
-            );
-        }
+        handleAllWeeksResponse
     );
 }
 
-// Fungsi baru untuk menangani respons semua minggu dengan status minggu saat ini
-function handleAllWeeksResponseImproved(weeklyData, statusData) {
-    console.log("Data semua minggu:", weeklyData);
-    
-    // Sembunyikan indikator loading
-    document.getElementById('loading-indicator').style.display = 'none';
-    
-    const weekSelect = document.getElementById('week-select');
-    weekSelect.innerHTML = ''; // Bersihkan opsi yang ada
-    
-    // Flag untuk menandai apakah minggu aktif ditemukan dalam data pengguna
-    let currentWeekFound = false;
-    
-    if (weeklyData && Array.isArray(weeklyData) && weeklyData.length > 0) {
-        // Urutkan minggu berdasarkan nomor minggu (ascending)
-        weeklyData.sort((a, b) => a.weeknumber - b.weeknumber);
-        
-        // Isi dropdown dengan data minggu yang ada
-        weeklyData.forEach(weekly => {
-            const option = document.createElement('option');
-            option.value = weekly.weeknumber;
-            option.textContent = `Minggu ${weekly.weeknumber} (${weekly.weeklabel})`;
-            weekSelect.appendChild(option);
-            
-            // Cek apakah minggu aktif ada dalam data pengguna
-            if (statusData && weekly.weeknumber === statusData.currentweek) {
-                currentWeekFound = true;
-            }
-        });
-        
-        // PERBAIKAN: Jika minggu aktif belum ada dalam data pengguna, tambahkan ke dropdown
-        if (statusData && !currentWeekFound) {
-            const option = document.createElement('option');
-            option.value = statusData.currentweek;
-            option.textContent = `Minggu ${statusData.currentweek} (${statusData.weeklabel})`;
-            weekSelect.appendChild(option);
-            
-            // Inisialisasi data untuk minggu aktif
-            initializeWeeklyData(statusData.currentweek);
-        }
-        
-        // Pilih minggu aktif saat ini
-        if (statusData) {
-            weekSelect.value = statusData.currentweek;
-        } else {
-            // Jika tidak ada data status, pilih minggu terbaru
-            const latestWeek = weeklyData[weeklyData.length - 1];
-            weekSelect.value = latestWeek.weeknumber;
-        }
-    } else if (statusData) {
-        // Jika tidak ada data minggu sama sekali, tambahkan minggu aktif saat ini
-        const option = document.createElement('option');
-        option.value = statusData.currentweek;
-        option.textContent = `Minggu ${statusData.currentweek} (${statusData.weeklabel})`;
-        weekSelect.appendChild(option);
-        
-        // Inisialisasi data untuk minggu aktif
-        initializeWeeklyData(statusData.currentweek);
-    } else {
-        // Jika tidak ada data status atau data minggu, tambahkan minggu 1 sebagai default
-        const option = document.createElement('option');
-        option.value = "1";
-        option.textContent = "Minggu 1 (week1)";
-        weekSelect.appendChild(option);
-    }
-    
-    // Muat data untuk minggu yang dipilih
-    fetchBimbinganWeeklyData();
-}
-
-// Fungsi baru untuk menginisialisasi data minggu
-function initializeWeeklyData(weekNumber) {
-    // Buat API call untuk menginisialisasi data minggu
-    fetch(`${backend.bimbingan.weekly}?week=${weekNumber}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'login': getCookie('login')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(`Data minggu ${weekNumber} berhasil diinisialisasi:`, data);
-    })
-    .catch(error => {
-        console.error(`Error menginisialisasi data minggu ${weekNumber}:`, error);
-    });
-}
-
-// Fungsi untuk menangani respons semua minggu (fungsi lama dipertahankan untuk kompatibilitas)
+// Fungsi untuk menangani respons semua minggu
 function handleAllWeeksResponse(result) {
     console.log("Data semua minggu:", result);
     
