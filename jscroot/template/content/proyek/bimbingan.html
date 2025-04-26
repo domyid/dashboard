@@ -4,7 +4,7 @@
         <p class="subtitle" id="current-week-label">Loading...</p>
 
         <div class="notification is-info is-light">
-            <p><strong>Catatan:</strong> Sistem bimbingan mingguan menyimpan data aktivitas Anda setiap minggu. Data score dihitung dari aktivitas crowdfunding dan lainnya untuk minggu tersebut. Poin dihitung secara inkremental, yaitu total poin dikurangi poin pada minggu-minggu sebelumnya.</p>
+            <p><strong>Catatan:</strong> Sistem bimbingan mingguan menyimpan data aktivitas Anda setiap minggu. Data score dihitung dari aktivitas crowdfunding dan lainnya untuk minggu tersebut. Poin dihitung secara inkremental (selisih), yaitu total poin dikurangi poin pada minggu-minggu sebelumnya yang sudah disetujui.</p>
         </div>
 
         <div class="columns">
@@ -67,8 +67,8 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <!-- <th colspan="3" class="has-text-right">Total Skor:</th>
-                            <th id="total-score">0</th> -->
+                            <th colspan="3" class="has-text-right">Total Skor:</th>
+                            <th id="total-score">0</th>
                         </tr>
                     </tfoot>
                 </table>
@@ -98,12 +98,13 @@
                 <li>Pilih minggu yang ingin Anda lihat dari dropdown di atas</li>
                 <li>Data aktivitas mingguan Anda akan ditampilkan dalam tabel</li>
                 <li>Data crowdfunding (MBC, RVN, QRIS) menjadi fokus utama penilaian</li>
-                <li>Poin dihitung secara inkremental dari minggu ke minggu</li>
+                <li>Poin dihitung secara inkremental dari minggu ke minggu (hanya menampilkan kontribusi baru)</li>
+                <li>Saat ada perubahan minggu, dropdown akan otomatis menampilkan semua minggu</li>
                 <li>Masukkan nomor telepon dosen asesor Anda untuk meminta persetujuan</li>
                 <li>Klik tombol "Minta Approval" untuk mengirim permintaan persetujuan</li>
                 <li>Dosen akan menerima notifikasi dan dapat memberikan persetujuan</li>
                 <li>Setelah disetujui, status akan berubah menjadi "Disetujui"</li>
-                <li>Data untuk setiap minggu disimpan secara terpisah dan dapat diakses kembali melalui dropdown minggu</li>
+                <li>Hanya minggu yang disetujui yang akan diperhitungkan dalam kalkulasi minggu berikutnya</li>
             </ol>
         </div>
     </div>
