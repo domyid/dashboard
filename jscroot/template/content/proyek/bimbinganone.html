@@ -35,24 +35,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="columns">
-                    <div class="column">
-                        <div class="field">
-                            <label class="label">Tanggal Mulai</label>
-                            <div class="control">
-                                <div class="is-size-5" id="current-start-date">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="column">
-                        <div class="field">
-                            <label class="label">Tanggal Selesai</label>
-                            <div class="control">
-                                <div class="is-size-5" id="current-end-date">-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="field">
                     <label class="label">Terakhir Diperbarui</label>
                     <div class="control">
@@ -94,6 +76,18 @@
                 <button class="button is-warning" id="force-refresh-button">Force Refresh Semua Data</button>
             </div>
         </div>
+        
+        <div class="content">
+            <h3>Petunjuk Penggunaan</h3>
+            <ol>
+                <li>Gunakan tombol "Ubah Minggu Aktif" untuk mengubah minggu aktif saat ini.</li>
+                <li>Data minggu sebelumnya tetap tersimpan ketika beralih ke minggu baru.</li>
+                <li>Skor aktivitas mingguan mahasiswa dihitung secara inkremental (total dikurangi minggu-minggu sebelumnya).</li>
+                <li>Gunakan "Refresh Data Minggu Ini" untuk memperbarui data minggu aktif saat ini.</li>
+                <li>Gunakan "Force Refresh Semua Data" hanya jika diperlukan (akan memakan waktu lama).</li>
+                <li>Perubahan minggu aktif akan memperbarui data untuk semua mahasiswa.</li>
+            </ol>
+        </div>
     </div>
 </section>
 
@@ -103,19 +97,19 @@ import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js
 import { id, backend } from "/dashboard/jscroot/url/config.js";
 
 export async function main() {
-    // Initialize the admin page
+    // Inisialisasi halaman admin
     document.addEventListener('DOMContentLoaded', function() {
-        // Load current week status
+        // Muat status minggu saat ini
         fetchCurrentWeekStatus();
         
-        // Set up event listeners
+        // Siapkan event listener
         document.getElementById('change-week-button').addEventListener('click', changeWeekNumber);
         document.getElementById('refresh-current-week-button').addEventListener('click', refreshCurrentWeek);
         document.getElementById('force-refresh-button').addEventListener('click', forceRefreshAllData);
     });
 }
 
-// Fetch current week status
+// Ambil status minggu saat ini
 function fetchCurrentWeekStatus() {
     document.getElementById('loading-indicator').style.display = 'block';
     document.getElementById('current-week-info').style.display = 'none';
@@ -141,30 +135,26 @@ function fetchCurrentWeekStatus() {
             document.getElementById('current-week-number').textContent = data.currentweek || '-';
             document.getElementById('current-week-label').textContent = data.weeklabel || '-';
             
-            // Format dates
-            const startDate = data.startdate ? new Date(data.startdate) : null;
-            const endDate = data.enddate ? new Date(data.enddate) : null;
+            // Format tanggal terakhir diperbarui
             const lastUpdated = data.lastupdated ? new Date(data.lastupdated) : null;
             
-            document.getElementById('current-start-date').textContent = startDate ? formatDate(startDate) : '-';
-            document.getElementById('current-end-date').textContent = endDate ? formatDate(endDate) : '-';
             document.getElementById('last-updated').textContent = lastUpdated ? 
                 `${formatDate(lastUpdated)} ${formatTime(lastUpdated)} (${data.updatedby || 'unknown'})` : '-';
             
-            // Pre-fill the new week number with current + 1
+            // Isi nomor minggu baru dengan current + 1
             if (data.currentweek) {
                 document.getElementById('new-week-number').value = data.currentweek + 1;
             }
         }
     })
     .catch(error => {
-        console.error('Error fetching week status:', error);
+        console.error('Error ambil status minggu:', error);
         document.getElementById('loading-indicator').style.display = 'none';
-        showError('Error fetching current week status. Please try again.');
+        showError('Error ambil status minggu saat ini. Silakan coba lagi.');
     });
 }
 
-// Change week number
+// Ubah nomor minggu
 function changeWeekNumber() {
     const weekNumber = parseInt(document.getElementById('new-week-number').value);
     const weekLabel = document.getElementById('new-week-label').value.trim();
@@ -176,9 +166,9 @@ function changeWeekNumber() {
     
     showConfirmation(
         `Ubah Minggu Aktif?`,
-        `Anda yakin ingin mengubah minggu aktif menjadi Minggu ${weekNumber}?`,
+        `Anda yakin ingin mengubah minggu aktif menjadi Minggu ${weekNumber}? Ini akan mengubah minggu saat ini di sistem.`,
         () => {
-            // Show loading
+            // Tampilkan loading
             Swal.fire({
                 title: 'Mengubah minggu...',
                 allowOutsideClick: false,
@@ -217,20 +207,20 @@ function changeWeekNumber() {
             })
             .catch(error => {
                 Swal.close();
-                console.error('Error changing week:', error);
-                showError('Error changing week. Please try again.');
+                console.error('Error mengubah minggu:', error);
+                showError('Error mengubah minggu. Silakan coba lagi.');
             });
         }
     );
 }
 
-// Refresh current week data
+// Refresh data minggu saat ini
 function refreshCurrentWeek() {
     showConfirmation(
         'Refresh Data Minggu Ini?',
         'Refresh akan memperbarui data untuk minggu aktif saat ini. Lanjutkan?',
         () => {
-            // Show loading
+            // Tampilkan loading
             Swal.fire({
                 title: 'Memperbarui data...',
                 allowOutsideClick: false,
@@ -263,20 +253,20 @@ function refreshCurrentWeek() {
             })
             .catch(error => {
                 Swal.close();
-                console.error('Error refreshing data:', error);
-                showError('Error refreshing data. Please try again.');
+                console.error('Error refresh data:', error);
+                showError('Error refresh data. Silakan coba lagi.');
             });
         }
     );
 }
 
-// Force refresh all data
+// Force refresh semua data
 function forceRefreshAllData() {
     showConfirmation(
         'Force Refresh Semua Data?',
         'Force refresh akan memperbarui SELURUH data untuk SEMUA minggu. Ini mungkin memakan waktu lama. Lanjutkan?',
         () => {
-            // Show loading with longer timeout
+            // Tampilkan loading dengan timeout lebih lama
             Swal.fire({
                 title: 'Memperbarui semua data...',
                 html: 'Ini mungkin memakan waktu beberapa menit',
@@ -310,14 +300,14 @@ function forceRefreshAllData() {
             })
             .catch(error => {
                 Swal.close();
-                console.error('Error force refreshing data:', error);
-                showError('Error force refreshing data. Please try again.');
+                console.error('Error force refresh data:', error);
+                showError('Error force refresh data. Silakan coba lagi.');
             });
         }
     );
 }
 
-// Helper functions
+// Fungsi helper
 function formatDate(date) {
     return date.toLocaleDateString('id-ID', {
         year: 'numeric',
