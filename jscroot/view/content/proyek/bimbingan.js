@@ -42,10 +42,13 @@ function loadAllWeeks() {
 function handleAllWeeksResponse(result) {
     console.log("All weeks data:", result);
     
-    if (result && Array.isArray(result)) {
+    if (result && Array.isArray(result) && result.length > 0) {
         // Populate the week selector with available weeks
         const weekSelect = document.getElementById('week-select');
         weekSelect.innerHTML = ''; // Clear existing options
+        
+        // Sort weeks by weeknumber to ensure correct order
+        result.sort((a, b) => a.weeknumber - b.weeknumber);
         
         result.forEach(weekly => {
             const option = document.createElement('option');
@@ -54,17 +57,11 @@ function handleAllWeeksResponse(result) {
             weekSelect.appendChild(option);
         });
         
-        // If there are weeks available, select the latest week
-        if (result.length > 0) {
-            const latestWeek = result[result.length - 1];
-            weekSelect.value = latestWeek.weeknumber;
-            
-            // Load data for the selected week
-            fetchBimbinganWeeklyData();
-        } else {
-            // If no data, fetch current week data
-            fetchCurrentWeekData();
-        }
+        // Select the latest week
+        weekSelect.value = result[result.length - 1].weeknumber;
+        
+        // Load data for the selected week
+        fetchBimbinganWeeklyData();
     } else {
         // No weeks found or error, fetch current week data
         fetchCurrentWeekData();
@@ -74,9 +71,8 @@ function handleAllWeeksResponse(result) {
 // Function to fetch current week data when no weeks are available
 function fetchCurrentWeekData() {
     console.log("Fetching current week status to get default week");
-    // Make an API call to get the current week status
     getJSON(
-        backend.bimbingan.status, // Endpoint to get current week status
+        backend.bimbingan.status,
         'login',
         getCookie('login'),
         (data) => {
@@ -143,26 +139,8 @@ function handleBimbinganWeeklyResponse(result) {
     document.getElementById('loading-indicator').style.display = 'none';
     
     if (result) {
-        // Debug log to see all properties
-        console.log("Available properties:", Object.keys(result));
-        
-        // PERBAIKAN: Cek di semua kemungkinan tempat data aktivitas bisa berada
-        let activityScore = null;
-        
-        // Cek beberapa kemungkinan lokasi data
-        if (result.activityscore) {
-            console.log("Found activityscore at root level");
-            activityScore = result.activityscore;
-        } else if (result.data && result.data.activityscore) {
-            console.log("Found activityscore in data property");
-            activityScore = result.data.activityscore;
-        } else {
-            // Cek apakah mungkin data langsung adalah activity score
-            if (result.iq !== undefined || result.mbc !== undefined || result.tracker !== undefined) {
-                console.log("Using root object as activityscore");
-                activityScore = result;
-            }
-        }
+        // Extract activity score data from the response
+        let activityScore = extractActivityScore(result);
         
         if (activityScore) {
             updateActivityScoreTable(activityScore);
@@ -174,9 +152,11 @@ function handleBimbinganWeeklyResponse(result) {
         // Update approval status
         updateApprovalStatus(result);
         
-        // Update week label display
-        document.getElementById('current-week-label').textContent = 
-            `Minggu ${result.weeknumber} (${result.weeklabel})`;
+        // Update week label display if it exists in the DOM
+        const weekLabelElement = document.getElementById('current-week-label');
+        if (weekLabelElement) {
+            weekLabelElement.textContent = `Minggu ${result.weeknumber} (${result.weeklabel})`;
+        }
         
         // If approved, disable the approval button
         document.getElementById('tombolmintaapproval').disabled = result.approved;
@@ -189,8 +169,13 @@ function handleBimbinganWeeklyResponse(result) {
         console.warn("No data received from server or error occurred");
         // No data found for this week, show initial state
         resetActivityScoreTable();
-        document.getElementById('approval-status').textContent = 'Belum ada bimbingan';
-        document.getElementById('approval-status').className = 'tag is-warning';
+        
+        const statusElement = document.getElementById('approval-status');
+        if (statusElement) {
+            statusElement.textContent = 'Belum ada bimbingan';
+            statusElement.className = 'tag is-warning';
+        }
+        
         document.getElementById('tombolmintaapproval').disabled = false;
         
         // Get week number from select
@@ -200,13 +185,43 @@ function handleBimbinganWeeklyResponse(result) {
             const option = weekSelect.options[weekSelect.selectedIndex];
             const label = option.textContent.split('(')[1]?.split(')')[0] || `week${weekNumber}`;
             
-            document.getElementById('current-week-label').textContent = 
-                `Minggu ${weekNumber} (${label})`;
+            const weekLabelElement = document.getElementById('current-week-label');
+            if (weekLabelElement) {
+                weekLabelElement.textContent = `Minggu ${weekNumber} (${label})`;
+            }
         } else {
-            document.getElementById('current-week-label').textContent = 
-                'Tidak ada data minggu tersedia';
+            const weekLabelElement = document.getElementById('current-week-label');
+            if (weekLabelElement) {
+                weekLabelElement.textContent = 'Tidak ada data minggu tersedia';
+            }
         }
     }
+}
+
+// Function to extract activity score data from response
+function extractActivityScore(result) {
+    // Try to find the activity score in different possible locations
+    if (result.activityscore) {
+        return result.activityscore;
+    } else if (result.data && result.data.activityscore) {
+        return result.data.activityscore;
+    } else if (isActivityScoreObject(result)) {
+        // Check if the result itself looks like an activity score object
+        return result;
+    }
+    return null;
+}
+
+// Helper function to check if an object looks like an activity score
+function isActivityScoreObject(obj) {
+    // Check for common activity score properties
+    const activityScoreProps = [
+        'sponsor', 'iq', 'strava', 'pomokit', 'tracker', 'gtmetrix', 
+        'webhook', 'presensi', 'qris', 'mbcPoints', 'ravencoinPoints'
+    ];
+    
+    // If at least 3 of these properties exist, consider it an activity score
+    return activityScoreProps.filter(prop => obj[prop] !== undefined).length >= 3;
 }
 
 // Function to update the activity score table
@@ -223,16 +238,39 @@ function updateActivityScoreTable(activityScore) {
     updateTableRow(1, activityScore.stravakm, activityScore.strava);
     updateTableRow(2, activityScore.iqresult, activityScore.iq);
     updateTableRow(3, activityScore.pomokitsesi, activityScore.pomokit);
-    updateTableRow(4, activityScore.mbc, activityScore.blockchain);
-    updateTableRow(5, activityScore.rupiah, activityScore.qris);
+    updateTableRow(4, activityScore.mbc, activityScore.mbcPoints);
+    updateTableRow(5, activityScore.rupiah, activityScore.qris || activityScore.qrisPoints);
     updateTableRow(6, activityScore.trackerdata, activityScore.tracker);
     updateTableRow(7, activityScore.gtmetrixresult, activityScore.gtmetrix);
     updateTableRow(8, activityScore.webhookpush, activityScore.webhook);
     updateTableRow(9, activityScore.presensihari, activityScore.presensi);
     updateTableRow(10, activityScore.rvn, activityScore.ravencoinPoints);
     
-    // Update total score
-    document.getElementById('total-score').textContent = activityScore.total || 0;
+    // Update total score if element exists
+    const totalScoreElement = document.getElementById('total-score');
+    if (totalScoreElement) {
+        // Calculate total if not provided
+        const total = activityScore.totalscore || activityScore.totalScore || calculateTotalScore(activityScore);
+        totalScoreElement.textContent = total;
+    }
+}
+
+// Helper function to calculate total score if not provided
+function calculateTotalScore(activityScore) {
+    // Sum up all the point values, handling undefined values
+    return [
+        activityScore.sponsor || 0,
+        activityScore.strava || 0,
+        activityScore.iq || 0,
+        activityScore.pomokit || 0,
+        activityScore.mbcPoints || 0,
+        activityScore.qris || activityScore.qrisPoints || 0,
+        activityScore.tracker || 0,
+        activityScore.gtmetrix || 0,
+        activityScore.webhook || 0,
+        activityScore.presensi || 0,
+        activityScore.ravencoinPoints || 0
+    ].reduce((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
 }
 
 // Function to reset the activity score table
@@ -250,8 +288,11 @@ function resetActivityScoreTable() {
         }
     });
     
-    // Reset total score
-    document.getElementById('total-score').textContent = '0';
+    // Reset total score if element exists
+    const totalScoreElement = document.getElementById('total-score');
+    if (totalScoreElement) {
+        totalScoreElement.textContent = '0';
+    }
 }
 
 // Function to update a single table row
@@ -270,14 +311,32 @@ function updateTableRow(rowIndex, quantity, points) {
         const pointsCell = row.querySelector('td:nth-child(4)');
         
         if (quantityCell && pointsCell) {
-            quantityCell.textContent = quantity !== undefined ? quantity : '0';
-            pointsCell.textContent = points !== undefined ? points : '0';
+            // Format the value based on type
+            const formattedQuantity = formatValue(quantity);
+            const formattedPoints = formatValue(points);
+            
+            quantityCell.textContent = formattedQuantity;
+            pointsCell.textContent = formattedPoints;
         } else {
             console.warn(`Could not find cells for row ${rowIndex}`);
         }
     } else {
         console.warn(`Could not find row at index ${rowIndex}`);
     }
+}
+
+// Helper function to format values for display
+function formatValue(value) {
+    if (value === undefined || value === null) {
+        return '0';
+    }
+    
+    if (typeof value === 'number') {
+        // Format floating point numbers to 2 decimal places if they have decimals
+        return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+    }
+    
+    return value.toString();
 }
 
 // Function to update approval status display
@@ -289,30 +348,35 @@ function updateApprovalStatus(data) {
     const validasiScore = document.getElementById('validasi-score');
     const asesorComment = document.getElementById('asesor-comment');
     
+    if (!statusElement) {
+        console.warn("approval-status element not found");
+        return;
+    }
+    
     // Reset display
-    asesorInfo.style.display = 'none';
-    validasiScore.style.display = 'none';
-    asesorComment.style.display = 'none';
+    if (asesorInfo) asesorInfo.style.display = 'none';
+    if (validasiScore) validasiScore.style.display = 'none';
+    if (asesorComment) asesorComment.style.display = 'none';
     
     if (data.approved) {
         statusElement.textContent = 'Disetujui';
         statusElement.className = 'tag is-success';
         
         // Show asesor information if available
-        if (data.asesor && data.asesor.name) {
+        if (data.asesor && data.asesor.name && asesorInfo) {
             asesorInfo.textContent = 
                 `Disetujui oleh: ${data.asesor.name} (${data.asesor.phonenumber})`;
             asesorInfo.style.display = 'block';
             
             // Show validation score if available
-            if (data.validasi) {
+            if (data.validasi !== undefined && validasiScore) {
                 validasiScore.textContent = 
                     `Validasi: ${data.validasi}/5`;
                 validasiScore.style.display = 'block';
             }
             
             // Show comment if available
-            if (data.komentar) {
+            if (data.komentar && asesorComment) {
                 asesorComment.textContent = 
                     `Komentar: ${data.komentar}`;
                 asesorComment.style.display = 'block';
@@ -321,9 +385,12 @@ function updateApprovalStatus(data) {
     } else if (data.asesor && data.asesor.phonenumber) {
         statusElement.textContent = 'Menunggu Persetujuan';
         statusElement.className = 'tag is-warning';
-        asesorInfo.textContent = 
-            `Diajukan ke: ${data.asesor.name || data.asesor.phonenumber}`;
-        asesorInfo.style.display = 'block';
+        
+        if (asesorInfo) {
+            asesorInfo.textContent = 
+                `Diajukan ke: ${data.asesor.name || data.asesor.phonenumber}`;
+            asesorInfo.style.display = 'block';
+        }
     } else {
         statusElement.textContent = 'Belum Diajukan';
         statusElement.className = 'tag is-danger';
@@ -389,19 +456,26 @@ function handleBimbinganSubmitResponse(result) {
             // Refresh the data
             fetchBimbinganWeeklyData();
         });
-    } else if (result && result.status && result.status.startsWith("Info : ")) {
+    } else if (result && result.Status && result.Status.startsWith("Info : ")) {
         // Info message
         Swal.fire({
             icon: 'info',
+            title: result.Status,
+            text: result.Response || result.Info || 'Informasi dari server'
+        });
+    } else if (result && result.status && result.status.startsWith("Info : ")) {
+        // Info message (alternative format)
+        Swal.fire({
+            icon: 'info',
             title: result.status,
-            text: result.response
+            text: result.response || 'Informasi dari server'
         });
     } else {
         // Error
         Swal.fire({
             icon: 'error',
-            title: result.status || 'Error',
-            text: result.response || 'Gagal mengirim permintaan bimbingan'
+            title: result.Status || result.status || 'Error',
+            text: result.Response || result.response || result.Info || 'Gagal mengirim permintaan bimbingan'
         });
     }
 }
