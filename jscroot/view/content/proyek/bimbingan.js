@@ -17,12 +17,10 @@ export async function main(){
 }
 
 function handleBimbinganChange(target) {
-    console.log("Dropdown diubah, value:", target.value);
     const selectedOptionValue = target.value; // Ini _id nya
 
     if (selectedOptionValue) {
         const url = `${backend.project.assessment}/${selectedOptionValue}`;
-        console.log('Fetching data untuk:', url);
         getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
     } else {
         console.warn('ID bimbingan tidak ditemukan pada option.');
