@@ -16,10 +16,23 @@ export async function main(){
     fetchActivityScore();
 }
 
+function updateApprovalStatus(result) {
+    const statusElement = document.getElementById('approval-status');
+
+    if (result.approved) {
+        statusElement.textContent = 'Disetujui';
+        statusElement.className = 'tag is-success';
+    } else {
+        statusElement.textContent = 'Belum Disetujui';
+        statusElement.className = 'tag is-danger';
+    }
+}
+
 function handleBimbinganChange(target) {
     const id = target.value; // Ini _id nya
+    const value = 'x'.repeat(10);
 
-    if (id === 'xxxxxxxxxx') {
+    if (id === value) {
         fetchActivityScore();
     } else {
         const url = `${backend.project.assessment}/${id}`;
@@ -27,9 +40,7 @@ function handleBimbinganChange(target) {
     }
 }
 
-
 function getBimbinganList(result) {
-    console.log(result);
     if (result.status === 200) {
         result.data.forEach((bimbingan) => {
             const option = document.createElement('option');
@@ -39,6 +50,7 @@ function getBimbinganList(result) {
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
         });
+        updateApprovalStatus();
     } else {
         Swal.fire({
             icon: 'error',
@@ -115,7 +127,6 @@ function fetchActivityScore() {
 }
 
 function handleActivityScoreResponse(result) {
-    console.log(result);
     if (result.status === 200) {
         updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
