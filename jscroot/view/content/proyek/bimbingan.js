@@ -34,6 +34,13 @@ function updateApprovalStatus(result) {
     }
 }
 
+// New function to clear approval status
+function clearApprovalStatus() {
+    const statusElement = document.getElementById('approval-status');
+    statusElement.textContent = '';
+    statusElement.className = '';
+}
+
 function handleBimbinganChange(target) {
     const id = target.value; // Ini _id nya
     const defaultValue = 'x'.repeat(10);
@@ -56,15 +63,7 @@ function handleBimbinganChange(target) {
     }
 }
 
-// New function to clear approval status
-function clearApprovalStatus() {
-    const statusElement = document.getElementById('approval-status');
-    statusElement.textContent = '';
-    statusElement.className = '';
-}
-
 function getBimbinganList(result) {
-    console.log({result});
     if (result.status === 200) {
         result.data.forEach((bimbingan) => {
             console.log({ bimbingan });
@@ -74,9 +73,6 @@ function getBimbinganList(result) {
             const bimbinganText = 'Bimbingan Ke-';
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
-            
-            // No longer updating approval status here
-            // This will happen only when an option is selected
         });
     } else {
         Swal.fire({
