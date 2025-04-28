@@ -25,7 +25,7 @@ function updateApprovalStatus(result) {
     } else if (!result.data.approved) {
         statusElement.textContent = 'Belum Disetujui';
         statusElement.className = 'tag is-danger';
-    } else {
+    } else if (result.data.approved === undefined) {
         statusElement.textContent = '';
         statusElement.className = '';
     }
