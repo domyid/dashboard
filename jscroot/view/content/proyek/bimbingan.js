@@ -19,16 +19,19 @@ export async function main(){
 function updateApprovalStatus(result) {
     const statusElement = document.getElementById('approval-status');
 
-        if (result.data.approved) {
+    switch (result.data.approved) {
+        case true:
             statusElement.textContent = 'Disetujui';
             statusElement.className = 'tag is-success';
-        } else if (!result.data.approved) {
+            break;
+        case false:
             statusElement.textContent = 'Belum Disetujui';
             statusElement.className = 'tag is-danger';
-        } else if (result.data.approved === undefined) {
+            break;
+        default:
             statusElement.textContent = '';
             statusElement.className = '';
-        }
+    }
 }
 
 function handleBimbinganChange(target) {
@@ -53,7 +56,7 @@ function getBimbinganList(result) {
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
 
-            // updateApprovalStatus(bimbingan);
+            updateApprovalStatus(bimbingan);
         });
     } else {
         Swal.fire({
@@ -131,10 +134,7 @@ function fetchActivityScore() {
 }
 
 function handleActivityScoreResponse(result) {
-    console.log(result);
     if (result.status === 200) {
-        updateApprovalStatus(result);
-
         updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
         updateTableRow(2, result.data.iqresult, result.data.iq);
