@@ -17,13 +17,13 @@ export async function main(){
 }
 
 function handleBimbinganChange(target) {
-    const selectedOptionValue = target.value; // Ini _id nya
+    const id = target.value; // Ini _id nya
 
-    if (selectedOptionValue) {
-        const url = `${backend.project.assessment}/${selectedOptionValue}`;
-        getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
+    if (id === 'xxxxxxxx') {
+        fetchActivityScore();
     } else {
-        console.warn('ID bimbingan tidak ditemukan pada option.');
+        const url = `${backend.project.assessment}/${id}`;
+        getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
     }
 }
 
