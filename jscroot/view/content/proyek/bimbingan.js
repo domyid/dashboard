@@ -10,6 +10,7 @@ export async function main(){
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', actionfunctionname);
     fetchActivityScore();
 }
@@ -48,6 +49,22 @@ function getResponseFunction(result){
     }
 }
 
+function getBimbinganList(result) {
+    if (result.status === 200) {
+        result.data.forEach((bimbingan) => {
+            const option = document.createElement('option');
+            option.value = bimbingan._id;
+            option.textContent = "Bimbingan ke-" + bimbingan.bimbinganke;
+            document.getElementById('bimbingan-name').appendChild(option);
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status,
+            text: result.data.response,
+        });
+    }
+}
 
 function postResponseFunction(result){
     if(result.status === 200){
