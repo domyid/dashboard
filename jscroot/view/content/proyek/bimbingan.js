@@ -19,7 +19,7 @@ export async function main(){
 function updateApprovalStatus(result) {
     const statusElement = document.getElementById('approval-status');
 
-    switch (result.data.approved) {
+    switch (result) {
         case true:
             statusElement.textContent = 'Disetujui';
             statusElement.className = 'tag is-success';
@@ -58,7 +58,7 @@ function getBimbinganList(result) {
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
 
-            updateApprovalStatus(bimbingan);
+            updateApprovalStatus(bimbingan.approved);
         });
     } else {
         Swal.fire({
