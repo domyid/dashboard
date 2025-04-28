@@ -19,7 +19,7 @@ export async function main(){
 function updateApprovalStatus(result) {
     const statusElement = document.getElementById('approval-status');
 
-    if (result.approved) {
+    if (result.data.approved) {
         statusElement.textContent = 'Disetujui';
         statusElement.className = 'tag is-success';
     } else {
