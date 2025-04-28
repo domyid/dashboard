@@ -17,23 +17,17 @@ export async function main(){
 }
 
 function handleBimbinganChange(target) {
-    const selectedOptionValue = target.value;
-    const selectedOption = document.querySelector(
-        `#bimbingan-name option[value="${selectedOptionValue}"]`
-    );
+    const selectedOptionValue = target.value; // Ini _id nya
 
-    if (selectedOption) {
-        const selectedBimbinganKe = selectedOption.dataset.bimbinganke;
-
-        if (selectedBimbinganKe) {
-            const url = `${backend.project.assessment}?bimbinganke=${selectedBimbinganKe}`;
-            console.log('Fetching data untuk:', url);
-            getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
-        } else {
-            console.warn('Bimbingan ke- tidak ditemukan pada option.');
-        }
+    if (selectedOptionValue) {
+        const url = `${backend.project.assessment}/${selectedOptionValue}`;
+        console.log('Fetching data untuk:', url);
+        getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
+    } else {
+        console.warn('ID bimbingan tidak ditemukan pada option.');
     }
 }
+
 
 function getBimbinganList(result) {
     console.log(result);
