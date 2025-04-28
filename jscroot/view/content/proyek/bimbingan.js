@@ -12,23 +12,8 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', actionfunctionname);
-    // onChange('bimbingan-name', handleBimbinganChange);
+    onChange('bimbingan-name', handleBimbinganChange);
     fetchActivityScore();
-
-        // Menambahkan event listener untuk perubahan pada dropdown 'bimbingan-name'
-    document.getElementById('bimbingan-name').addEventListener('change', function(event) {
-        console.log("Dropdown diubah, value:", event.target.value);
-        const selectedValue = event.target.value; // Mendapatkan nilai ID yang dipilih di dropdown
-
-        // Mengecek apakah ada nilai yang dipilih
-        if (selectedValue) {
-            const url = `${backend.project.assessment}/${selectedValue}`; // URL untuk mengambil data berdasarkan ID
-            console.log('Fetching data untuk:', url); // Menampilkan URL yang sedang diambil datanya
-            getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse); // Memanggil API untuk mendapatkan data
-        } else {
-            console.warn('ID bimbingan tidak ditemukan pada option.'); // Menampilkan peringatan jika tidak ada ID yang dipilih
-        }
-    });
 }
 
 function handleBimbinganChange(target) {
