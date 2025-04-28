@@ -36,14 +36,31 @@ function updateApprovalStatus(result) {
 
 function handleBimbinganChange(target) {
     const id = target.value; // Ini _id nya
-    const value = 'x'.repeat(10);
+    const defaultValue = 'xxxxxxxxxx';
 
-    if (id === value) {
+    if (id === defaultValue) {
+        // When "Bimbingan Minggu ini" is selected
         fetchActivityScore();
+        // Clear the approval status when selecting the default option
+        clearApprovalStatus();
     } else {
         const url = `${backend.project.assessment}/${id}`;
-        getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
+        getJSON(url, 'login', getCookie('login'), function(result) {
+            handleActivityScoreResponse(result);
+            
+            // Only update approval status for specific bimbingan entries
+            if (result.status === 200 && result.data.approved !== undefined) {
+                updateApprovalStatus(result.data.approved);
+            }
+        });
     }
+}
+
+// New function to clear approval status
+function clearApprovalStatus() {
+    const statusElement = document.getElementById('approval-status');
+    statusElement.textContent = '';
+    statusElement.className = '';
 }
 
 function getBimbinganList(result) {
@@ -57,8 +74,9 @@ function getBimbinganList(result) {
             const bimbinganText = 'Bimbingan Ke-';
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
-
-            updateApprovalStatus(bimbingan.approved);
+            
+            // No longer updating approval status here
+            // This will happen only when an option is selected
         });
     } else {
         Swal.fire({
