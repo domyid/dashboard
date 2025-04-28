@@ -13,10 +13,26 @@ export async function main(){
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', actionfunctionname);
     // onChange('bimbingan-name', handleBimbinganChange);
+    fetchActivityScore();
+
+        // Menambahkan event listener untuk perubahan pada dropdown 'bimbingan-name'
+    document.getElementById('bimbingan-name').addEventListener('change', function(event) {
+        console.log("Dropdown diubah, value:", event.target.value);
+        const selectedValue = event.target.value; // Mendapatkan nilai ID yang dipilih di dropdown
+
+        // Mengecek apakah ada nilai yang dipilih
+        if (selectedValue) {
+            const url = `${backend.project.assessment}/${selectedValue}`; // URL untuk mengambil data berdasarkan ID
+            console.log('Fetching data untuk:', url); // Menampilkan URL yang sedang diambil datanya
+            getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse); // Memanggil API untuk mendapatkan data
+        } else {
+            console.warn('ID bimbingan tidak ditemukan pada option.'); // Menampilkan peringatan jika tidak ada ID yang dipilih
+        }
+    });
 }
 
 function handleBimbinganChange(target) {
-    console.log('Dropdown diubah, value:', target.value);
+    console.log("Dropdown diubah, value:", target.value);
     const selectedOptionValue = target.value; // Ini _id nya
 
     if (selectedOptionValue) {
@@ -30,24 +46,16 @@ function handleBimbinganChange(target) {
 
 
 function getBimbinganList(result) {
-    console.log('Response getBimbinganList:', result);
+    console.log(result);
     if (result.status === 200) {
-        const selectElement = document.getElementById('bimbingan-name');
-
         result.data.forEach((bimbingan) => {
             const option = document.createElement('option');
             option.value = bimbingan._id;
-            option.textContent = 'Bimbingan Ke-' + (bimbingan.bimbinganke ?? 1);
-            selectElement.appendChild(option);
+
+            const bimbinganText = 'Bimbingan Ke-';
+            option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
+            document.getElementById('bimbingan-name').appendChild(option);
         });
-
-        // BARU setelah dropdown diisi, pasang event onChange
-        onChange('bimbingan-name', handleBimbinganChange);
-
-        // Kalau belum memilih apapun, fetch default activity score
-        if (!selectElement.value) {
-            fetchActivityScore();
-        }
     } else {
         Swal.fire({
             icon: 'error',
