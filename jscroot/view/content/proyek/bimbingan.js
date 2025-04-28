@@ -36,7 +36,7 @@ function updateApprovalStatus(result) {
 
 function handleBimbinganChange(target) {
     const id = target.value; // Ini _id nya
-    const defaultValue = 'xxxxxxxxxx';
+    const defaultValue = 'x'.repeat(10);
 
     if (id === defaultValue) {
         // When "Bimbingan Minggu ini" is selected
