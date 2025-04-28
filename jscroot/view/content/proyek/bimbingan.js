@@ -12,7 +12,7 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', actionfunctionname);
-    onChange('bimbingan-name', handleBimbinganChange);
+    // onChange('bimbingan-name', handleBimbinganChange);
 }
 
 function handleBimbinganChange(target) {
@@ -30,20 +30,22 @@ function handleBimbinganChange(target) {
 
 
 function getBimbinganList(result) {
-    console.log(result);
+    console.log('Response getBimbinganList:', result);
     if (result.status === 200) {
+        const selectElement = document.getElementById('bimbingan-name');
+
         result.data.forEach((bimbingan) => {
             const option = document.createElement('option');
             option.value = bimbingan._id;
-
-            const bimbinganText = 'Bimbingan Ke-';
-            option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
-            document.getElementById('bimbingan-name').appendChild(option);
+            option.textContent = 'Bimbingan Ke-' + (bimbingan.bimbinganke ?? 1);
+            selectElement.appendChild(option);
         });
-        // Setelah selesai mengisi dropdown
-        const selectElement = document.getElementById('bimbingan-name');
-        if (selectElement && !selectElement.value) {
-            // Kalau belum dipilih apa-apa, fetch activity score default
+
+        // BARU setelah dropdown diisi, pasang event onChange
+        onChange('bimbingan-name', handleBimbinganChange);
+
+        // Kalau belum memilih apapun, fetch default activity score
+        if (!selectElement.value) {
             fetchActivityScore();
         }
     } else {
