@@ -47,8 +47,10 @@ function handleBimbinganChange(target) {
 }
 
 function getBimbinganList(result) {
+    console.log({result});
     if (result.status === 200) {
         result.data.forEach((bimbingan) => {
+            console.log({ bimbingan });
             const option = document.createElement('option');
             option.value = bimbingan._id;
 
