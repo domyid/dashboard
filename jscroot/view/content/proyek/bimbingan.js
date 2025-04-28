@@ -17,10 +17,7 @@ export async function main(){
 }
 
 function updateApprovalStatus(result) {
-    const labelElenment = document.getElementsByClassName('label');
-    const statusElement = document.createElement('span');
-
-    statusElement.id = 'approval-status';
+    const statusElement = document.getElementById('approval-status');
 
     if (result.data.approved) {
         statusElement.textContent = 'Disetujui';
@@ -29,15 +26,8 @@ function updateApprovalStatus(result) {
         statusElement.textContent = 'Belum Disetujui';
         statusElement.className = 'tag is-danger';
     } else {
-        labelElenment.style.display = 'none';
-        statusElement.style.display = 'none';
-    }
-
-    const container = document.getElementsByClassName('field')[2];
-    if (container) {
-        container.appendChild(statusElement);
-    } else {
-        console.warn('Container untuk status approval tidak ditemukan!');
+        statusElement.textContent = '';
+        statusElement.className = '';
     }
 }
 
