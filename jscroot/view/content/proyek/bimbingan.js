@@ -50,7 +50,7 @@ function getBimbinganList(result) {
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
 
-            updateApprovalStatus(bimbingan);
+            // updateApprovalStatus(bimbingan);
         });
     } else {
         Swal.fire({
@@ -129,7 +129,7 @@ function fetchActivityScore() {
 
 function handleActivityScoreResponse(result) {
     if (result.status === 200) {
-        // updateApprovalStatus(bimbingan);
+        updateApprovalStatus(result);
 
         updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
