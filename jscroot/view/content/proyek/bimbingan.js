@@ -19,7 +19,7 @@ export async function main(){
 function handleBimbinganChange(target) {
     const id = target.value; // Ini _id nya
 
-    if (id === 'xxxxxxxx') {
+    if (id === 'xxxxxxxxxx') {
         fetchActivityScore();
     } else {
         const url = `${backend.project.assessment}/${id}`;
