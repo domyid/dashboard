@@ -55,7 +55,7 @@ function getBimbinganList(result) {
         result.data.forEach((bimbingan) => {
             const option = document.createElement('option');
             option.value = bimbingan._id;
-            option.textContent = "Bimbingan ke-" + bimbingan.bimbinganke;
+            option.textContent = "Bimbingan ke-" + bimbingan.bimbinganke ?? 1;
             document.getElementById('bimbingan-name').appendChild(option);
         });
     } else {
