@@ -37,7 +37,6 @@ function handleBimbinganChange(target) {
     } else {
         const url = `${backend.project.assessment}/${id}`;
         getJSON(url, 'login', getCookie('login'), handleActivityScoreResponse);
-        updateApprovalStatus();
     }
 }
 
@@ -50,8 +49,9 @@ function getBimbinganList(result) {
             const bimbinganText = 'Bimbingan Ke-';
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
             document.getElementById('bimbingan-name').appendChild(option);
+
+            updateApprovalStatus(bimbingan);
         });
-        // updateApprovalStatus();
     } else {
         Swal.fire({
             icon: 'error',
