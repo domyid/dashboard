@@ -1,0 +1,110 @@
+<section class="section">
+    <div class="container">
+        <h1 class="title">Bimbingan Mingguan</h1>
+        <p class="subtitle" id="current-week-label">Loading...</p>
+
+        <div class="notification is-info is-light">
+            <p><strong>Catatan:</strong> Sistem bimbingan mingguan menyimpan data aktivitas Anda setiap minggu. Data score dihitung dari aktivitas crowdfunding dan lainnya untuk minggu tersebut. Poin dihitung secara inkremental, yaitu total poin dikurangi poin pada minggu-minggu sebelumnya.</p>
+        </div>
+
+        <div class="columns">
+            <div class="column is-half">
+                <div class="field">
+                    <label class="label">Pilih Minggu</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select id="week-select" name="weekSelect" required>
+                                <!-- Will be populated by JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-half">
+                <div class="field">
+                    <label class="label">Status Approval</label>
+                    <div class="control">
+                        <span id="approval-status" class="tag is-danger">Belum Diajukan</span>
+                    </div>
+                    <p id="asesor-info" style="display: none; margin-top: 5px;"></p>
+                    <p id="validasi-score" style="display: none; margin-top: 5px;"></p>
+                    <p id="asesor-comment" style="display: none; margin-top: 5px;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-indicator" class="has-text-centered" style="display: none;">
+            <span class="icon is-large">
+                <i class="fas fa-spinner fa-pulse fa-2x"></i>
+            </span>
+            <p>Memuat data...</p>
+        </div>
+
+        <div class="box">
+            <h2 class="title is-4">Skor Aktivitas Mingguan</h2>
+            <div class="table-container">
+                <table class="table is-bordered is-striped is-fullwidth">
+                    <thead>
+                        <tr>
+                            <th width="5%">No.</th>
+                            <th width="30%">Kegiatan</th>
+                            <th width="25%">Kuantitas</th>
+                            <th width="15%">Poin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>Data Sponsor</td><td>0</td><td>0</td></tr>
+                        <tr><td>2</td><td>Strava</td><td>0</td><td>0</td></tr>
+                        <tr><td>3</td><td>Test IQ</td><td>0</td><td>0</td></tr>
+                        <tr><td>4</td><td>Pomokit</td><td>0</td><td>0</td></tr>
+                        <tr><td>5</td><td>Blockchain (MBC)</td><td>0</td><td>0</td></tr>
+                        <tr><td>6</td><td>QRIS</td><td>0</td><td>0</td></tr>
+                        <tr><td>7</td><td>Web Tracker</td><td>0</td><td>0</td></tr> 
+                        <tr><td>8</td><td>GTMetrix</td><td>0</td><td>0</td></tr>
+                        <tr><td>9</td><td>WebHook</td><td>0</td><td>0</td></tr>
+                        <tr><td>10</td><td>Presensi</td><td>0</td><td>0</td></tr>
+                        <tr><td>11</td><td>Blockchain (RAVEN)</td><td>0</td><td>0</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <!-- <th colspan="3" class="has-text-right">Total Skor:</th>
+                            <th id="total-score">0</th> -->
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="title is-4">Minta Approval Dosen Asesor</h2>
+            <div class="field">
+                <label class="label">Nomor Telepon Dosen Asesor</label>
+                <div class="control">
+                    <input class="input" type="tel" id="phonenumber" name="phonenumber" placeholder="628111" required>
+                </div>
+                <p class="help">Masukkan nomor telepon dosen asesor format 628xxx</p>
+            </div>
+
+            <div class="field">
+                <div class="control">
+                    <button class="button is-primary" type="submit" id="tombolmintaapproval" disabled>Minta Approval</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h3>Petunjuk Penggunaan</h3>
+            <ol>
+                <li>Pilih minggu yang ingin Anda lihat dari dropdown di atas</li>
+                <li>Data aktivitas mingguan Anda akan ditampilkan dalam tabel</li>
+                <li>Data crowdfunding (MBC, RVN, QRIS) menjadi fokus utama penilaian</li>
+                <li>Poin dihitung secara inkremental dari minggu ke minggu</li>
+                <li>Masukkan nomor telepon dosen asesor Anda untuk meminta persetujuan</li>
+                <li>Klik tombol "Minta Approval" untuk mengirim permintaan persetujuan</li>
+                <li>Dosen akan menerima notifikasi dan dapat memberikan persetujuan</li>
+                <li>Setelah disetujui, status akan berubah menjadi "Disetujui"</li>
+                <li>Data untuk setiap minggu disimpan secara terpisah dan dapat diakses kembali melalui dropdown minggu</li>
+            </ol>
+        </div>
+    </div>
+</section>
