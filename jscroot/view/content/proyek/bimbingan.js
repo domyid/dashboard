@@ -13,10 +13,10 @@ export async function main(){
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', actionfunctionname);
     onChange('bimbingan-name', handleBimbinganChange);
-    fetchActivityScore();
 }
 
 function handleBimbinganChange(target) {
+    console.log('Dropdown diubah, value:', target.value);
     const selectedOptionValue = target.value; // Ini _id nya
 
     if (selectedOptionValue) {
@@ -38,9 +38,14 @@ function getBimbinganList(result) {
 
             const bimbinganText = 'Bimbingan Ke-';
             option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
-            option.dataset.bimbinganke = bimbingan.bimbinganke ?? 1;
             document.getElementById('bimbingan-name').appendChild(option);
         });
+        // Setelah selesai mengisi dropdown
+        const selectElement = document.getElementById('bimbingan-name');
+        if (selectElement && !selectElement.value) {
+            // Kalau belum dipilih apa-apa, fetch activity score default
+            fetchActivityScore();
+        }
     } else {
         Swal.fire({
             icon: 'error',
