@@ -50,6 +50,7 @@ function getResponseFunction(result){
 }
 
 function getBimbinganList(result) {
+    console.log(result);
     if (result.status === 200) {
         result.data.forEach((bimbingan) => {
             const option = document.createElement('option');
