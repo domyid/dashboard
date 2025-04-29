@@ -15,30 +15,29 @@ export async function main() {
 }
 
 function validateAndSubmit() {
-    // Check if required quantities are above 0
-    const validationResult = checkRequiredQuantities();
+    // Check if all quantities are above 0
+    const validationResult = checkAllQuantitiesAboveZero();
     
-    if (validationResult.missingItems.length > 0) {
+    if (validationResult.allAboveZero) {
+        // All quantities are above 0, proceed with submission
+        actionfunctionname();
+    } else {
         // Show error message with missing items
         showMissingItemsNotification(validationResult.missingItems);
     }
-    
-    // Always proceed with submission regardless of validation result
-    actionfunctionname();
 }
 
-function checkRequiredQuantities() {
+function checkAllQuantitiesAboveZero() {
     const tableRows = document.querySelectorAll('table.table tbody tr');
     const missingItems = [];
     
-    tableRows.forEach(row => {
+    tableRows.forEach((row, index) => {
         const quantityCell = row.querySelector('td:nth-child(3)');
         const activityName = row.querySelector('td:nth-child(2)').textContent;
-        const rowIndex = row.querySelector('td:nth-child(1)').textContent;
         
-        // Skip checking Jurnal (row 9) as it's optional
-        if (rowIndex === "9" || activityName === "Jurnal") {
-            return;
+        // Skip validation for Jurnal (index 8) since it's optional
+        if (index === 8) {
+            return; // Skip this iteration
         }
         
         if (quantityCell && parseInt(quantityCell.textContent || 0) === 0) {
@@ -47,23 +46,19 @@ function checkRequiredQuantities() {
     });
     
     return {
-        allValid: missingItems.length === 0,
+        allAboveZero: missingItems.length === 0,
         missingItems: missingItems
     };
 }
 
 function showMissingItemsNotification(missingItems) {
-    if (missingItems.length === 0) {
-        return; // No missing items, no notification needed
-    }
-    
     const missingItemsList = missingItems.map(item => `- ${item}`).join('<br>');
     
     Swal.fire({
         icon: 'warning',
-        title: 'Perhatian',
-        html: `Anda mengajukan permohonan dengan data berikut ini masih bernilai 0:<br><br>${missingItemsList}<br><br>Proses pengajuan tetap dilanjutkan.`,
-        confirmButtonText: 'Lanjutkan'
+        title: 'Data tidak lengkap',
+        html: `Anda perlu melengkapi data berikut ini (kuantitas masih 0):<br><br>${missingItemsList}`,
+        confirmButtonText: 'Mengerti'
     });
 }
 
@@ -170,14 +165,20 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-// Function to update button state - always enabled now
+// Function to update button state based on table quantities
 function updateApprovalButtonState() {
+    const validationResult = checkAllQuantitiesAboveZero();
     const approvalButton = document.getElementById('tombolmintaapproval');
     
     if (approvalButton) {
-        // Always make the button enabled
-        approvalButton.removeAttribute('disabled');
-        approvalButton.classList.remove('is-light');
-        approvalButton.classList.add('is-primary');
+        if (validationResult.allAboveZero) {
+            approvalButton.removeAttribute('disabled');
+            approvalButton.classList.remove('is-light');
+            approvalButton.classList.add('is-primary');
+        } else {
+            approvalButton.setAttribute('disabled', 'disabled');
+            approvalButton.classList.remove('is-primary');
+            approvalButton.classList.add('is-light');
+        }
     }
 }
