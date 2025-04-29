@@ -11,7 +11,7 @@ export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
-    onClick('tombolmintaapproval', actionfunctionname);
+    onClick('tombolmintaapproval', checkAndSubmit);
     onChange('bimbingan-name', handleBimbinganChange);
     fetchActivityScore();
 }
@@ -81,6 +81,49 @@ function getBimbinganList(result) {
             text: result.data.response,
         });
     }
+}
+
+function checkAndSubmit() {
+    // Check the conditions first
+    const conditions = checkApprovalButtonConditions();
+    
+    if (!conditions.isValid) {
+        // Create message about what's missing
+        let missingItems = [];
+        
+        if (!conditions.sponsordata) missingItems.push("Data Sponsor");
+        if (!conditions.stravakm) missingItems.push("Strava");
+        if (!conditions.iqresult) missingItems.push("Test IQ");
+        if (!conditions.pomokitsesi) missingItems.push("Pomokit");
+        if (!conditions.trackerdata) missingItems.push("Web Tracker");
+        if (!conditions.gtmetrixresult) missingItems.push("GTMetrix");
+        if (!conditions.webhookpush) missingItems.push("WebHook");
+        if (!conditions.presensihari) missingItems.push("Presensi");
+        
+        // Check QRIS condition
+        if (!conditions.qrisCondition) {
+            if (activityData.rupiah === 0) {
+                if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
+                if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
+                missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
+            } else {
+                missingItems.push("QRIS");
+            }
+        }
+        
+        // Show alert with missing items
+        Swal.fire({
+            icon: 'warning',
+            title: 'Belum Lengkap',
+            html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
+            confirmButtonText: 'Mengerti'
+        });
+        
+        return; // Stop here
+    }
+    
+    // If all conditions are met, proceed with the action
+    actionfunctionname();
 }
 
 function actionfunctionname(){
@@ -222,8 +265,6 @@ function updateTableRow(rowIndex, quantity, points) {
 
 // Function to check conditions and update button status
 function checkApprovalButtonConditions() {
-    const approvalButton = document.getElementById('tombolmintaapproval');
-    
     // Extract values from activityData
     const {
         sponsordata, stravakm, iqresult, pomokitsesi, mbc, rupiah,
@@ -248,10 +289,18 @@ function checkApprovalButtonConditions() {
     // Combine all conditions
     const allConditionsMet = requiredActivitiesPositive && qrisCondition;
     
-    // Enable or disable the button based on conditions
-    if (allConditionsMet) {
-        approvalButton.disabled = false;
-    } else {
-        approvalButton.disabled = true;
-    }
+    return {
+        isValid: allConditionsMet,
+        sponsordata: sponsordata > 0,
+        stravakm: stravakm > 0,
+        iqresult: iqresult > 0,
+        pomokitsesi: pomokitsesi > 0,
+        trackerdata: trackerdata > 0,
+        gtmetrixresult: gtmetrixresult > 0,
+        webhookpush: webhookpush > 0,
+        presensihari: presensihari > 0,
+        qrisCondition: qrisCondition,
+        rupiah: rupiah > 0,
+        mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0
+    };
 }
