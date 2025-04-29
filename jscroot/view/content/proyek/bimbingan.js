@@ -145,12 +145,46 @@ function postResponseFunction(result){
     console.log(result);
 }
 
+// Global variables to store activity data
+let activityData = {
+    sponsordata: 0,
+    stravakm: 0,
+    iqresult: 0,
+    pomokitsesi: 0,
+    mbc: 0,
+    rupiah: 0,
+    trackerdata: 0,
+    bukukatalog: 0,
+    jurnalcount: 0,
+    gtmetrixresult: 0,
+    webhookpush: 0,
+    presensihari: 0,
+    rvn: 0
+};
+
 function fetchActivityScore() {
     getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
 }
 
 function handleActivityScoreResponse(result) {
     if (result.status === 200) {
+        // Update the global activity data
+        activityData = {
+            sponsordata: result.data.sponsordata || 0,
+            stravakm: result.data.stravakm || 0,
+            iqresult: result.data.iqresult || 0,
+            pomokitsesi: result.data.pomokitsesi || 0,
+            mbc: result.data.mbc || 0,
+            rupiah: result.data.rupiah || 0,
+            trackerdata: result.data.trackerdata || 0,
+            bukukatalog: result.data.bukukatalog || 0,
+            jurnalcount: result.data.jurnalcount || 0,
+            gtmetrixresult: result.data.gtmetrixresult || 0,
+            webhookpush: result.data.webhookpush || 0,
+            presensihari: result.data.presensihari || 0,
+            rvn: result.data.rvn || 0
+        };
+
         updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
         updateTableRow(2, result.data.iqresult, result.data.iq);
@@ -159,11 +193,14 @@ function handleActivityScoreResponse(result) {
         updateTableRow(5, result.data.rupiah, result.data.qrisPoints || result.data.qris);     
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
         updateTableRow(7, result.data.bukukatalog, result.data.bukped);
+        updateTableRow(8, result.data.jurnalcount || 0, result.data.jurnal || 0);  // Added jurnal row
         updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
         updateTableRow(10, result.data.webhookpush, result.data.webhook);
         updateTableRow(11, result.data.presensihari, result.data.presensi);
         updateTableRow(12, result.data.rvn, result.data.ravencoinPoints || 0);
-
+        
+        // Check conditions and update button status
+        checkApprovalButtonConditions();
     } else {
         console.log(result.data.message);
     }
@@ -180,5 +217,41 @@ function updateTableRow(rowIndex, quantity, points) {
             quantityCell.textContent = quantity || 0;
             pointsCell.textContent = points || 0;
         }
+    }
+}
+
+// Function to check conditions and update button status
+function checkApprovalButtonConditions() {
+    const approvalButton = document.getElementById('tombolmintaapproval');
+    
+    // Extract values from activityData
+    const {
+        sponsordata, stravakm, iqresult, pomokitsesi, mbc, rupiah,
+        trackerdata, bukukatalog, jurnalcount, gtmetrixresult, webhookpush, presensihari, rvn
+    } = activityData;
+    
+    // Check if all required activities have quantity > 0
+    // Except for buku (bukukatalog) and jurnal (jurnalcount)
+    const requiredActivitiesPositive = 
+        sponsordata > 0 && 
+        stravakm > 0 && 
+        iqresult > 0 && 
+        pomokitsesi > 0 && 
+        trackerdata > 0 && 
+        gtmetrixresult > 0 && 
+        webhookpush > 0 && 
+        presensihari > 0;
+    
+    // Special condition for QRIS, MBC, and RVN
+    const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
+    
+    // Combine all conditions
+    const allConditionsMet = requiredActivitiesPositive && qrisCondition;
+    
+    // Enable or disable the button based on conditions
+    if (allConditionsMet) {
+        approvalButton.disabled = false;
+    } else {
+        approvalButton.disabled = true;
     }
 }
