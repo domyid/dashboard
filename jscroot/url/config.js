@@ -21,6 +21,8 @@ export const backend = {
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/anggota',
         assessment:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan',
+        kelasai:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/tugaskelasai',
     },
     ux: {
         feedback:
@@ -36,13 +38,17 @@ export const backend = {
         weekly: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/activityscoreweekly',
     },
     bimbingan: {
-        process: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly',
+        process:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly',
         force: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/refresh/bimbingan/weekly/force',
         all: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/all',
         weekly: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly',
-        request: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/request',
-        approve: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/approve',
-        changeWeek: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/admin/bimbingan/changeweek',
+        request:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/request',
+        approve:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/approve',
+        changeWeek:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/admin/bimbingan/changeweek',
         status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/status',
     },
 };
