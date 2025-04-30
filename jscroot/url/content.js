@@ -76,7 +76,7 @@ export function getURLContentJS(){
         case "proyek/tugasmingguan":
             return url.view.content+"proyek/tugasmingguan.js";
         case "proyek/kelasai":
-            return url.template.content+"proyek/kelasai.js";
+            return url.view.content+"proyek/kelasai.js";
         case "notifications/blocked":
             return url.view.content+"notifications/blocked.js";
         case "notifications/silenced":
