@@ -55,7 +55,9 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
-                setValue('phonenumber', '');
+                setValue('kelas-name', '');
+                setValue('tugas1', '');
+                setValue('tugas2', '');
             },
         });
     }else if (result.data.status.startsWith("Info : ")) {
