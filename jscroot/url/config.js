@@ -23,6 +23,8 @@ export const backend = {
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan',
         kelasai:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/tugaskelasai',
+        kelasws:
+            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/tugaskelasws',
     },
     ux: {
         feedback:
