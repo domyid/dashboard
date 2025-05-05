@@ -19,11 +19,13 @@ export async function main(){
 function handleTugasAIChange(target) {
     const id = target.value; // Ini _id nya
     const defaultValue = 'x'.repeat(10);
+    const submitButton = getValue('tombolkirimtugas');
 
     if (id === defaultValue) {
-        // When "Tugas Minggu ini" is selected
+        submitButton.style.display = 'inline-block';
         fetchTugasScore();
     } else {
+        submitButton.style.display = 'none';
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), handleTugasScoreResponse);
     }
