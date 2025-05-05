@@ -45,14 +45,15 @@ function getResponseFunction(result){
 }
 
 function postResponseFunction(result){
-    const id = target.value; // Ini _id nya
+    const select = document.getElementById('kelas-name');
+    const selectedValue = select.value;
     const defaultValue = 'x'.repeat(2);
 
-    if (id === defaultValue) {
+    if (selectedValue === defaultValue) {
         Swal.fire({
             icon: 'error',
-            title: 'Gagal',
-            text: 'Silahkan pilih kelas yang benar',
+            title: 'Kelas Kosong',
+            text: 'Silakan pilih kelas terlebih dahulu.',
         });
         return;
     }
