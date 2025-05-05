@@ -12,7 +12,21 @@ export async function main(){
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     getJSON(tugaskelasai, 'login', getCookie('login'), getTugasAIList);
     onClick('tombolkirimtugas', actionfunctionname);
+    onChange('tugas-name', handleTugasAIChange);
     fetchTugasScore();
+}
+
+function handleTugasAIChange(target) {
+    const id = target.value; // Ini _id nya
+    const defaultValue = 'x'.repeat(10);
+
+    if (id === defaultValue) {
+        // When "Tugas Minggu ini" is selected
+        fetchTugasScore();
+    } else {
+        const url = `${tugaskelasai}/${id}`;
+        getJSON(url, 'login', getCookie('login'), handleTugasScoreResponse);
+    }
 }
 
 function getTugasAIList(result) {
