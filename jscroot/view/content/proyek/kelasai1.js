@@ -56,9 +56,9 @@ function getTugasAIList(result) {
 }
 
 function actionfunctionname(){
+    if (!validateTugasTable()) return;
     if (!validateKelas()) return;
     if (!validateQuantity()) return;
-    if (!validateTugasTable()) return;
 
     let idprjusr = {
         kelas: kelas,
@@ -168,15 +168,16 @@ function validateQuantity() {
     for (let i = 0; i < tableRows.length; i++) {
         const quantityCell = tableRows[i].querySelector('td:nth-child(3)');
         const quantity = quantityCell ? quantityCell.textContent.trim() : '';
-        if (!quantity || quantity === '0') {
+        if (!quantity || quantity === 0) {
             Swal.fire({
                 icon: 'info',
                 title: 'Tugas Kosong',
                 text: 'Belum ada tugas yang tersedia untuk dikirim.',
             });
-            return;
+            return false;
         }
     }
+    return true;
 }
 
 function validateTugasTable() {
@@ -187,8 +188,9 @@ function validateTugasTable() {
             title: 'Tugas Kosong',
             text: 'Belum ada tugas yang tersedia untuk dikirim.',
         });
-        return;
+        return false;
     }
+    return true;
 }
 
 function validateKelas() {
@@ -200,6 +202,7 @@ function validateKelas() {
             title: 'Kelas Kosong',
             text: 'Silakan pilih kelas terlebih dahulu.',
         });
-        return;
+        return false;
     }
+    return true;
 }
