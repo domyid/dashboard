@@ -108,15 +108,15 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-function addTableTugas(result) {
+function addTableTugas(data) {
     const tbody = document.querySelector('table.table-tugas tbody');
     tbody.innerHTML = '';
-    result.forEach((item, index) => {
+    data.alltugas.forEach((item, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>Pekerjaan ${index + 1}</td>
-            <td>${item.alltugas}</td>
+            <td>${item}</td>
         `;
         tbody.appendChild(row);
     });
