@@ -56,9 +56,9 @@ function getTugasAIList(result) {
 }
 
 function actionfunctionname(){
-    if (!validateTugasTable()) return;
     if (!validateKelas()) return;
-    if (!validateQuantity()) return;
+    if (validateTugasTable()) return;
+    if (validateQuantity()) return;
 
     let idprjusr = {
         kelas: kelas,
@@ -202,7 +202,6 @@ function validateKelas() {
             title: 'Kelas Kosong',
             text: 'Silakan pilih kelas terlebih dahulu.',
         });
-        return false;
+        return;
     }
-    return true;
 }
