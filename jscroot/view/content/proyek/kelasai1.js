@@ -111,12 +111,12 @@ function updateTableRow(rowIndex, quantity, points) {
 function addTableTugas(alltugas) {
     const tbody = document.querySelector('table.table-tugas tbody');
     tbody.innerHTML = '';
-    alltugas.forEach((item, index) => {
+    alltugas.forEach((url, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>Pekerjaan ${index + 1}</td>
-            <td>${item}</td>
+            <td><a href="${url}" target="_blank">${url}</a></td>
         `;
         tbody.appendChild(row);
     });
