@@ -61,7 +61,7 @@ function actionfunctionname(){
     if (validateQuantity()) return;
 
     let idprjusr = {
-        kelas: kelas,
+        kelas: getValue('kelas-name'),
     };
     if (getCookie("login")===""){
         redirect("/signin");
