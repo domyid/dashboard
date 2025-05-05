@@ -115,7 +115,7 @@ function addTableTugas(result) {
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>Pekerjaan ${index + 1}</td>
-            <td>${item.keterangan}</td>
+            <td>${item.alltugas}</td>
         `;
         tbody.appendChild(row);
     });
