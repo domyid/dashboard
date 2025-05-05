@@ -10,7 +10,7 @@ const tugaskelasai = backend.project.kelasai + '1';
 export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    getJSON(backend.project.assessment,'login',getCookie('login'),getTugasAIList);
+    getJSON(tugaskelasai, 'login', getCookie('login'), getTugasAIList);
     onClick('tombolkirimtugas', actionfunctionname);
     fetchTugasScore();
 }
