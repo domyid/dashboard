@@ -101,7 +101,7 @@ function postResponseFunction(result){
         Swal.fire({
             icon: 'success',
             title: 'Berhasil',
-            text: 'Tugas sudah dikirim. Selamat!',
+            text: `Tugas ${result.data.tugaske} berhasil dikirim. Selamat!`,
             didClose: () => {
                 setValue('kelas-name', '');
             },
