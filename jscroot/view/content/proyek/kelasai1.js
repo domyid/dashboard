@@ -59,7 +59,7 @@ function actionfunctionname(){
     if (!validateKelas()) return;
     if (!validateQuantity()) return;
     if (!validateTugasTable()) return;
-    
+
     let idprjusr = {
         kelas: kelas,
     };
@@ -174,10 +174,9 @@ function validateQuantity() {
                 title: 'Tugas Kosong',
                 text: 'Belum ada tugas yang tersedia untuk dikirim.',
             });
-            return false;
+            return;
         }
     }
-    return true;
 }
 
 function validateTugasTable() {
@@ -188,9 +187,8 @@ function validateTugasTable() {
             title: 'Tugas Kosong',
             text: 'Belum ada tugas yang tersedia untuk dikirim.',
         });
-        return false;
+        return;
     }
-    return true;
 }
 
 function validateKelas() {
