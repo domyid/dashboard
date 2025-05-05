@@ -5,14 +5,35 @@ import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
+const tugaskelasai = backend.project.kelasai + '1';
+
 export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    getJSON(backend.project.assessment,'login',getCookie('login'),getTugasAIList);
     onClick('tombolkirimtugas', actionfunctionname);
     fetchTugasScore();
 }
 
-const tugaskelasai = backend.project.kelasai + '1';
+function getTugasAIList(result) {
+    if (result.status === 200) {
+        result.data.forEach((tugas) => {
+            console.log({ tugas });
+            const option = document.createElement('option');
+            option.value = tugas._id;
+
+            const tugasText = 'Tugas Ke-';
+            option.textContent = tugasText + (tugas.tugaske ?? 1);
+            document.getElementById('tugas-name').appendChild(option);
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status,
+            text: result.data.response,
+        });
+    }
+}
 
 function actionfunctionname(){
     const kelas = getValue('kelas-name');
