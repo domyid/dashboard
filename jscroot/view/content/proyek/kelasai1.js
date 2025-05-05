@@ -108,10 +108,10 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-function addTableTugas(data) {
+function addTableTugas(alltugas) {
     const tbody = document.querySelector('table.table-tugas tbody');
     tbody.innerHTML = '';
-    data.alltugas.forEach((item, index) => {
+    alltugas.forEach((item, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
