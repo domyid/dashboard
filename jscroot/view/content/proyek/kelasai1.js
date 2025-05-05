@@ -97,6 +97,7 @@ function getResponseFunction(result){
 }
 
 function postResponseFunction(result){
+    console.log(result);
     if(result.status === 200){
         Swal.fire({
             icon: 'success',
