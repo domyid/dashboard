@@ -27,7 +27,11 @@ function handleTugasAIChange(target) {
     } else {
         submitButton.style.display = 'none';
         const url = `${tugaskelasai}/${id}`;
-        getJSON(url, 'login', getCookie('login'), handleTugasScoreResponse);
+        getJSON(url, 'login', getCookie('login'), function(result) {
+            handleTugasScoreResponse(result);
+
+            if (result.status === 200) setValue('kelas-name', result.data.kelas);
+        });
     }
 }
 
