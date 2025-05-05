@@ -80,6 +80,7 @@ function fetchTugasScore() {
 }
 
 function handleTugasScoreResponse(result) {
+    console.log(result);
     if (result.status === 200) {
         updateTableRow(0, result.data.stravakm, result.data.strava);
         updateTableRow(1, result.data.iqresult, result.data.iq);
