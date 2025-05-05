@@ -56,17 +56,10 @@ function getTugasAIList(result) {
 }
 
 function actionfunctionname(){
-    const kelas = getValue('kelas-name');
-    const defaultValue = 'x'.repeat(2);
-
-    if (kelas === defaultValue) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Kelas Kosong',
-            text: 'Silakan pilih kelas terlebih dahulu.',
-        });
-        return;
-    }
+    if (!validateKelas()) return;
+    if (!validateQuantity()) return;
+    if (!validateTugasTable()) return;
+    
     let idprjusr = {
         kelas: kelas,
     };
@@ -97,7 +90,6 @@ function getResponseFunction(result){
 }
 
 function postResponseFunction(result){
-    console.log(result);
     if(result.status === 200){
         Swal.fire({
             icon: 'success',
@@ -168,4 +160,48 @@ function addTableTugas(alltugas) {
         `;
         tbody.appendChild(row);
     });
+    
+}
+
+function validateQuantity() {
+    const tableRows = document.querySelectorAll('table.table tbody tr');
+    for (let i = 0; i < tableRows.length; i++) {
+        const quantityCell = tableRows[i].querySelector('td:nth-child(3)');
+        const quantity = quantityCell ? quantityCell.textContent.trim() : '';
+        if (!quantity || quantity === '0') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tugas Kosong',
+                text: 'Belum ada tugas yang tersedia untuk dikirim.',
+            });
+            return false;
+        }
+    }
+    return true;
+}
+
+function validateTugasTable() {
+    const tugasRows = document.querySelectorAll('table.table-tugas tbody tr');
+    if (tugasRows.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Tugas Kosong',
+            text: 'Belum ada tugas yang tersedia untuk dikirim.',
+        });
+        return false;
+    }
+    return true;
+}
+
+function validateKelas() {
+    const kelas = getValue('kelas-name');
+    const defaultValue = 'x'.repeat(2);
+    if (kelas === defaultValue) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Kelas Kosong',
+            text: 'Silakan pilih kelas terlebih dahulu.',
+        });
+        return;
+    }
 }
