@@ -15,8 +15,19 @@ export async function main(){
 const tugaskelasai = backend.project.kelasai + '1';
 
 function actionfunctionname(){
+    const kelas = getValue('kelas-name');
+    const defaultValue = 'x'.repeat(2);
+
+    if (kelas === defaultValue) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Kelas Kosong',
+            text: 'Silakan pilih kelas terlebih dahulu.',
+        });
+        return;
+    }
     let idprjusr = {
-        kelas: getValue('kelas-name'),
+        kelas: kelas,
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -45,18 +56,6 @@ function getResponseFunction(result){
 }
 
 function postResponseFunction(result){
-    const select = document.getElementById('kelas-name');
-    const selectedValue = select.value;
-    const defaultValue = 'x'.repeat(2);
-
-    if (selectedValue === defaultValue) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Kelas Kosong',
-            text: 'Silakan pilih kelas terlebih dahulu.',
-        });
-        return;
-    }
     if(result.status === 200){
         Swal.fire({
             icon: 'success',
