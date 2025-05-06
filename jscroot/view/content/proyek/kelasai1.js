@@ -126,8 +126,9 @@ function actionfunctionname(){
         redirect("/signin");
     }else{
         postJSON(tugaskelasai,"login",getCookie("login"),idprjusr,postResponseFunction);
-        // hide("tombolbuatproyek");    
     }
+
+    setValue('kelas-name', defaultValue);
 }
 
 function getResponseFunction(result){
