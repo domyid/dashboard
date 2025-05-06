@@ -66,7 +66,7 @@ let activityData = {
 };
 
 function checkAndSubmit() {
-    if (!validateKelas()) return;
+    // if (!validateKelas()) return;
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
     console.log({conditions})
@@ -111,8 +111,19 @@ function checkAndSubmit() {
 function actionfunctionname(){
     console.log('masuk1');
 
+    const kelas = getValue('kelas-name');
+    const defaultValue = 'x'.repeat(2);
+    if (kelas === defaultValue) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Kelas Kosong',
+            text: 'Silakan pilih kelas terlebih dahulu.',
+        });
+        return;
+    }
+
     let idprjusr = {
-        kelas: getValue('kelas-name'),
+        kelas: kelas,
     };
     console.log(idprjusr.kelas)
     if (getCookie("login")===""){
