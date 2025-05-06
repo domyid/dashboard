@@ -1,4 +1,4 @@
-import { onClick,getValue,setValue,onChange,container } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
+import { onClick,getValue,setValue,onChange,hide,show,container } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
 import {postJSON,getJSON} from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import {getCookie} from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
@@ -29,15 +29,12 @@ export async function main(){
 function handleTugasAIChange(target) {
     const id = target.value; // Ini _id nya
     const defaultValue = 'x'.repeat(10);
-    const submitButton = container('tombolkirimtugas');
-    const dropdownKelas = container('kelas-name');
 
     if (id === defaultValue) {
-        submitButton.style.display = 'inline-block';
+        show('tombolkirimtugas');
         fetchTugasScore();
     } else {
-        submitButton.style.display = 'none';
-        dropdownKelas.options.disabled = true;
+        hide('tombolkirimtugas');
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), function(result) {
             handleTugasScoreResponse(result);
