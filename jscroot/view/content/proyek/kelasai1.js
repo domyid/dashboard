@@ -68,6 +68,7 @@ function getTugasAIList(result) {
 function checkAndSubmit() {
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
+    console.log({conditions})
     
     if (!conditions.isValid) {
         // Create message about what's missing
