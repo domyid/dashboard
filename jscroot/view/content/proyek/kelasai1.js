@@ -56,6 +56,7 @@ function getTugasAIList(result) {
 }
 
 function checkAndSubmit() {
+    if (!validateKelas()) return;
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
     
@@ -90,8 +91,6 @@ function checkAndSubmit() {
 }
 
 function actionfunctionname(){
-    if (!validateKelas()) return;
-
     let idprjusr = {
         kelas: getValue('kelas-name'),
     };
