@@ -59,6 +59,7 @@ function checkAndSubmit() {
     if (!validateKelas()) return;
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
+    console.log('Cek kondisi:', conditions);
     
     if (!conditions.isValid) {
         // Create message about what's missing
@@ -86,12 +87,12 @@ function checkAndSubmit() {
         return; // Stop here
     }
     
+    console.log('Semua valid, proses submit...');
     // If all conditions are met, proceed with the action
     actionfunctionname();
 }
 
 function actionfunctionname(){
-    console.log('Semua valid, proses submit...');
     let idprjusr = {
         kelas: getValue('kelas-name'),
     };
