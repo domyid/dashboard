@@ -98,6 +98,7 @@ function checkAndSubmit() {
 }
 
 function actionfunctionname(){
+    console.log('masuk1');
     if (!validateKelas()) return;
 
     let idprjusr = {
