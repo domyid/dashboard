@@ -185,7 +185,7 @@ function checkApprovalButtonConditions() {
     
     const requiredActivitiesPositive = stravakm > 0 && iqresult > 0 && pomokitsesi > 0;
     const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
-    const hasTugas = Array.isArray(alltugas) && alltugas.length > 0;
+    const hasTugas = Array.isArray(alltugas) && alltugas.some(item => item.trim && item.trim() !== "");
     
     // Combine all conditions
     const allConditionsMet = requiredActivitiesPositive && qrisCondition && hasTugas;
@@ -257,5 +257,4 @@ function addTableTugas(alltugas) {
             console.log("gaada")
         }
     });
-    
 }
