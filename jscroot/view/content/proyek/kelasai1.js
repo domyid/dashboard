@@ -73,7 +73,7 @@ function checkAndSubmit() {
             missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
         }
 
-        if (!conditions.hasTugas) missingItems.push("Tugas");
+        if (!conditions.hasTugas) missingItems.push("Pekerjaan");
         
         // Show alert with missing items
         Swal.fire({
@@ -91,6 +91,7 @@ function checkAndSubmit() {
 }
 
 function actionfunctionname(){
+    console.log('Semua valid, proses submit...');
     let idprjusr = {
         kelas: getValue('kelas-name'),
     };
