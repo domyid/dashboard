@@ -78,14 +78,18 @@ function checkAndSubmit() {
         if (!conditions.pomokitsesi) missingItems.push("Pomokit");
         
         // Check QRIS condition
+        // if (!conditions.qrisCondition) {
+        //     if (activityData.rupiah === 0) {
+        //         if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
+        //         if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
+        //         missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
+        //     } else {
+        //         missingItems.push("QRIS");
+        //     }
+        // }
+
         if (!conditions.qrisCondition) {
-            if (activityData.rupiah === 0) {
-                if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
-                if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
-                missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
-            } else {
-                missingItems.push("QRIS");
-            }
+            missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
         }
 
         if (!conditions.hasTugas) missingItems.push("Pekerjaan");
@@ -183,7 +187,7 @@ function checkApprovalButtonConditions() {
     const { stravakm, iqresult, pomokitsesi, mbc, rupiah, rvn, alltugas } = activityData;
     
     const requiredActivitiesPositive = stravakm > 0 && iqresult > 0 && pomokitsesi > 0;
-    const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
+    const qrisCondition = rupiah > 0 || mbc > 0 || rvn > 0;
     const hasTugas = Array.isArray(alltugas) && alltugas.some(item => item.trim && item.trim() !== "");
     
     // Combine all conditions
@@ -196,7 +200,8 @@ function checkApprovalButtonConditions() {
         pomokitsesi: pomokitsesi > 0,
         qrisCondition: qrisCondition,
         rupiah: rupiah > 0,
-        mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0,
+        mbc: mbc > 0,
+        rvn: rvn > 0,
         hasTugas: hasTugas,
     };
 }
