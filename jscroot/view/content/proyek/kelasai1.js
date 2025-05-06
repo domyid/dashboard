@@ -37,7 +37,7 @@ function handleTugasAIChange(target) {
         fetchTugasScore();
     } else {
         submitButton.style.display = 'none';
-        dropdownKelas.disabled = true;
+        dropdownKelas.options.disabled = true;
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), function(result) {
             handleTugasScoreResponse(result);
