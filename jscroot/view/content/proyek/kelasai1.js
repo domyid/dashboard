@@ -88,7 +88,7 @@ function checkAndSubmit() {
             }
         }
 
-        if (!conditions.hasTugas) missingItems.push("Tugas");
+        if (!conditions.hasTugas) missingItems.push("Pekerjaan");
         
         // Show alert with missing items
         Swal.fire({
@@ -245,26 +245,17 @@ function addTableTugas(alltugas) {
     const tbody = document.querySelector('table.table-tugas tbody');
     tbody.innerHTML = '';
     alltugas.forEach((url, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>Pekerjaan ${index + 1}</td>
-            <td><a href="${url}" target="_blank">${url}</a></td>
-        `;
-        tbody.appendChild(row);
+        if(url != "") {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>Pekerjaan ${index + 1}</td>
+                <td><a href="${url}" target="_blank">${url}</a></td>
+            `;
+            tbody.appendChild(row);
+        } else {
+            console.log("gaada")
+        }
     });
     
-}
-
-function validateKelas() {
-    const kelas = getValue('kelas-name');
-    const defaultValue = 'x'.repeat(2);
-    if (kelas === defaultValue) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Kelas Kosong',
-            text: 'Silakan pilih kelas terlebih dahulu.',
-        });
-        return;
-    }
 }
