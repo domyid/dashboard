@@ -114,6 +114,7 @@ function actionfunctionname(){
     let idprjusr = {
         kelas: getValue('kelas-name'),
     };
+    console.log(idprjusr.kelas)
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
