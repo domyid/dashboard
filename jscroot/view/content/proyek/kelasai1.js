@@ -30,12 +30,14 @@ function handleTugasAIChange(target) {
     const id = target.value; // Ini _id nya
     const defaultValue = 'x'.repeat(10);
     const submitButton = container('tombolkirimtugas');
+    const dropdownKelas = container('kelas-name');
 
     if (id === defaultValue) {
         submitButton.style.display = 'inline-block';
         fetchTugasScore();
     } else {
         submitButton.style.display = 'none';
+        dropdownKelas.disabled = true;
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), function(result) {
             handleTugasScoreResponse(result);
