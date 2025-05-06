@@ -5,7 +5,7 @@ import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
-const tugaskelasai = backend.project.kelasai + '1';
+const tugaskelasai = backend.project.kelasai;
 
 let activityData = {
     stravakm: 0,
