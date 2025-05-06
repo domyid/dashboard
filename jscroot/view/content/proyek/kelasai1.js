@@ -7,6 +7,16 @@ import { id,backend } from "/dashboard/jscroot/url/config.js";
 
 const tugaskelasai = backend.project.kelasai + '1';
 
+let activityData = {
+    stravakm: 0,
+    iqresult: 0,
+    pomokitsesi: 0,
+    mbc: 0,
+    rupiah: 0,
+    rvn: 0,
+    alltugas: [],
+};
+
 export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
@@ -55,21 +65,9 @@ function getTugasAIList(result) {
     }
 }
 
-let activityData = {
-    stravakm: 0,
-    iqresult: 0,
-    pomokitsesi: 0,
-    mbc: 0,
-    rupiah: 0,
-    rvn: 0,
-    alltugas: [],
-};
-
 function checkAndSubmit() {
-    // if (!validateKelas()) return;
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
-    console.log({conditions})
     
     if (!conditions.isValid) {
         // Create message about what's missing
@@ -103,14 +101,11 @@ function checkAndSubmit() {
         return; // Stop here
     }
     
-    console.log("masuk")
     // If all conditions are met, proceed with the action
     actionfunctionname();
 }
 
 function actionfunctionname(){
-    console.log('masuk1');
-
     const kelas = getValue('kelas-name');
     const defaultValue = 'x'.repeat(2);
     if (kelas === defaultValue) {
