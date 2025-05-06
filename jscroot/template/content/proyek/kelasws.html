@@ -28,6 +28,7 @@
                 <div class="control">
                     <div class="select">
                         <select id="kelas-name" name="kelasName" required>
+                            <option value="xx" selected disabled>Pilih Kelas</option>
                             <option value="2A">2A</option>
                             <option value="2B">2B</option>
                         </select>
@@ -75,6 +76,10 @@
                 <div class="control">
                     <button class="button is-primary" type="submit" id="tombolkirimtugas">Kirim</button>
                 </div>
+            </div>
+
+            <div class="notification is-info is-light" id="validation-message">
+                <p>Untuk mengirimkan tugas, Strava minimal 2km; QRIS dan Blockchain bisa di kerjakan salah satu, tanpa ada batas minimal.</p>
             </div>
 
     </div>
