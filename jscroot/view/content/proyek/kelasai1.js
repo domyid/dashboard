@@ -55,6 +55,16 @@ function getTugasAIList(result) {
     }
 }
 
+let activityData = {
+    stravakm: 0,
+    iqresult: 0,
+    pomokitsesi: 0,
+    mbc: 0,
+    rupiah: 0,
+    rvn: 0,
+    alltugas: [],
+};
+
 function checkAndSubmit() {
     if (!validateKelas()) return;
     // Check the conditions first
@@ -80,7 +90,7 @@ function checkAndSubmit() {
             }
         }
 
-        // if (!conditions.hasTugas) missingItems.push("Tugas");
+        if (!conditions.hasTugas) missingItems.push("Tugas");
         
         // Show alert with missing items
         Swal.fire({
@@ -161,16 +171,6 @@ function fetchTugasScore() {
     getJSON(tugaskelasai+'/weekly', 'login', getCookie('login'), handleTugasScoreResponse);
 }
 
-let activityData = {
-    stravakm: 0,
-    iqresult: 0,
-    pomokitsesi: 0,
-    mbc: 0,
-    rupiah: 0,
-    rvn: 0,
-    // alltugas: [],
-};
-
 // Function to check conditions and update button status
 function checkApprovalButtonConditions() {
     // Extract values from activityData
@@ -178,10 +178,10 @@ function checkApprovalButtonConditions() {
     
     const requiredActivitiesPositive = stravakm > 0 && iqresult > 0 && pomokitsesi > 0;
     const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
-    // const hasTugas = Array.isArray(alltugas) && alltugas.length > 0;
+    const hasTugas = Array.isArray(alltugas) && alltugas.length > 0;
     
     // Combine all conditions
-    const allConditionsMet = requiredActivitiesPositive && qrisCondition;
+    const allConditionsMet = requiredActivitiesPositive && qrisCondition && hasTugas;
     
     return {
         isValid: allConditionsMet,
@@ -191,7 +191,7 @@ function checkApprovalButtonConditions() {
         qrisCondition: qrisCondition,
         rupiah: rupiah > 0,
         mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0,
-        // hasTugas: hasTugas,
+        hasTugas: hasTugas,
     };
 }
 
@@ -205,7 +205,7 @@ function handleTugasScoreResponse(result) {
             mbc: result.data.mbc || 0,
             rupiah: result.data.rupiah || 0,
             rvn: result.data.rvn || 0,
-            // alltugas: result.data.alltugas || [],
+            alltugas: result.data.alltugas || [],
         };
 
         updateTableRow(0, result.data.stravakm, result.data.strava);
