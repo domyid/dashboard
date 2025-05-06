@@ -68,12 +68,7 @@ function checkAndSubmit() {
         if (!conditions.stravakm) missingItems.push("Strava");
         if (!conditions.iqresult) missingItems.push("Test IQ");
         if (!conditions.pomokitsesi) missingItems.push("Pomokit");
-        
-        // Check QRIS condition
-        if (!conditions.qrisCondition) {
-            missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
-        }
-
+        if (!conditions.qrisCondition) missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
         if (!conditions.hasTugas) missingItems.push("Pekerjaan");
         
         // Show alert with missing items
@@ -181,10 +176,7 @@ function checkApprovalButtonConditions() {
         iqresult: iqresult > 0,
         pomokitsesi: pomokitsesi > 0,
         qrisCondition: qrisCondition,
-        rupiah: rupiah > 0,
-        mbc: mbc > 0,
-        rvn: rvn > 0,
-        hasTugas: hasTugas,
+        alltugas: alltugas.length > 0,
     };
 }
 
