@@ -154,7 +154,7 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: `Tugas ${result.data.tugaske} berhasil dikirim. Selamat!`,
             didClose: () => {
-                setValue('kelas-name', 'xx');
+                setValue('kelas-name', result.data.kelas);
             },
         });
     }else if (result.data.status.startsWith("Info : ")) {
