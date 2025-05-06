@@ -127,8 +127,6 @@ function actionfunctionname(){
     }else{
         postJSON(tugaskelasai,"login",getCookie("login"),idprjusr,postResponseFunction);
     }
-
-    setValue('kelas-name', defaultValue);
 }
 
 function getResponseFunction(result){
@@ -156,7 +154,7 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: `Tugas ${result.data.tugaske} berhasil dikirim. Selamat!`,
             didClose: () => {
-                setValue('kelas-name', '');
+                setValue('kelas-name', 'xx');
             },
         });
     }else if (result.data.status.startsWith("Info : ")) {
