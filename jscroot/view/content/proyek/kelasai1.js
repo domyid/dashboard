@@ -56,10 +56,9 @@ function getTugasAIList(result) {
 }
 
 function checkAndSubmit() {
-    if (!validateKelas()) return;
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
-    console.log('Cek kondisi:', conditions);
+    console.log({conditions})
     
     if (!conditions.isValid) {
         // Create message about what's missing
@@ -68,8 +67,19 @@ function checkAndSubmit() {
         if (!conditions.stravakm) missingItems.push("Strava");
         if (!conditions.iqresult) missingItems.push("Test IQ");
         if (!conditions.pomokitsesi) missingItems.push("Pomokit");
-        if (!conditions.qrisCondition) missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
-        if (!conditions.hasTugas) missingItems.push("Pekerjaan");
+        
+        // Check QRIS condition
+        if (!conditions.qrisCondition) {
+            if (activityData.rupiah === 0) {
+                if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
+                if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
+                missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
+            } else {
+                missingItems.push("QRIS");
+            }
+        }
+
+        if (!conditions.hasTugas) missingItems.push("Tugas");
         
         // Show alert with missing items
         Swal.fire({
@@ -82,12 +92,13 @@ function checkAndSubmit() {
         return; // Stop here
     }
     
-    console.log('Semua valid, proses submit...');
     // If all conditions are met, proceed with the action
     actionfunctionname();
 }
 
 function actionfunctionname(){
+    if (!validateKelas()) return;
+
     let idprjusr = {
         kelas: getValue('kelas-name'),
     };
@@ -164,7 +175,7 @@ function checkApprovalButtonConditions() {
     const { stravakm, iqresult, pomokitsesi, mbc, rupiah, rvn, alltugas } = activityData;
     
     const requiredActivitiesPositive = stravakm > 0 && iqresult > 0 && pomokitsesi > 0;
-    const qrisCondition = rupiah > 0 || mbc > 0 || rvn > 0; // hanya salah satu cukup
+    const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
     const hasTugas = Array.isArray(alltugas) && alltugas.length > 0;
     
     // Combine all conditions
@@ -176,10 +187,11 @@ function checkApprovalButtonConditions() {
         iqresult: iqresult > 0,
         pomokitsesi: pomokitsesi > 0,
         qrisCondition: qrisCondition,
-        alltugas: alltugas.length > 0,
+        rupiah: rupiah > 0,
+        mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0,
+        hasTugas: hasTugas,
     };
 }
-
 
 function handleTugasScoreResponse(result) {
     if (result.status === 200) {
