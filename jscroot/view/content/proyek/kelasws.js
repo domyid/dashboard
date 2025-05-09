@@ -20,13 +20,13 @@ let activityData = {
 export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    getJSON(tugaskelasws, 'login', getCookie('login'), getTugasAIList);
+    getJSON(tugaskelasws, 'login', getCookie('login'), getTugasWSList);
     onClick('tombolkirimtugas', checkAndSubmit);
-    onChange('tugas-name', handleTugasAIChange);
+    onChange('tugas-name', handleTugasWSChange);
     fetchTugasScore();
 }
 
-function handleTugasAIChange(target) {
+function handleTugasWSChange(target) {
     const id = target.value; // Ini _id nya
     const defaultValue = 'x'.repeat(10);
 
@@ -44,7 +44,7 @@ function handleTugasAIChange(target) {
     }
 }
 
-function getTugasAIList(result) {
+function getTugasWSList(result) {
     if (result.status === 200) {
         result.data.forEach((tugas) => {
             console.log({ tugas });
