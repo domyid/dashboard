@@ -199,7 +199,7 @@ let activityData = {
     trackerdata: 0,
     bukukatalog: 0,
     jurnalcount: 0,
-    gtmetrixresult: 0,
+    gtmetrixresult: '', // Changed to empty string as default
     webhookpush: 0,
     presensihari: 0,
     rvn: 0
@@ -222,7 +222,7 @@ function handleActivityScoreResponse(result) {
             trackerdata: result.data.trackerdata || 0,
             bukukatalog: result.data.bukukatalog || 0,
             jurnalcount: result.data.jurnalcount || 0,
-            gtmetrixresult: result.data.gtmetrixresult || 0,
+            gtmetrixresult: result.data.gtmetrixresult || '', // Accept as string
             webhookpush: result.data.webhookpush || 0,
             presensihari: result.data.presensihari || 0,
             rvn: result.data.rvn || 0
@@ -271,6 +271,9 @@ function checkApprovalButtonConditions() {
         trackerdata, bukukatalog, jurnalcount, gtmetrixresult, webhookpush, presensihari, rvn
     } = activityData;
     
+    // Check if gtmetrixresult has a value (not empty string)
+    const hasGtmetrixResult = gtmetrixresult && gtmetrixresult.trim() !== '';
+    
     // Check if all required activities have quantity > 0
     // Except for buku (bukukatalog) and jurnal (jurnalcount)
     const requiredActivitiesPositive = 
@@ -279,7 +282,7 @@ function checkApprovalButtonConditions() {
         iqresult > 0 && 
         pomokitsesi > 0 && 
         trackerdata > 0 && 
-        gtmetrixresult > 0 && 
+        hasGtmetrixResult && // Changed condition for gtmetrixresult
         webhookpush > 0 && 
         presensihari > 0;
     
@@ -296,7 +299,7 @@ function checkApprovalButtonConditions() {
         iqresult: iqresult > 0,
         pomokitsesi: pomokitsesi > 0,
         trackerdata: trackerdata > 0,
-        gtmetrixresult: gtmetrixresult > 0,
+        gtmetrixresult: hasGtmetrixResult, // Changed to check for non-empty string
         webhookpush: webhookpush > 0,
         presensihari: presensihari > 0,
         qrisCondition: qrisCondition,
