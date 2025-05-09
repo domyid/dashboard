@@ -124,6 +124,7 @@ function getResponseFunction(result){
             option.textContent = project.name;
             document.getElementById('project-name').appendChild(option);
         });
+        
     }else{
         Swal.fire({
             icon: "error",
@@ -200,16 +201,15 @@ function handleTugasScoreResponse(result) {
             mbc: result.data.mbc || 0,
             rupiah: result.data.rupiah || 0,
             rvn: result.data.rvn || 0,
-            alltugas: result.data.alltugas || [],
+            alltugas: Array.isArray(result.data.alltugas) ? result.data.alltugas : [],
         };
-
         updateTableRow(0, result.data.stravakm, result.data.strava);
         updateTableRow(1, result.data.iqresult, result.data.iq);
         updateTableRow(2, result.data.pomokitsesi, result.data.pomokit);
         updateTableRow(3, result.data.mbc, result.data.mbcPoints || result.data.blockchain); 
         updateTableRow(4, result.data.rupiah, result.data.qrisPoints || result.data.qris);
         updateTableRow(5, result.data.rvn, result.data.ravencoinPoints || 0);
-        addTableTugas(result.data.alltugas);
+        addTableTugas(activityData.alltugas);
     } else {
         console.log(result.data.message);
     }
@@ -230,19 +230,21 @@ function updateTableRow(rowIndex, quantity, points) {
 }
 
 function addTableTugas(alltugas) {
-    const tbody = document.querySelector('table.table-tugas tbody');
-    tbody.innerHTML = '';
-    alltugas.forEach((url, index) => {
-        if(url != "") {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>Pekerjaan ${index + 1}</td>
-                <td><a href="${url}" target="_blank">${url}</a></td>
-            `;
-            tbody.appendChild(row);
-        } else {
-            console.log("gaada")
-        }
-    });
+  // jika bukan array atau tabel tidak ada, keluar
+  if (!Array.isArray(alltugas)) return;
+  const tbody = document.querySelector('table.table-tugas tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  alltugas.forEach((url, index) => {
+    if (url) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>Pekerjaan ${index + 1}</td>
+        <td><a href="${url}" target="_blank">${url}</a></td>
+      `;
+      tbody.appendChild(row);
+    }
+  });
 }
