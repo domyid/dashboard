@@ -76,10 +76,24 @@ function checkAndSubmit() {
         if (!conditions.stravakm) missingItems.push("Strava");
         if (!conditions.iqresult) missingItems.push("Test IQ");
         if (!conditions.pomokitsesi) missingItems.push("Pomokit");
+        
+        // Check QRIS condition
+        // if (!conditions.qrisCondition) {
+        //     if (activityData.rupiah === 0) {
+        //         if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
+        //         if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
+        //         missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
+        //     } else {
+        //         missingItems.push("QRIS");
+        //     }
+        // }
+
         if (!conditions.qrisCondition) {
             missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
         }
+
         if (!conditions.hasTugas) missingItems.push("Pekerjaan");
+        
         // Show alert with missing items
         Swal.fire({
             icon: 'warning',
@@ -87,8 +101,10 @@ function checkAndSubmit() {
             html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
             confirmButtonText: 'Mengerti'
         });
+        
         return; // Stop here
     }
+    
     // If all conditions are met, proceed with the action
     actionfunctionname();
 }
@@ -124,7 +140,7 @@ function getResponseFunction(result){
             option.textContent = project.name;
             document.getElementById('project-name').appendChild(option);
         });
-        
+
     }else{
         Swal.fire({
             icon: "error",
@@ -201,15 +217,16 @@ function handleTugasScoreResponse(result) {
             mbc: result.data.mbc || 0,
             rupiah: result.data.rupiah || 0,
             rvn: result.data.rvn || 0,
-            alltugas: Array.isArray(result.data.alltugas) ? result.data.alltugas : [],
+            alltugas: result.data.alltugas || [],
         };
+
         updateTableRow(0, result.data.stravakm, result.data.strava);
         updateTableRow(1, result.data.iqresult, result.data.iq);
         updateTableRow(2, result.data.pomokitsesi, result.data.pomokit);
         updateTableRow(3, result.data.mbc, result.data.mbcPoints || result.data.blockchain); 
         updateTableRow(4, result.data.rupiah, result.data.qrisPoints || result.data.qris);
         updateTableRow(5, result.data.rvn, result.data.ravencoinPoints || 0);
-        addTableTugas(activityData.alltugas);
+        addTableTugas(result.data.alltugas);
     } else {
         console.log(result.data.message);
     }
@@ -230,21 +247,19 @@ function updateTableRow(rowIndex, quantity, points) {
 }
 
 function addTableTugas(alltugas) {
-  // jika bukan array atau tabel tidak ada, keluar
-  if (!Array.isArray(alltugas)) return;
-  const tbody = document.querySelector('table.table-tugas tbody');
-  if (!tbody) return;
-
-  tbody.innerHTML = '';
-  alltugas.forEach((url, index) => {
-    if (url) {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>Pekerjaan ${index + 1}</td>
-        <td><a href="${url}" target="_blank">${url}</a></td>
-      `;
-      tbody.appendChild(row);
-    }
-  });
+    const tbody = document.querySelector('table.table-tugas tbody');
+    tbody.innerHTML = '';
+    alltugas.forEach((url, index) => {
+        if(url != "") {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>Pekerjaan ${index + 1}</td>
+                <td><a href="${url}" target="_blank">${url}</a></td>
+            `;
+            tbody.appendChild(row);
+        } else {
+            console.log("gaada")
+        }
+    });
 }
