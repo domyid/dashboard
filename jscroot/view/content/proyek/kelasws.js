@@ -190,6 +190,7 @@ function checkApprovalButtonConditions() {
 }
 
 function handleTugasScoreResponse(result) {
+    console.log({result})
     if (result.status === 200) {
 
         activityData = {
