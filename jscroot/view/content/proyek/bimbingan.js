@@ -166,7 +166,7 @@ function postResponseFunction(result){
         Swal.fire({
             icon: 'success',
             title: 'Berhasil',
-            text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
+            text: `Selamat! Anda telah berhasil mengajukan permohonan Bimbingan ${result.data.bimbinganke}. Silakan tunggu konfirmasi dari asesor.`,
             didClose: () => {
                 setValue('phonenumber', '');
             },
