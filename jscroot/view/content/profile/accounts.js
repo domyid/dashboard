@@ -24,6 +24,7 @@ function actionfunctionname(){
         athleteid: getValue('athleteid'),
         npm: getValue('npm'),
         wonpaywallet: getValue('wonpaywallet'),
+        rvnwallet: getValue('rvnwallet'),
     };
     if (getCookie("login")===""){
         redirect("/signin");
@@ -54,6 +55,7 @@ function responseFunction(result){
           setValue("athleteid",result.data.athleteid);
           setValue("npm",result.data.npm);
           setValue("wonpaywallet",result.data.wonpaywallet);
+          setValue("rvnwallet",result.data.rvnwallet);
           show("buttonkirimaccount");
     }else{
         Swal.fire({
@@ -81,5 +83,6 @@ function getUserFunction(result){
     setValue("athleteid",result.data.athleteid);
     setValue("npm",result.data.npm);
     setValue("wonpaywallet",result.data.wonpaywallet);
+    setValue("rvnwallet",result.data.rvnwallet);
   }
 }
