@@ -11,10 +11,14 @@ let bimbinganCount = 0;
 export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
-    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    
+    // Modified: Only call getResponseFunction if project-name exists
+    if (document.getElementById('project-name')) {
+        getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
+    }
     
     // Get bimbingan list and count them for eligibility check
-    getJSON(backend.project.bimbingan,'login',getCookie('login'), function(result) {
+    getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         getBimbinganList(result);
         processBimbinganCount(result);
     });
@@ -141,12 +145,17 @@ function submitSidangApplication() {
     };
     
     // Call the API to save the sidang application
-    const sidangSubmissionURL = backend.project.bimbingan + "/pengajuan";
+    // Fixed endpoint to match the one from route.go
+    const sidangSubmissionURL = `${backend.project.assessment}/pengajuan`;
+    console.log(`Submitting sidang application to: ${sidangSubmissionURL}`);
+    console.log('Payload:', payload);
+    
     postJSON(sidangSubmissionURL, "login", getCookie("login"), payload, handleSidangSubmissionResponse);
 }
 
 // Handle API response after submitting sidang application
 function handleSidangSubmissionResponse(result) {
+    console.log('Sidang submission response:', result);
     if (result.status === 200) {
         Swal.fire({
             icon: 'success',
@@ -159,8 +168,8 @@ function handleSidangSubmissionResponse(result) {
     } else {
         Swal.fire({
             icon: 'error',
-            title: result.data.status || 'Error',
-            text: result.data.response || 'Terjadi kesalahan saat mengajukan sidang.'
+            title: result.data?.status || 'Error',
+            text: result.data?.response || 'Terjadi kesalahan saat mengajukan sidang.'
         });
     }
 }
@@ -246,13 +255,16 @@ function actionfunctionname(){
 
 function getResponseFunction(result){
     if (result.status===200){
-        result.data.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project._id;
-            option.textContent = project.name;
-            document.getElementById('project-name').appendChild(option);
-        });
-
+        // Fixed: Check if project-name element exists before trying to append
+        const projectNameElement = document.getElementById('project-name');
+        if (projectNameElement) {
+            result.data.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project._id;
+                option.textContent = project.name;
+                projectNameElement.appendChild(option);
+            });
+        }
     }else{
         Swal.fire({
             icon: "error",
@@ -273,7 +285,7 @@ function postResponseFunction(result){
                 setValue('phonenumber', '');
             },
         });
-    }else if (result.data.status.startsWith("Info : ")) {
+    }else if (result.data.status && result.data.status.startsWith("Info : ")) {
         Swal.fire({
             icon: 'info',
             title: result.data.status,
@@ -282,8 +294,8 @@ function postResponseFunction(result){
     } else {
         Swal.fire({
             icon: 'error',
-            title: result.data.status,
-            text: result.data.response,
+            title: result.data?.status || "Error",
+            text: result.data?.response || "Terjadi kesalahan saat mengirim request",
         });
         // show("tombolmintaapproval");
     }
@@ -347,7 +359,7 @@ function handleActivityScoreResponse(result) {
         // Check conditions and update button status
         checkApprovalButtonConditions();
     } else {
-        console.log(result.data.message);
+        console.log(result.data ? result.data.message : 'Error fetching activity score');
     }
 }
 
