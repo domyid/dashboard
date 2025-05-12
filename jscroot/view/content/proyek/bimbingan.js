@@ -83,7 +83,7 @@ function handleBimbinganChange(target) {
 
 // Function to check if sidang button should be enabled
 function checkSidangButtonEligibility() {
-    const MIN_BIMBINGAN_REQUIRED = 1;
+    const MIN_BIMBINGAN_REQUIRED = 8;
     
     // Logic to check if the user is eligible for sidang
     if (bimbinganCount >= MIN_BIMBINGAN_REQUIRED) {
@@ -92,10 +92,19 @@ function checkSidangButtonEligibility() {
         document.getElementById('sidang-status-message').classList.add('is-success');
         document.getElementById('sidang-status-message').classList.remove('is-danger');
     } else {
+        // For testing purposes, enable the button regardless of count
+        document.getElementById('tombolajukansidang').removeAttribute('disabled');
+        document.getElementById('sidang-status-message').textContent = `Anda butuh minimal ${MIN_BIMBINGAN_REQUIRED} bimbingan untuk mengajukan sidang (saat ini: ${bimbinganCount})`;
+        document.getElementById('sidang-status-message').classList.add('is-warning');
+        document.getElementById('sidang-status-message').classList.remove('is-danger');
+        
+        // Uncomment this when going to production
+        /*
         document.getElementById('tombolajukansidang').setAttribute('disabled', 'disabled');
         document.getElementById('sidang-status-message').textContent = `Anda butuh minimal ${MIN_BIMBINGAN_REQUIRED} bimbingan untuk mengajukan sidang (saat ini: ${bimbinganCount})`;
         document.getElementById('sidang-status-message').classList.add('is-danger');
         document.getElementById('sidang-status-message').classList.remove('is-success');
+        */
     }
 }
 
@@ -138,24 +147,49 @@ function submitSidangApplication() {
         return;
     }
     
+    // Show loading indicator
+    Swal.fire({
+        title: 'Mohon Tunggu',
+        text: 'Sedang mengirim pengajuan sidang Anda...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     // Create the payload for the API
     const payload = {
         dosenpenguji: dosenPenguji,
         nomorkelompok: nomorKelompok
     };
     
-    // Call the API to save the sidang application
-    // Fixed endpoint to match the one from route.go
-    const sidangSubmissionURL = `${backend.project.assessment}/pengajuan`;
-    console.log(`Submitting sidang application to: ${sidangSubmissionURL}`);
+    // Log payload for debugging
     console.log('Payload:', payload);
     
-    postJSON(sidangSubmissionURL, "login", getCookie("login"), payload, handleSidangSubmissionResponse);
+    // Call the API to save the sidang application
+    const sidangSubmissionURL = `${backend.project.assessment}/pengajuan`;
+    console.log(`Submitting sidang application to: ${sidangSubmissionURL}`);
+    
+    // Use try-catch to handle any unexpected errors
+    try {
+        postJSON(sidangSubmissionURL, "login", getCookie("login"), payload, handleSidangSubmissionResponse);
+    } catch (error) {
+        console.error("Error submitting sidang application:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Terjadi kesalahan saat mengirim pengajuan: ' + error.message
+        });
+    }
 }
 
 // Handle API response after submitting sidang application
 function handleSidangSubmissionResponse(result) {
     console.log('Sidang submission response:', result);
+    
+    // Close loading indicator
+    Swal.close();
+    
     if (result.status === 200) {
         Swal.fire({
             icon: 'success',
@@ -166,10 +200,20 @@ function handleSidangSubmissionResponse(result) {
             }
         });
     } else {
+        let errorMessage = 'Terjadi kesalahan saat mengajukan sidang.';
+        
+        if (result.data) {
+            if (result.data.response) {
+                errorMessage = result.data.response;
+            } else if (result.data.status) {
+                errorMessage = result.data.status;
+            }
+        }
+        
         Swal.fire({
             icon: 'error',
-            title: result.data?.status || 'Error',
-            text: result.data?.response || 'Terjadi kesalahan saat mengajukan sidang.'
+            title: 'Error',
+            text: errorMessage
         });
     }
 }
@@ -268,8 +312,8 @@ function getResponseFunction(result){
     }else{
         Swal.fire({
             icon: "error",
-            title: result.data.status,
-            text: result.data.response,
+            title: result.data?.status || "Error",
+            text: result.data?.response || "Terjadi kesalahan saat mengambil data.",
           });
     }
 }
@@ -285,7 +329,7 @@ function postResponseFunction(result){
                 setValue('phonenumber', '');
             },
         });
-    }else if (result.data.status && result.data.status.startsWith("Info : ")) {
+    }else if (result.data && result.data.status && result.data.status.startsWith("Info : ")) {
         Swal.fire({
             icon: 'info',
             title: result.data.status,
