@@ -317,7 +317,7 @@ function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
             const bimbinganCount = result.data.length;
-            const eligibilityMet = bimbinganCount >= 1;
+            const eligibilityMet = bimbinganCount >= 8;
             
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
@@ -326,7 +326,7 @@ function checkSidangEligibility() {
                 
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 1 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
                     
@@ -384,18 +384,17 @@ function setupPengajuanSidangModal() {
     const closeNotificationBtn = document.getElementById('close-notification');
     const notification = document.getElementById('notification-pengajuan');
     
-    // Load the list of available dosen pembimbing on modal open
+    // Load the list of available dosen penguji on modal open
     tombolPengajuan.addEventListener('click', function() {
         modal.classList.add('is-active');
-        // Fetch the list of dosen pembimbing
-        fetchDosenPembimbing();
+        // Fetch the list of dosen penguji
+        fetchDosenPenguji();
     });
     
     // Close modal functions
     function closeModal() {
         modal.classList.remove('is-active');
         // Reset form
-        document.getElementById('dosen-pembimbing').value = '';
         document.getElementById('dosen-penguji').value = '';
         document.getElementById('nomor-kelompok').value = '';
     }
@@ -405,24 +404,20 @@ function setupPengajuanSidangModal() {
     
     // Handle submission
     submitBtn.addEventListener('click', function() {
-        const dosenPembimbingSelect = document.getElementById('dosen-pembimbing');
-        const dosenPenguji = document.getElementById('dosen-penguji').value;
+        const dosenPengujiSelect = document.getElementById('dosen-penguji');
         const nomorKelompok = document.getElementById('nomor-kelompok').value;
         
-        if (!dosenPembimbingSelect.value || !dosenPenguji || !nomorKelompok) {
+        if (!dosenPengujiSelect.value || !nomorKelompok) {
             showNotification('Mohon lengkapi semua field', 'is-danger');
             return;
         }
         
-        // Get the selected dosen pembimbing phone number from the data attribute
-        const dosenPembimbingPhone = dosenPembimbingSelect.options[dosenPembimbingSelect.selectedIndex].getAttribute('data-phone');
-        const dosenPembimbingName = dosenPembimbingSelect.options[dosenPembimbingSelect.selectedIndex].text;
+        // Get the selected dosen penguji phone number from the data attribute
+        const dosenPengujiPhone = dosenPengujiSelect.options[dosenPengujiSelect.selectedIndex].getAttribute('data-phone');
         
         const pengajuanData = {
-            dosenPenguji: dosenPenguji,
-            nomorKelompok: nomorKelompok,
-            dosenPembimbingPhone: dosenPembimbingPhone,
-            dosenPembimbing: dosenPembimbingName
+            dosenPengujiPhone: dosenPengujiPhone,
+            nomorKelompok: nomorKelompok
         };
         
         postJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), pengajuanData, function(result) {
@@ -443,15 +438,15 @@ function setupPengajuanSidangModal() {
     });
 }
 
-// Function to fetch and populate dosen pembimbing dropdown
-function fetchDosenPembimbing() {
-    getJSON(backend.bimbingan.dosen, 'login', getCookie('login'), function(result) {
+// Function to fetch and populate dosen penguji dropdown
+function fetchDosenPenguji() {
+    getJSON(backend.bimbingan.dosenpenguji, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            const dosenPembimbingSelect = document.getElementById('dosen-pembimbing');
+            const dosenPengujiSelect = document.getElementById('dosen-penguji');
             
             // Clear existing options except the first one
-            while (dosenPembimbingSelect.options.length > 1) {
-                dosenPembimbingSelect.remove(1);
+            while (dosenPengujiSelect.options.length > 1) {
+                dosenPengujiSelect.remove(1);
             }
             
             // Add new options
@@ -460,10 +455,10 @@ function fetchDosenPembimbing() {
                 option.value = dosen._id;
                 option.textContent = dosen.name;
                 option.setAttribute('data-phone', dosen.phonenumber);
-                dosenPembimbingSelect.appendChild(option);
+                dosenPengujiSelect.appendChild(option);
             });
         } else {
-            showNotification('Gagal mengambil data dosen pembimbing', 'is-danger');
+            showNotification('Gagal mengambil data dosen penguji', 'is-danger');
         }
     });
 }
