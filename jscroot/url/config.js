@@ -21,8 +21,6 @@ export const backend = {
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/anggota',
         assessment:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan',
-        bimbingan:
-            'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/proyek/bimbingan',
         kelasai:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/data/tugaskelasai',
         kelasws:
@@ -54,6 +52,8 @@ export const backend = {
         changeWeek:
             'https://asia-southeast2-awangga.cloudfunctions.net/domyid/admin/bimbingan/changeweek',
         status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/status',
+        pengajuan: 
+        'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/pengajuan',
     },
 };
 

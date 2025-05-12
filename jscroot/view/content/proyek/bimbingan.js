@@ -6,32 +6,18 @@ import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
-let bimbinganCount = 0;
-
 export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
-    
-    // Modified: Only call getResponseFunction if project-name exists
-    if (document.getElementById('project-name')) {
-        getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
-    }
-    
-    // Get bimbingan list and count them for eligibility check
-    getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
-        getBimbinganList(result);
-        processBimbinganCount(result);
-    });
-    
+    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', checkAndSubmit);
     onChange('bimbingan-name', handleBimbinganChange);
     fetchActivityScore();
     
-    // Add event listeners for the sidang feature
-    onClick('tombolajukansidang', openSidangModal);
-    onClick('close-modal', closeSidangModal);
-    onClick('cancel-sidang', closeSidangModal);
-    onClick('submit-sidang', submitSidangApplication);
+    // Add new functionality for pengajuan sidang
+    checkSidangEligibility();
+    setupPengajuanSidangModal();
 }
 
 function updateApprovalStatus(result) {
@@ -77,143 +63,6 @@ function handleBimbinganChange(target) {
             if (result.status === 200 && result.data.approved !== undefined) {
                 updateApprovalStatus(result.data.approved);
             }
-        });
-    }
-}
-
-// Function to check if sidang button should be enabled
-function checkSidangButtonEligibility() {
-    const MIN_BIMBINGAN_REQUIRED = 8;
-    
-    // Logic to check if the user is eligible for sidang
-    if (bimbinganCount >= MIN_BIMBINGAN_REQUIRED) {
-        document.getElementById('tombolajukansidang').removeAttribute('disabled');
-        document.getElementById('sidang-status-message').textContent = 'Anda memenuhi syarat untuk mengajukan sidang!';
-        document.getElementById('sidang-status-message').classList.add('is-success');
-        document.getElementById('sidang-status-message').classList.remove('is-danger');
-    } else {
-        // For testing purposes, enable the button regardless of count
-        document.getElementById('tombolajukansidang').removeAttribute('disabled');
-        document.getElementById('sidang-status-message').textContent = `Anda butuh minimal ${MIN_BIMBINGAN_REQUIRED} bimbingan untuk mengajukan sidang (saat ini: ${bimbinganCount})`;
-        document.getElementById('sidang-status-message').classList.add('is-warning');
-        document.getElementById('sidang-status-message').classList.remove('is-danger');
-        
-        // Uncomment this when going to production
-        /*
-        document.getElementById('tombolajukansidang').setAttribute('disabled', 'disabled');
-        document.getElementById('sidang-status-message').textContent = `Anda butuh minimal ${MIN_BIMBINGAN_REQUIRED} bimbingan untuk mengajukan sidang (saat ini: ${bimbinganCount})`;
-        document.getElementById('sidang-status-message').classList.add('is-danger');
-        document.getElementById('sidang-status-message').classList.remove('is-success');
-        */
-    }
-}
-
-// Function to handle bimbingan data and update count
-function processBimbinganCount(result) {
-    if (result.status === 200) {
-        bimbinganCount = result.data.length;
-        console.log(`Total bimbingan count: ${bimbinganCount}`);
-        checkSidangButtonEligibility();
-    } else {
-        console.error('Failed to fetch bimbingan data');
-    }
-}
-
-// Function to open modal
-function openSidangModal() {
-    document.getElementById('modal-sidang').classList.add('is-active');
-}
-
-// Function to close modal
-function closeSidangModal() {
-    document.getElementById('modal-sidang').classList.remove('is-active');
-    // Clear form
-    document.getElementById('dosen-penguji').value = '';
-    document.getElementById('nomor-kelompok').value = '';
-}
-
-// Function to submit sidang application
-function submitSidangApplication() {
-    const dosenPenguji = document.getElementById('dosen-penguji').value;
-    const nomorKelompok = document.getElementById('nomor-kelompok').value;
-    
-    // Validate inputs
-    if (!dosenPenguji || !nomorKelompok) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Lengkapi Form',
-            text: 'Silakan lengkapi semua field yang diperlukan!'
-        });
-        return;
-    }
-    
-    // Show loading indicator
-    Swal.fire({
-        title: 'Mohon Tunggu',
-        text: 'Sedang mengirim pengajuan sidang Anda...',
-        allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
-    
-    // Create the payload for the API
-    const payload = {
-        dosenpenguji: dosenPenguji,
-        nomorkelompok: nomorKelompok
-    };
-    
-    // Log payload for debugging
-    console.log('Payload:', payload);
-    
-    // Call the API to save the sidang application
-    const sidangSubmissionURL = `${backend.project.assessment}/pengajuan`;
-    console.log(`Submitting sidang application to: ${sidangSubmissionURL}`);
-    
-    // Use try-catch to handle any unexpected errors
-    try {
-        postJSON(sidangSubmissionURL, "login", getCookie("login"), payload, handleSidangSubmissionResponse);
-    } catch (error) {
-        console.error("Error submitting sidang application:", error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Terjadi kesalahan saat mengirim pengajuan: ' + error.message
-        });
-    }
-}
-
-// Handle API response after submitting sidang application
-function handleSidangSubmissionResponse(result) {
-    console.log('Sidang submission response:', result);
-    
-    // Close loading indicator
-    Swal.close();
-    
-    if (result.status === 200) {
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil',
-            text: 'Pengajuan sidang Anda telah berhasil diajukan!',
-            didClose: () => {
-                closeSidangModal();
-            }
-        });
-    } else {
-        let errorMessage = 'Terjadi kesalahan saat mengajukan sidang.';
-        
-        if (result.data) {
-            if (result.data.response) {
-                errorMessage = result.data.response;
-            } else if (result.data.status) {
-                errorMessage = result.data.status;
-            }
-        }
-        
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: errorMessage
         });
     }
 }
@@ -299,21 +148,18 @@ function actionfunctionname(){
 
 function getResponseFunction(result){
     if (result.status===200){
-        // Fixed: Check if project-name element exists before trying to append
-        const projectNameElement = document.getElementById('project-name');
-        if (projectNameElement) {
-            result.data.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project._id;
-                option.textContent = project.name;
-                projectNameElement.appendChild(option);
-            });
-        }
+        result.data.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project._id;
+            option.textContent = project.name;
+            document.getElementById('project-name').appendChild(option);
+        });
+
     }else{
         Swal.fire({
             icon: "error",
-            title: result.data?.status || "Error",
-            text: result.data?.response || "Terjadi kesalahan saat mengambil data.",
+            title: result.data.status,
+            text: result.data.response,
           });
     }
 }
@@ -329,7 +175,7 @@ function postResponseFunction(result){
                 setValue('phonenumber', '');
             },
         });
-    }else if (result.data && result.data.status && result.data.status.startsWith("Info : ")) {
+    }else if (result.data.status.startsWith("Info : ")) {
         Swal.fire({
             icon: 'info',
             title: result.data.status,
@@ -338,8 +184,8 @@ function postResponseFunction(result){
     } else {
         Swal.fire({
             icon: 'error',
-            title: result.data?.status || "Error",
-            text: result.data?.response || "Terjadi kesalahan saat mengirim request",
+            title: result.data.status,
+            text: result.data.response,
         });
         // show("tombolmintaapproval");
     }
@@ -403,7 +249,7 @@ function handleActivityScoreResponse(result) {
         // Check conditions and update button status
         checkApprovalButtonConditions();
     } else {
-        console.log(result.data ? result.data.message : 'Error fetching activity score');
+        console.log(result.data.message);
     }
 }
 
@@ -464,4 +310,145 @@ function checkApprovalButtonConditions() {
         rupiah: rupiah > 0,
         mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0
     };
+}
+
+// Function to check if student has enough bimbingan sessions to request sidang
+function checkSidangEligibility() {
+    getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
+        if (result.status === 200) {
+            const bimbinganCount = result.data.length;
+            const eligibilityMet = bimbinganCount >= 8;
+            
+            // Enable or disable the "Ajukan Sidang" button based on eligibility
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = !eligibilityMet;
+                
+                // Add tooltip to explain why button is disabled
+                if (!eligibilityMet) {
+                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                } else {
+                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                    
+                    // Check if there's an existing pengajuan
+                    checkExistingPengajuan();
+                }
+            }
+        } else {
+            console.error('Failed to get bimbingan data:', result);
+        }
+    });
+}
+
+// Function to check if there's an existing pengajuan
+function checkExistingPengajuan() {
+    getJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), function(result) {
+        if (result.status === 200 && result.data.length > 0) {
+            // There's an existing pengajuan
+            const latestPengajuan = result.data[result.data.length - 1];
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            
+            // Update button based on status
+            if (tombolPengajuanSidang) {
+                if (latestPengajuan.status === 'pending') {
+                    tombolPengajuanSidang.textContent = 'Pengajuan Sidang (Pending)';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-warning');
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda sedang diproses');
+                } else if (latestPengajuan.status === 'approved') {
+                    tombolPengajuanSidang.textContent = 'Pengajuan Sidang (Disetujui)';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-success');
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda telah disetujui');
+                } else if (latestPengajuan.status === 'rejected') {
+                    tombolPengajuanSidang.textContent = 'Ajukan Sidang Kembali';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-danger');
+                    tombolPengajuanSidang.disabled = false;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda ditolak. Silakan ajukan kembali.');
+                }
+            }
+        }
+    });
+}
+
+// Handle modal interactions for pengajuan sidang
+function setupPengajuanSidangModal() {
+    const modal = document.getElementById('modal-pengajuan-sidang');
+    const tombolPengajuan = document.getElementById('tombolpengajuansidang');
+    const closeModalBtn = document.getElementById('close-modal');
+    const cancelBtn = document.getElementById('cancel-pengajuan');
+    const submitBtn = document.getElementById('submit-pengajuan');
+    const closeNotificationBtn = document.getElementById('close-notification');
+    const notification = document.getElementById('notification-pengajuan');
+    
+    // Open modal when button is clicked
+    tombolPengajuan.addEventListener('click', function() {
+        modal.classList.add('is-active');
+    });
+    
+    // Close modal functions
+    function closeModal() {
+        modal.classList.remove('is-active');
+        // Reset form
+        document.getElementById('dosen-penguji').value = '';
+        document.getElementById('nomor-kelompok').value = '';
+    }
+    
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Handle submission
+    submitBtn.addEventListener('click', function() {
+        const dosenPenguji = document.getElementById('dosen-penguji').value;
+        const nomorKelompok = document.getElementById('nomor-kelompok').value;
+        
+        if (!dosenPenguji || !nomorKelompok) {
+            showNotification('Mohon lengkapi semua field', 'is-danger');
+            return;
+        }
+        
+        const pengajuanData = {
+            dosenPenguji: dosenPenguji,
+            nomorKelompok: nomorKelompok
+        };
+        
+        postJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), pengajuanData, function(result) {
+            closeModal();
+            if (result.status === 200) {
+                showNotification('Pengajuan sidang berhasil dikirim', 'is-success');
+                // Update button state
+                setTimeout(checkExistingPengajuan, 1000);
+            } else {
+                showNotification(`Error: ${result.data?.response || 'Gagal mengirim pengajuan'}`, 'is-danger');
+            }
+        });
+    });
+    
+    // Close notification
+    closeNotificationBtn.addEventListener('click', function() {
+        notification.classList.add('is-hidden');
+    });
+}
+
+// Show notification function
+function showNotification(message, type) {
+    const notification = document.getElementById('notification-pengajuan');
+    const notificationMessage = document.getElementById('notification-message');
+    
+    // Remove all notification types
+    notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info');
+    // Add the specific type
+    notification.classList.add(type);
+    // Set the message
+    notificationMessage.textContent = message;
+    // Show the notification
+    notification.classList.remove('is-hidden');
+    
+    // Auto hide after 5 seconds
+    setTimeout(function() {
+        notification.classList.add('is-hidden');
+    }, 5000);
 }
