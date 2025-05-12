@@ -317,7 +317,7 @@ function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
             const bimbinganCount = result.data.length;
-            const eligibilityMet = bimbinganCount >= 8;
+            const eligibilityMet = bimbinganCount >= 1;
             
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
@@ -326,7 +326,7 @@ function checkSidangEligibility() {
                 
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 1 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
                     
