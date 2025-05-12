@@ -79,7 +79,7 @@ function handleBimbinganChange(target) {
 
 // Function to check if sidang button should be enabled
 function checkSidangButtonEligibility() {
-    const MIN_BIMBINGAN_REQUIRED = 8;
+    const MIN_BIMBINGAN_REQUIRED = 1;
     
     // Logic to check if the user is eligible for sidang
     if (bimbinganCount >= MIN_BIMBINGAN_REQUIRED) {
