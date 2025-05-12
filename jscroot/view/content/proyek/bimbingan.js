@@ -384,15 +384,18 @@ function setupPengajuanSidangModal() {
     const closeNotificationBtn = document.getElementById('close-notification');
     const notification = document.getElementById('notification-pengajuan');
     
-    // Open modal when button is clicked
+    // Load the list of available dosen pembimbing on modal open
     tombolPengajuan.addEventListener('click', function() {
         modal.classList.add('is-active');
+        // Fetch the list of dosen pembimbing
+        fetchDosenPembimbing();
     });
     
     // Close modal functions
     function closeModal() {
         modal.classList.remove('is-active');
         // Reset form
+        document.getElementById('dosen-pembimbing').value = '';
         document.getElementById('dosen-penguji').value = '';
         document.getElementById('nomor-kelompok').value = '';
     }
@@ -402,17 +405,24 @@ function setupPengajuanSidangModal() {
     
     // Handle submission
     submitBtn.addEventListener('click', function() {
+        const dosenPembimbingSelect = document.getElementById('dosen-pembimbing');
         const dosenPenguji = document.getElementById('dosen-penguji').value;
         const nomorKelompok = document.getElementById('nomor-kelompok').value;
         
-        if (!dosenPenguji || !nomorKelompok) {
+        if (!dosenPembimbingSelect.value || !dosenPenguji || !nomorKelompok) {
             showNotification('Mohon lengkapi semua field', 'is-danger');
             return;
         }
         
+        // Get the selected dosen pembimbing phone number from the data attribute
+        const dosenPembimbingPhone = dosenPembimbingSelect.options[dosenPembimbingSelect.selectedIndex].getAttribute('data-phone');
+        const dosenPembimbingName = dosenPembimbingSelect.options[dosenPembimbingSelect.selectedIndex].text;
+        
         const pengajuanData = {
             dosenPenguji: dosenPenguji,
-            nomorKelompok: nomorKelompok
+            nomorKelompok: nomorKelompok,
+            dosenPembimbingPhone: dosenPembimbingPhone,
+            dosenPembimbing: dosenPembimbingName
         };
         
         postJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), pengajuanData, function(result) {
@@ -430,6 +440,31 @@ function setupPengajuanSidangModal() {
     // Close notification
     closeNotificationBtn.addEventListener('click', function() {
         notification.classList.add('is-hidden');
+    });
+}
+
+// Function to fetch and populate dosen pembimbing dropdown
+function fetchDosenPembimbing() {
+    getJSON(backend.bimbingan.dosen, 'login', getCookie('login'), function(result) {
+        if (result.status === 200) {
+            const dosenPembimbingSelect = document.getElementById('dosen-pembimbing');
+            
+            // Clear existing options except the first one
+            while (dosenPembimbingSelect.options.length > 1) {
+                dosenPembimbingSelect.remove(1);
+            }
+            
+            // Add new options
+            result.data.forEach(dosen => {
+                const option = document.createElement('option');
+                option.value = dosen._id;
+                option.textContent = dosen.name;
+                option.setAttribute('data-phone', dosen.phonenumber);
+                dosenPembimbingSelect.appendChild(option);
+            });
+        } else {
+            showNotification('Gagal mengambil data dosen pembimbing', 'is-danger');
+        }
     });
 }
 

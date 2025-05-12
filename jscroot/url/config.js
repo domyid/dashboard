@@ -54,6 +54,7 @@ export const backend = {
         status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/status',
         pengajuan: 
         'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/pengajuan',
+        dosen: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/dosen',
     },
 };
 
