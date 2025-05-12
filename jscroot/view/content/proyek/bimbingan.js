@@ -6,14 +6,28 @@ import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
+let bimbinganCount = 0;
+
 export async function main(){    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
+    
+    // Get bimbingan list and count them for eligibility check
+    getJSON(backend.project.bimbingan,'login',getCookie('login'), function(result) {
+        getBimbinganList(result);
+        processBimbinganCount(result);
+    });
+    
     onClick('tombolmintaapproval', checkAndSubmit);
     onChange('bimbingan-name', handleBimbinganChange);
     fetchActivityScore();
+    
+    // Add event listeners for the sidang feature
+    onClick('tombolajukansidang', openSidangModal);
+    onClick('close-modal', closeSidangModal);
+    onClick('cancel-sidang', closeSidangModal);
+    onClick('submit-sidang', submitSidangApplication);
 }
 
 function updateApprovalStatus(result) {
@@ -34,7 +48,7 @@ function updateApprovalStatus(result) {
     }
 }
 
-// New function to clear approval status
+// Function to clear approval status
 function clearApprovalStatus() {
     const statusElement = document.getElementById('approval-status');
     statusElement.textContent = '';
@@ -59,6 +73,94 @@ function handleBimbinganChange(target) {
             if (result.status === 200 && result.data.approved !== undefined) {
                 updateApprovalStatus(result.data.approved);
             }
+        });
+    }
+}
+
+// Function to check if sidang button should be enabled
+function checkSidangButtonEligibility() {
+    const MIN_BIMBINGAN_REQUIRED = 8;
+    
+    // Logic to check if the user is eligible for sidang
+    if (bimbinganCount >= MIN_BIMBINGAN_REQUIRED) {
+        document.getElementById('tombolajukansidang').removeAttribute('disabled');
+        document.getElementById('sidang-status-message').textContent = 'Anda memenuhi syarat untuk mengajukan sidang!';
+        document.getElementById('sidang-status-message').classList.add('is-success');
+        document.getElementById('sidang-status-message').classList.remove('is-danger');
+    } else {
+        document.getElementById('tombolajukansidang').setAttribute('disabled', 'disabled');
+        document.getElementById('sidang-status-message').textContent = `Anda butuh minimal ${MIN_BIMBINGAN_REQUIRED} bimbingan untuk mengajukan sidang (saat ini: ${bimbinganCount})`;
+        document.getElementById('sidang-status-message').classList.add('is-danger');
+        document.getElementById('sidang-status-message').classList.remove('is-success');
+    }
+}
+
+// Function to handle bimbingan data and update count
+function processBimbinganCount(result) {
+    if (result.status === 200) {
+        bimbinganCount = result.data.length;
+        console.log(`Total bimbingan count: ${bimbinganCount}`);
+        checkSidangButtonEligibility();
+    } else {
+        console.error('Failed to fetch bimbingan data');
+    }
+}
+
+// Function to open modal
+function openSidangModal() {
+    document.getElementById('modal-sidang').classList.add('is-active');
+}
+
+// Function to close modal
+function closeSidangModal() {
+    document.getElementById('modal-sidang').classList.remove('is-active');
+    // Clear form
+    document.getElementById('dosen-penguji').value = '';
+    document.getElementById('nomor-kelompok').value = '';
+}
+
+// Function to submit sidang application
+function submitSidangApplication() {
+    const dosenPenguji = document.getElementById('dosen-penguji').value;
+    const nomorKelompok = document.getElementById('nomor-kelompok').value;
+    
+    // Validate inputs
+    if (!dosenPenguji || !nomorKelompok) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Lengkapi Form',
+            text: 'Silakan lengkapi semua field yang diperlukan!'
+        });
+        return;
+    }
+    
+    // Create the payload for the API
+    const payload = {
+        dosenpenguji: dosenPenguji,
+        nomorkelompok: nomorKelompok
+    };
+    
+    // Call the API to save the sidang application
+    const sidangSubmissionURL = backend.project.bimbingan + "/pengajuan";
+    postJSON(sidangSubmissionURL, "login", getCookie("login"), payload, handleSidangSubmissionResponse);
+}
+
+// Handle API response after submitting sidang application
+function handleSidangSubmissionResponse(result) {
+    if (result.status === 200) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Pengajuan sidang Anda telah berhasil diajukan!',
+            didClose: () => {
+                closeSidangModal();
+            }
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status || 'Error',
+            text: result.data.response || 'Terjadi kesalahan saat mengajukan sidang.'
         });
     }
 }
@@ -166,7 +268,7 @@ function postResponseFunction(result){
         Swal.fire({
             icon: 'success',
             title: 'Berhasil',
-            text: `Selamat! Anda telah berhasil mengajukan permohonan Bimbingan ${result.data.bimbinganke}. Silakan tunggu konfirmasi dari asesor.`,
+            text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
                 setValue('phonenumber', '');
             },

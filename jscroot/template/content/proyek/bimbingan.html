@@ -73,6 +73,14 @@
                 </div>
             </div>
 
+            <!-- New Sidang Application Button -->
+            <div class="field">
+                <div class="control">
+                    <button class="button is-success" type="button" id="tombolajukansidang" disabled>Ajukan Sidang</button>
+                    <span id="sidang-status-message" class="help"></span>
+                </div>
+            </div>
+
             <!-- <div class="field">
                 <label class="checkbox">
                   <input type="checkbox" id="checkbox-approved" disabled>
@@ -80,5 +88,41 @@
                 </label>
               </div>               -->
 
+    </div>
+
+    <!-- Sidang Application Modal -->
+    <div class="modal" id="modal-sidang">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Pengajuan Sidang</p>
+                <button class="delete" aria-label="close" id="close-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">Dosen Penguji</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select id="dosen-penguji" name="dosenPenguji" required>
+                                <option value="">Pilih Dosen Penguji</option>
+                                <option value="Budi1">Budi1</option>
+                                <option value="Budi2">Budi2</option>
+                                <option value="Budi3">Budi3</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Nomor Kelompok</label>
+                    <div class="control">
+                        <input class="input" type="text" id="nomor-kelompok" name="nomorKelompok" placeholder="Contoh: A1" required>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="submit-sidang">Ajukan</button>
+                <button class="button" id="cancel-sidang">Batal</button>
+            </footer>
+        </div>
     </div>
 </section>
