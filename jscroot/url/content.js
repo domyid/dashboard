@@ -28,6 +28,8 @@ export function getContentURL(){
             return url.template.content+"proyek/kelasws.html";
         case "proyek/kelasai":
             return url.template.content+"proyek/kelasai.html";
+        case "proyek/kelasai1":
+            return url.template.content+"proyek/kelasai1.html";
         case "proyek/bimbinganone":
                 return url.template.content+"proyek/bimbinganone.html";    
         case "notifications/blocked":
@@ -77,6 +79,8 @@ export function getURLContentJS(){
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":
             return url.view.content+"proyek/kelasai.js";
+        case "proyek/kelasai1":
+            return url.view.content+"proyek/kelasai1.js";
         case "notifications/blocked":
             return url.view.content+"notifications/blocked.js";
         case "notifications/silenced":
