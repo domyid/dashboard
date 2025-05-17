@@ -7,21 +7,11 @@ import { id,backend } from "/dashboard/jscroot/url/config.js";
 
 const tugaskelasai = backend.project.kelasai+'1';
 
-let activityData = {
-    stravakm: 0,
-    iqresult: 0,
-    pomokitsesi: 0,
-    mbc: 0,
-    rupiah: 0,
-    rvn: 0,
-    alltugas: [],
-};
-
 export async function main(){
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
     getJSON(tugaskelasai, 'login', getCookie('login'), getTugasAIList);
-    onClick('tombolkirimtugas', checkAndSubmit);
+    onClick('tombolkirimtugas', actionfunctionname);
     onChange('tugas-name', handleTugasAIChange);
     fetchTugasScore();
 }
@@ -62,51 +52,6 @@ function getTugasAIList(result) {
             text: result.data.response,
         });
     }
-}
-
-function checkAndSubmit() {
-    // Check the conditions first
-    const conditions = checkApprovalButtonConditions();
-    console.log({conditions})
-    
-    if (!conditions.isValid) {
-        // Create message about what's missing
-        let missingItems = [];
-        
-        if (!conditions.stravakm) missingItems.push("Strava");
-        if (!conditions.iqresult) missingItems.push("Test IQ");
-        if (!conditions.pomokitsesi) missingItems.push("Pomokit");
-        
-        // Check QRIS condition
-        // if (!conditions.qrisCondition) {
-        //     if (activityData.rupiah === 0) {
-        //         if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
-        //         if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
-        //         missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
-        //     } else {
-        //         missingItems.push("QRIS");
-        //     }
-        // }
-
-        if (!conditions.qrisCondition) {
-            missingItems.push("Minimal salah satu dari QRIS / MBC / RVN harus terisi");
-        }
-
-        if (!conditions.hasTugas) missingItems.push("Pekerjaan");
-        
-        // Show alert with missing items
-        Swal.fire({
-            icon: 'warning',
-            title: 'Belum Lengkap',
-            html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
-            confirmButtonText: 'Mengerti'
-        });
-        
-        return; // Stop here
-    }
-    
-    // If all conditions are met, proceed with the action
-    actionfunctionname();
 }
 
 function actionfunctionname(){
@@ -181,45 +126,9 @@ function fetchTugasScore() {
     getJSON(tugaskelasai+'/weekly', 'login', getCookie('login'), handleTugasScoreResponse);
 }
 
-// Function to check conditions and update button status
-function checkApprovalButtonConditions() {
-    // Extract values from activityData
-    const { stravakm, iqresult, pomokitsesi, mbc, rupiah, rvn, alltugas } = activityData;
-    
-    const requiredActivitiesPositive = stravakm > 0 && iqresult > 0 && pomokitsesi > 0;
-    const qrisCondition = rupiah > 0 || mbc > 0 || rvn > 0;
-    const hasTugas = Array.isArray(alltugas) && alltugas.some(item => item.trim && item.trim() !== "");
-    
-    // Combine all conditions
-    const allConditionsMet = requiredActivitiesPositive && qrisCondition && hasTugas;
-    
-    return {
-        isValid: allConditionsMet,
-        stravakm: stravakm > 0,
-        iqresult: iqresult > 0,
-        pomokitsesi: pomokitsesi > 0,
-        qrisCondition: qrisCondition,
-        rupiah: rupiah > 0,
-        mbc: mbc > 0,
-        rvn: rvn > 0,
-        hasTugas: hasTugas,
-    };
-}
-
 function handleTugasScoreResponse(result) {
     console.log({result})
     if (result.status === 200) {
-
-        activityData = {
-            stravakm: result.data.stravakm || 0,
-            iqresult: result.data.iqresult || 0,
-            pomokitsesi: result.data.pomokitsesi || 0,
-            mbc: result.data.mbc || 0,
-            rupiah: result.data.rupiah || 0,
-            rvn: result.data.rvn || 0,
-            alltugas: result.data.alltugas || [],
-        };
-
         updateTableRow(0, result.data.stravakm, result.data.strava);
         updateTableRow(1, result.data.iqresult, result.data.iq);
         updateTableRow(2, result.data.pomokitsesi, result.data.pomokit);
