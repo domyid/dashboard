@@ -157,6 +157,7 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: `Tugas ${result.data.tugaske} berhasil dikirim. Selamat!`,
             didClose: () => {
+                location.reload();
                 setValue('kelas-name', result.data.kelas);
             },
         });
