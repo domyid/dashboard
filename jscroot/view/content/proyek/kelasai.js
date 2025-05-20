@@ -54,11 +54,7 @@ function getTugasAIList(result) {
         if (firstOption) {
             firstOption.textContent = `Tugas ke-${n + 1} (belum kirim)`;
             firstOption.value = 'x'.repeat(10);
-            // firstOption.style.color = 'red';
-        }
-        
-        while (select.options.length > 1) {
-            select.remove(1);
+            firstOption.style.color = 'red';
         }
 
         const sortedTugas = result.data.sort((a, b) => (b.tugaske ?? 1) - (a.tugaske ?? 1));
@@ -72,7 +68,6 @@ function getTugasAIList(result) {
         if (result.data.length > 0 && result.data[0].kelas) {
             setValue('kelas-name', result.data[0].kelas);
         }
-        handleTugasAIChange(select);
     } else {
         Swal.fire({
             icon: 'error',
