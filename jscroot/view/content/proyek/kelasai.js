@@ -56,7 +56,10 @@ function getTugasAIList(result) {
             firstOption.value = 'x'.repeat(10);
             firstOption.style.color = 'red';
         }
-        select.style.color = 'red';
+        
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
 
         const sortedTugas = result.data.sort((a, b) => (b.tugaske ?? 1) - (a.tugaske ?? 1));
         sortedTugas.forEach((tugas) => {
