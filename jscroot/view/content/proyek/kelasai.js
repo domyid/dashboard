@@ -31,11 +31,9 @@ function handleTugasAIChange(target) {
     const defaultValue = 'x'.repeat(10);
 
     if (id === defaultValue) {
-        target.style.color = 'red';
         show('tombolkirimtugas');
         fetchTugasScore();
     } else {
-        target.style.color = '';
         hide('tombolkirimtugas');
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), function(result) {
