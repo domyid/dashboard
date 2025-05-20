@@ -54,7 +54,7 @@ function getTugasAIList(result) {
         if (firstOption) {
             firstOption.textContent = `Tugas ke-${n + 1} (belum kirim)`;
             firstOption.value = 'x'.repeat(10);
-            firstOption.style.color = 'red';
+            // firstOption.style.color = 'red';
         }
         
         while (select.options.length > 1) {
