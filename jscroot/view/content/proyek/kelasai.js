@@ -50,8 +50,9 @@ function getTugasAIList(result) {
         const n = result.data.length;
         const firstOption = select.options[0];
         if (firstOption) {
-            firstOption.textContent = `Tugas ke-${n + 1} (belum dikirim)`;
+            firstOption.textContent = `Tugas ke-${n + 1} (belum kirim)`;
             firstOption.value = 'x'.repeat(10);
+            firstOption.style.color = 'red';
         }
 
         const sortedTugas = result.data.sort((a, b) => (b.tugaske ?? 1) - (a.tugaske ?? 1));
