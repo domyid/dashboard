@@ -54,10 +54,12 @@ function getTugasAIList(result) {
             firstOption.value = 'x'.repeat(10);
         }
 
-        result.data.forEach((tugas) => {
+        const sortedTugas = result.data.sort((a, b) => (a.tugaske ?? 1) - (b.tugaske ?? 1));
+
+        sortedTugas.forEach((tugas) => {
             const option = document.createElement('option');
             option.value = tugas._id;
-            option.textContent = 'Tugas Ke-' + (tugas.tugaske ?? 1);
+            option.textContent = `Tugas Ke-${tugas.tugaske ?? 1}`;
             select.appendChild(option);
         });
 
