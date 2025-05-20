@@ -46,13 +46,21 @@ function handleTugasAIChange(target) {
 
 function getTugasAIList(result) {
     if (result.status === 200) {
+        const select = document.getElementById('tugas-name');
+        const n = result.data.length;
+        const firstOption = select.options[0];
+        if (firstOption) {
+            firstOption.textContent = `Tugas ke-${n + 1}`;
+            firstOption.value = 'x'.repeat(10);
+        }
+
         result.data.forEach((tugas) => {
             const option = document.createElement('option');
             option.value = tugas._id;
             option.textContent = 'Tugas Ke-' + (tugas.tugaske ?? 1);
-            document.getElementById('tugas-name').appendChild(option);
+            select.appendChild(option);
         });
-        
+
         if (result.data.length > 0 && result.data[0].kelas) {
             setValue('kelas-name', result.data[0].kelas);
         }
