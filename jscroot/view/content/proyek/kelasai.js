@@ -46,30 +46,15 @@ function handleTugasAIChange(target) {
 
 function getTugasAIList(result) {
     if (result.status === 200) {
-        const tugasNameSelect = document.getElementById('tugas-name');
-        const kelasNameSelect = document.getElementById('kelas-name');
-
         result.data.forEach((tugas) => {
             const option = document.createElement('option');
             option.value = tugas._id;
-            const tugasText = 'Tugas Ke-';
-            option.textContent = tugasText + (tugas.tugaske ?? 1);
-            tugasNameSelect.appendChild(option);
+            option.textContent = 'Tugas Ke-' + (tugas.tugaske ?? 1);
+            document.getElementById('tugas-name').appendChild(option);
         });
         
         if (result.data.length > 0 && result.data[0].kelas) {
-            const kelas = result.data[0].kelas;
-
-            // Bersihkan dropdown dulu, lalu isi 1 opsi dan set nilainya
-            kelasNameSelect.innerHTML = '';
-
-            const kelasOption = document.createElement('option');
-            kelasOption.value = kelas;
-            kelasOption.textContent = kelas;
-            kelasNameSelect.appendChild(kelasOption);
-
-            // Set sebagai selected
-            kelasNameSelect.value = kelas;
+            setValue('kelas-name', result.data[0].kelas);
         }
     } else {
         Swal.fire({
@@ -140,7 +125,6 @@ function actionfunctionname(){
     let idprjusr = {
         kelas: kelas,
     };
-    console.log(idprjusr.kelas)
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
