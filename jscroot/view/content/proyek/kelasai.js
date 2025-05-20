@@ -72,6 +72,7 @@ function getTugasAIList(result) {
         if (result.data.length > 0 && result.data[0].kelas) {
             setValue('kelas-name', result.data[0].kelas);
         }
+        handleTugasAIChange(select);
     } else {
         Swal.fire({
             icon: 'error',
