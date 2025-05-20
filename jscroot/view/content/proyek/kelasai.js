@@ -35,6 +35,7 @@ function handleTugasAIChange(target) {
         show('tombolkirimtugas');
         fetchTugasScore();
     } else {
+        target.style.color = '';
         hide('tombolkirimtugas');
         const url = `${tugaskelasai}/${id}`;
         getJSON(url, 'login', getCookie('login'), function(result) {
@@ -55,9 +56,9 @@ function getTugasAIList(result) {
             firstOption.value = 'x'.repeat(10);
             firstOption.style.color = 'red';
         }
+        select.style.color = 'red';
 
         const sortedTugas = result.data.sort((a, b) => (b.tugaske ?? 1) - (a.tugaske ?? 1));
-
         sortedTugas.forEach((tugas) => {
             const option = document.createElement('option');
             option.value = tugas._id;
