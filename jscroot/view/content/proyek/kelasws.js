@@ -1,4 +1,4 @@
-import { onClick,getValue,setValue,onChange,hide,show,container } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
+import { onClick,getValue,setValue,onChange,hide,show } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
 import {postJSON,getJSON} from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import {getCookie} from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
@@ -46,15 +46,26 @@ function handleTugasWSChange(target) {
 
 function getTugasWSList(result) {
     if (result.status === 200) {
-        result.data.forEach((tugas) => {
-            console.log({ tugas });
+        const select = document.getElementById('tugas-name');
+        const n = result.data.length;
+        const firstOption = select.options[0];
+        if (firstOption) {
+            firstOption.textContent = `Tugas ke-${n + 1} (belum kirim)`;
+            firstOption.value = 'x'.repeat(10);
+            firstOption.style.color = 'red';
+        }
+
+        const sortedTugas = result.data.sort((a, b) => (b.tugaske ?? 1) - (a.tugaske ?? 1));
+        sortedTugas.forEach((tugas) => {
             const option = document.createElement('option');
             option.value = tugas._id;
-
-            const tugasText = 'Tugas Ke-';
-            option.textContent = tugasText + (tugas.tugaske ?? 1);
-            document.getElementById('tugas-name').appendChild(option);
+            option.textContent = `Tugas Ke-${tugas.tugaske ?? 1}`;
+            select.appendChild(option);
         });
+
+        if (result.data.length > 0 && result.data[0].kelas) {
+            setValue('kelas-name', result.data[0].kelas);
+        }
     } else {
         Swal.fire({
             icon: 'error',
@@ -124,7 +135,6 @@ function actionfunctionname(){
     let idprjusr = {
         kelas: kelas,
     };
-    console.log(idprjusr.kelas)
     if (getCookie("login")===""){
         redirect("/signin");
     }else{
@@ -157,6 +167,7 @@ function postResponseFunction(result){
             title: 'Berhasil',
             text: `Tugas ${result.data.tugaske} berhasil dikirim. Selamat!`,
             didClose: () => {
+                location.reload();
                 setValue('kelas-name', result.data.kelas);
             },
         });
