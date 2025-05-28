@@ -10,7 +10,6 @@ let pengunjungChartInstance = null;
 export async function main() {
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
-    onClick('tombolmintaapproval', validateAndSubmit);
     runAfterDOM(() => {
         onClicks('tombol-tracker', handleButtonClick);
         loadChart("last_day");
