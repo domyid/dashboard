@@ -35,12 +35,12 @@ function getResponseFunction(result) {
 
 // function loadChart(howLong) {
 //     const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker?how_long=${howLong}`;
-//     getJSON(url, 'login', getCookie('login'), responseFunction)
+//     getJSON(url, 'login', getCookie('login'), (result) => responseFunction(result, howLong))
 // };
 
 function loadChart(howLong) {
     const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker/testing?how_long=${howLong}`;
-    postBiasa(url, {}, responseFunction);
+    postBiasa(url, {}, (result) => responseFunction(result, howLong));
 };
 
 function handleButtonClick(buttonElement) {
@@ -48,21 +48,55 @@ function handleButtonClick(buttonElement) {
     loadChart(range);
 }
 
-function responseFunction(result) {
+function responseFunction(result, howLong) {
     if (result.status == 200) {
         const data = result.data.data;
-        const pengunjungPerHari = {};
 
-        data.forEach(item => {
-            const tanggal = new Date(item.tanggal_ambil).toISOString().split('T')[0];
-            pengunjungPerHari[tanggal] = (pengunjungPerHari[tanggal] || 0) + 1;
-        });
+        if (howLong === "last_day") {
+            const nowUTC = new Date();
+            const now = new Date(nowUTC.getTime() + 7 * 60 * 60 * 1000);
+            const startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        const allDates = generateDateRange(Object.keys(pengunjungPerHari));
+            const pengunjungPerJam = Array(24).fill(0);
+            const labels = [];
 
-        const jumlah = allDates.map(tgl => pengunjungPerHari[tgl] || 0);
+            for (let i = 0; i < 24; i++) {
+                const hour = new Date(startTime.getTime() + i * 60 * 60 * 1000);
+                labels.push(hour.getHours().toString().padStart(2, '0') + ':00');
+            }
 
-        tampilkanChart(allDates, jumlah);
+            data.forEach(item => {
+                const waktuUTC = new Date(item.tanggal_ambil);
+                const waktu = new Date(waktuUTC.getTime() + 7 * 60 * 60 * 1000);
+
+                if (waktu >= startTime && waktu <= now) {
+                    const diffMs = waktu - startTime;
+                    const jamIndex = Math.floor(diffMs / (60 * 60 * 1000));
+
+                    if (jamIndex >= 0 && jamIndex < 24) {
+                        pengunjungPerJam[jamIndex]++;
+                    }
+                }
+            });
+
+            tampilkanChart(labels, pengunjungPerJam);
+
+        } else {
+            const pengunjung = {};
+            data.forEach(item => {
+                const waktuUTC = new Date(item.tanggal_ambil);
+                const waktu = new Date(waktuUTC.getTime() + 7 * 60 * 60 * 1000);
+
+                const key = waktu.toISOString().split('T')[0];
+                pengunjung[key] = (pengunjung[key] || 0) + 1;
+            });
+
+            const allDates = generateDateRange(Object.keys(pengunjung));
+            const labels = allDates;
+            const jumlah = allDates.map(tgl => pengunjung[tgl] || 0);
+
+            tampilkanChart(labels, jumlah);
+        }
     }
 };
 
@@ -78,7 +112,7 @@ function generateDateRange(tanggalArray) {
     }
 
     return dateList;
-}
+};
 
 function tampilkanChart(labels, data) {
     const ctx = document.getElementById('pengunjungChart').getContext('2d');
