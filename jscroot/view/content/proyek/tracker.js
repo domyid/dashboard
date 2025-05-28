@@ -33,15 +33,15 @@ function getResponseFunction(result) {
     }
 }
 
-// function loadChart(howLong) {
-//     const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker?how_long=${howLong}`;
-//     getJSON(url, 'login', getCookie('login'), (result) => responseFunction(result, howLong))
-// };
-
 function loadChart(howLong) {
-    const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker/testing?how_long=${howLong}`;
-    postBiasa(url, {}, (result) => responseFunction(result, howLong));
+    const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker?how_long=${howLong}`;
+    getJSON(url, 'login', getCookie('login'), (result) => responseFunction(result, howLong))
 };
+
+// function loadChart(howLong) {
+//     const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker/testing?how_long=${howLong}`;
+//     postBiasa(url, {}, (result) => responseFunction(result, howLong));
+// };
 
 function handleButtonClick(buttonElement) {
     const range = buttonElement.getAttribute('data-range');
