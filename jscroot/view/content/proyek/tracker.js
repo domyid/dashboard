@@ -1,4 +1,4 @@
-import { runAfterDOM, onClicks } from "https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.6/element.js";
+import { onClicks } from "https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.6/element.js";
 import { getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
@@ -10,10 +10,8 @@ let pengunjungChartInstance = null;
 export async function main() {
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
-    runAfterDOM(() => {
-        onClicks('tombol-tracker', handleButtonClick);
-        loadChart("last_day");
-    });
+    onClicks('tombol-tracker', handleButtonClick);
+    loadChart("last_day");
 }
 
 function getResponseFunction(result) {
