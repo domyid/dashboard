@@ -38,11 +38,6 @@ function loadChart(howLong) {
     getJSON(url, 'login', getCookie('login'), (result) => responseFunction(result, howLong))
 };
 
-// function loadChart(howLong) {
-//     const url = `https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/tracker/testing?how_long=${howLong}`;
-//     postBiasa(url, {}, (result) => responseFunction(result, howLong));
-// };
-
 function handleButtonClick(buttonElement) {
     const range = buttonElement.getAttribute('data-range');
     loadChart(range);
@@ -91,7 +86,7 @@ function responseFunction(result, howLong) {
                 pengunjung[key] = (pengunjung[key] || 0) + 1;
             });
 
-            const allDates = generateDateRange(Object.keys(pengunjung));
+            const allDates = generateDateRange(Object.keys(pengunjung), howLong);
             const labels = allDates;
             const jumlah = allDates.map(tgl => pengunjung[tgl] || 0);
 
@@ -100,13 +95,23 @@ function responseFunction(result, howLong) {
     }
 };
 
-function generateDateRange(tanggalArray) {
-    const sortedDates = tanggalArray.sort();
-    const start = new Date(sortedDates[0]);
-    const end = new Date(sortedDates[sortedDates.length - 1]);
-    const dateList = [];
+function generateDateRange(tanggalArray, howLong) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let start;
 
-    while (start <= end) {
+    if (howLong === 'last_week') {
+        start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    } else if (howLong === 'last_month') {
+        start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+    } else {
+        const sortedDates = tanggalArray.sort();
+        start = new Date(sortedDates[0]);
+        now = new Date(sortedDates[sortedDates.length - 1]);
+    }
+
+    const dateList = [];
+    while (start <= now) {
         dateList.push(start.toISOString().split('T')[0]);
         start.setDate(start.getDate() + 1);
     }
@@ -148,29 +153,4 @@ function tampilkanChart(labels, data) {
             }
         }
     });
-};
-
-function postBiasa(target_url, datajson, responseFunction) {
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    myHeaders.append("Accept", "application/json");
-
-    var raw = JSON.stringify(datajson);
-
-    var requestOptions = {
-        method: 'POST',
-        headers: myHeaders,
-        body: raw,
-        redirect: 'follow'
-    };
-
-    fetch(target_url, requestOptions)
-        .then(response => {
-            const status = response.status;
-            return response.text().then(result => {
-                const parsedResult = JSON.parse(result);
-                responseFunction({ status, data: parsedResult });
-            });
-        })
-        .catch(error => console.log('error', error));
 };
