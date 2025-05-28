@@ -114,3 +114,28 @@ function tampilkanChart(labels, data) {
         }
     });
 };
+
+function postBiasa(target_url, datajson, responseFunction) {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Accept", "application/json");
+
+    var raw = JSON.stringify(datajson);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    fetch(target_url, requestOptions)
+        .then(response => {
+            const status = response.status;
+            return response.text().then(result => {
+                const parsedResult = JSON.parse(result);
+                responseFunction({ status, data: parsedResult });
+            });
+        })
+        .catch(error => console.log('error', error));
+};
