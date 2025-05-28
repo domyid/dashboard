@@ -96,24 +96,38 @@ function responseFunction(result, howLong) {
 };
 
 function generateDateRange(tanggalArray, howLong) {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    let start;
+    if (howLong === 'last_week' || howLong === 'last_month') {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        let start;
 
-    if (howLong === 'last_week') {
-        start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-    } else if (howLong === 'last_month') {
-        start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
-    } else {
-        const sortedDates = tanggalArray.sort();
-        start = new Date(sortedDates[0]);
-        now = new Date(sortedDates[sortedDates.length - 1]);
+        if (howLong === 'last_week') {
+            start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+        } else {
+            start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+        }
+
+        const dateList = [];
+        const dateIter = new Date(start);
+
+        while (dateIter <= now) {
+            dateList.push(dateIter.toISOString().split('T')[0]);
+            dateIter.setDate(dateIter.getDate() + 1);
+        }
+
+        return dateList;
     }
+    
+    const sortedDates = tanggalArray.slice().sort();
+    const start = new Date(sortedDates[0]);
+    const end = new Date(sortedDates[sortedDates.length - 1]);
 
     const dateList = [];
-    while (start <= now) {
-        dateList.push(start.toISOString().split('T')[0]);
-        start.setDate(start.getDate() + 1);
+    const iterDate = new Date(start);
+
+    while (iterDate <= end) {
+        dateList.push(iterDate.toISOString().split('T')[0]);
+        iterDate.setDate(iterDate.getDate() + 1);
     }
 
     return dateList;
