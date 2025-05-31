@@ -6,63 +6,72 @@ import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croo
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
 import { id, backend } from "/dashboard/jscroot/url/config.js";
 
+// Global variables to store activity data
+let activityData = {
+    sponsordata: 0,
+    stravakm: 0,
+    iqresult: 0,
+    pomokitsesi: 0,
+    mbc: 0,
+    rupiah: 0,
+    trackerdata: 0,
+    bukukatalog: 0,
+    jurnalcount: 0,
+    gtmetrixresult: '',
+    webhookpush: 0,
+    presensihari: 0,
+    rvn: 0
+};
+
 export async function main() {
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
-    onClick('tombolmintaapproval', validateAndSubmit);
+    onClick('tombolmintaapproval', checkAndSubmit);
     fetchActivityScore();
 }
 
-function validateAndSubmit() {
-    // Check if all quantities are above 0
-    const validationResult = checkAllQuantitiesAboveZero();
+function checkAndSubmit() {
+    // Check the conditions first
+    const conditions = checkApprovalButtonConditions();
     
-    if (validationResult.allAboveZero) {
-        // All quantities are above 0, proceed with submission
-        actionfunctionname();
-    } else {
-        // Show error message with missing items
-        showMissingItemsNotification(validationResult.missingItems);
-    }
-}
-
-function checkAllQuantitiesAboveZero() {
-    const tableRows = document.querySelectorAll('table.table tbody tr');
-    const missingItems = [];
-    
-    tableRows.forEach((row, index) => {
-        const quantityCell = row.querySelector('td:nth-child(3)');
-        const activityName = row.querySelector('td:nth-child(2)').textContent;
+    if (!conditions.isValid) {
+        // Create message about what's missing
+        let missingItems = [];
         
-        // Skip validation for Jurnal (index 8) since it's optional
-        if (index === 8) {
-            return; // Skip this iteration
-        }
+        if (!conditions.sponsordata) missingItems.push("Data Sponsor");
+        if (!conditions.stravakm) missingItems.push("Strava");
+        if (!conditions.iqresult) missingItems.push("Test IQ");
+        if (!conditions.pomokitsesi) missingItems.push("Pomokit");
+        if (!conditions.trackerdata) missingItems.push("Web Tracker");
+        if (!conditions.gtmetrixresult) missingItems.push("GTMetrix");
+        if (!conditions.webhookpush) missingItems.push("WebHook");
+        if (!conditions.presensihari) missingItems.push("Presensi");
         
-        if (quantityCell) {
-            const quantity = parseInt(quantityCell.textContent || 0);
-            if (quantity === 0) {
-                missingItems.push(activityName);
+        // Check QRIS condition
+        if (!conditions.qrisCondition) {
+            if (activityData.rupiah === 0) {
+                if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
+                if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
+                missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
+            } else {
+                missingItems.push("QRIS");
             }
         }
-    });
+        
+        // Show alert with missing items
+        Swal.fire({
+            icon: 'warning',
+            title: 'Belum Lengkap',
+            html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
+            confirmButtonText: 'Mengerti'
+        });
+        
+        return; // Stop here
+    }
     
-    return {
-        allAboveZero: missingItems.length === 0,
-        missingItems: missingItems
-    };
-}
-
-function showMissingItemsNotification(missingItems) {
-    const missingItemsList = missingItems.map(item => `- ${item}`).join('<br>');
-    
-    Swal.fire({
-        icon: 'warning',
-        title: 'Data tidak lengkap',
-        html: `Anda perlu melengkapi data berikut ini (kuantitas masih 0):<br><br>${missingItemsList}`,
-        confirmButtonText: 'Mengerti'
-    });
+    // If all conditions are met, proceed with the action
+    actionfunctionname();
 }
 
 function actionfunctionname() {
@@ -108,8 +117,6 @@ function postResponseFunction(result) {
             text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
                 setValue('phonenumber', '');
-                // Reset button state after successful submission
-                updateApprovalButtonState();
             },
         });
     } else if (result.data.status.startsWith("Info : ")) {
@@ -136,6 +143,23 @@ function fetchActivityScore() {
 function handleActivityScoreResponse(result) {
     console.log(result);
     if (result.status === 200) {
+        // Update the global activity data
+        activityData = {
+            sponsordata: result.data.sponsordata || 0,
+            stravakm: result.data.stravakm || 0,
+            iqresult: result.data.iqresult || 0,
+            pomokitsesi: result.data.pomokitsesi || 0,
+            mbc: result.data.mbc || 0,
+            rupiah: result.data.rupiah || 0,
+            trackerdata: result.data.trackerdata || 0,
+            bukukatalog: result.data.bukukatalog || 0,
+            jurnalcount: result.data.jurnalcount || 0,
+            gtmetrixresult: result.data.gtmetrixresult || '',
+            webhookpush: result.data.webhookpush || 0,
+            presensihari: result.data.presensihari || 0,
+            rvn: result.data.rvn || 0
+        };
+
         updateTableRow(0, result.data.sponsordata, result.data.sponsor);
         updateTableRow(1, result.data.stravakm, result.data.strava);
         updateTableRow(2, result.data.iqresult, result.data.iq);
@@ -144,17 +168,16 @@ function handleActivityScoreResponse(result) {
         updateTableRow(5, result.data.rupiah, result.data.qrisPoints || result.data.qris);
         updateTableRow(6, result.data.trackerdata, result.data.tracker);
         updateTableRow(7, result.data.bukukatalog, result.data.bukped);
+        updateTableRow(8, result.data.jurnalcount || 0, result.data.jurnal || 0);
         updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
         updateTableRow(10, result.data.webhookpush, result.data.webhook);
         updateTableRow(11, result.data.presensihari, result.data.presensi);
         updateTableRow(12, result.data.rvn, result.data.ravencoinPoints || 0);
         
-        // After updating all table rows, check if the button should be enabled
-        updateApprovalButtonState();
+        // Check conditions after updating data
+        checkApprovalButtonConditions();
     } else {
         console.log(result.data.message);
-        // If data fetch fails, still update button state based on current table values
-        updateApprovalButtonState();
     }
 }
 
@@ -172,40 +195,47 @@ function updateTableRow(rowIndex, quantity, points) {
     }
 }
 
-// Function to update button state based on table quantities
-function updateApprovalButtonState() {
-    const validationResult = checkAllQuantitiesAboveZero();
-    const approvalButton = document.getElementById('tombolmintaapproval');
+// Function to check conditions (same logic as bimbingan)
+function checkApprovalButtonConditions() {
+    // Extract values from activityData
+    const {
+        sponsordata, stravakm, iqresult, pomokitsesi, mbc, rupiah,
+        trackerdata, bukukatalog, jurnalcount, gtmetrixresult, webhookpush, presensihari, rvn
+    } = activityData;
     
-    if (approvalButton) {
-        if (validationResult.allAboveZero) {
-            approvalButton.removeAttribute('disabled');
-            approvalButton.classList.remove('is-light');
-            approvalButton.classList.add('is-primary');
-        } else {
-            approvalButton.setAttribute('disabled', 'disabled');
-            approvalButton.classList.remove('is-primary');
-            approvalButton.classList.add('is-light');
-        }
-    }
-}
-
-// Add event listener to monitor table changes (optional enhancement)
-function observeTableChanges() {
-    const table = document.querySelector('table.table tbody');
-    if (table) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    updateApprovalButtonState();
-                }
-            });
-        });
-        
-        observer.observe(table, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
-    }
+    // Check if gtmetrixresult has a value (not empty string)
+    const hasGtmetrixResult = gtmetrixresult && gtmetrixresult.trim() !== '';
+    
+    // Check if all required activities have quantity > 0
+    // Except for buku (bukukatalog) and jurnal (jurnalcount)
+    const requiredActivitiesPositive = 
+        sponsordata > 0 && 
+        stravakm > 0 && 
+        iqresult > 0 && 
+        pomokitsesi > 0 && 
+        trackerdata > 0 && 
+        hasGtmetrixResult && 
+        webhookpush > 0 && 
+        presensihari > 0;
+    
+    // Special condition for QRIS, MBC, and RVN
+    const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
+    
+    // Combine all conditions
+    const allConditionsMet = requiredActivitiesPositive && qrisCondition;
+    
+    return {
+        isValid: allConditionsMet,
+        sponsordata: sponsordata > 0,
+        stravakm: stravakm > 0,
+        iqresult: iqresult > 0,
+        pomokitsesi: pomokitsesi > 0,
+        trackerdata: trackerdata > 0,
+        gtmetrixresult: hasGtmetrixResult,
+        webhookpush: webhookpush > 0,
+        presensihari: presensihari > 0,
+        qrisCondition: qrisCondition,
+        rupiah: rupiah > 0,
+        mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0
+    };
 }
