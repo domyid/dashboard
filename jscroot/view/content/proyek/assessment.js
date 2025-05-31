@@ -40,8 +40,11 @@ function checkAllQuantitiesAboveZero() {
             return; // Skip this iteration
         }
         
-        if (quantityCell && parseInt(quantityCell.textContent || 0) === 0) {
-            missingItems.push(activityName);
+        if (quantityCell) {
+            const quantity = parseInt(quantityCell.textContent || 0);
+            if (quantity === 0) {
+                missingItems.push(activityName);
+            }
         }
     });
     
@@ -105,6 +108,8 @@ function postResponseFunction(result) {
             text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
                 setValue('phonenumber', '');
+                // Reset button state after successful submission
+                updateApprovalButtonState();
             },
         });
     } else if (result.data.status.startsWith("Info : ")) {
@@ -148,6 +153,8 @@ function handleActivityScoreResponse(result) {
         updateApprovalButtonState();
     } else {
         console.log(result.data.message);
+        // If data fetch fails, still update button state based on current table values
+        updateApprovalButtonState();
     }
 }
 
@@ -180,5 +187,25 @@ function updateApprovalButtonState() {
             approvalButton.classList.remove('is-primary');
             approvalButton.classList.add('is-light');
         }
+    }
+}
+
+// Add event listener to monitor table changes (optional enhancement)
+function observeTableChanges() {
+    const table = document.querySelector('table.table tbody');
+    if (table) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    updateApprovalButtonState();
+                }
+            });
+        });
+        
+        observer.observe(table, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
     }
 }
