@@ -20,29 +20,68 @@ export async function main(){
     setupPengajuanSidangModal();
 }
 
+// Global variable to track current approval status
+let currentApprovalStatus = null;
+
 function updateApprovalStatus(result) {
     const statusElement = document.getElementById('approval-status');
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    
+    // Update global status
+    currentApprovalStatus = result;
 
     switch (result) {
         case true:
             statusElement.textContent = 'Disetujui';
             statusElement.className = 'tag is-success';
+            // Disable tombol if already approved
+            if (tombolApproval) {
+                tombolApproval.disabled = true;
+                tombolApproval.textContent = 'Sudah Disetujui';
+                tombolApproval.classList.remove('is-primary');
+                tombolApproval.classList.add('is-success');
+            }
             break;
         case false:
             statusElement.textContent = 'Belum Disetujui';
             statusElement.className = 'tag is-danger';
+            // Enable tombol if not approved
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
+            }
             break;
         default:
             statusElement.textContent = '';
             statusElement.className = '';
+            // Reset tombol to default state
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
+            }
     }
 }
 
 // Function to clear approval status
 function clearApprovalStatus() {
     const statusElement = document.getElementById('approval-status');
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    
     statusElement.textContent = '';
     statusElement.className = '';
+    currentApprovalStatus = null;
+    
+    // Reset tombol to default state
+    if (tombolApproval) {
+        tombolApproval.disabled = false;
+        tombolApproval.textContent = 'Minta Approval';
+        tombolApproval.classList.remove('is-success');
+        tombolApproval.classList.add('is-primary');
+    }
 }
 
 function handleBimbinganChange(target) {
@@ -88,6 +127,24 @@ function getBimbinganList(result) {
 }
 
 function checkAndSubmit() {
+    // Check if already approved
+    if (currentApprovalStatus === true) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Sudah Disetujui',
+            text: 'Bimbingan ini sudah disetujui dan tidak perlu diajukan lagi.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    // Disable tombol immediately to prevent double-click
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    if (tombolApproval) {
+        tombolApproval.disabled = true;
+        tombolApproval.textContent = 'Memproses...';
+    }
+    
     // Check the conditions first
     const conditions = checkApprovalButtonConditions();
     
@@ -121,6 +178,12 @@ function checkAndSubmit() {
             title: 'Belum Lengkap',
             html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
             confirmButtonText: 'Mengerti'
+        }).then(() => {
+            // Re-enable tombol after alert is closed
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+            }
         });
         
         return; // Stop here
@@ -165,6 +228,8 @@ function getResponseFunction(result){
 }
 
 function postResponseFunction(result){
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    
     if(result.status === 200){
         // const katakata = "Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.";
         Swal.fire({
@@ -173,6 +238,13 @@ function postResponseFunction(result){
             text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
             didClose: () => {
                 setValue('phonenumber', '');
+                // Update button state to show it's been submitted
+                if (tombolApproval) {
+                    tombolApproval.disabled = true;
+                    tombolApproval.textContent = 'Menunggu Approval';
+                    tombolApproval.classList.remove('is-primary');
+                    tombolApproval.classList.add('is-warning');
+                }
             },
         });
     }else if (result.data.status.startsWith("Info : ")) {
@@ -180,12 +252,26 @@ function postResponseFunction(result){
             icon: 'info',
             title: result.data.status,
             text: result.data.response,
+            didClose: () => {
+                // Re-enable button if info message
+                if (tombolApproval) {
+                    tombolApproval.disabled = false;
+                    tombolApproval.textContent = 'Minta Approval';
+                }
+            }
         });
     } else {
         Swal.fire({
             icon: 'error',
             title: result.data.status,
             text: result.data.response,
+            didClose: () => {
+                // Re-enable button if error
+                if (tombolApproval) {
+                    tombolApproval.disabled = false;
+                    tombolApproval.textContent = 'Minta Approval';
+                }
+            }
         });
         // show("tombolmintaapproval");
     }
