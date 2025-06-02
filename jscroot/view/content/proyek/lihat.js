@@ -99,7 +99,7 @@ function getResponseFunction(result) {
             <button class="button is-danger removeProjectButton" data-project-name="${project.name}">
               <i class="bx bx-trash"></i>          
             </button>
-            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-enroll="${project.enroll}" data-project-repoorg="${project.repoorg}" data-project-hostname="${project.project_hostname}" data-project-repologname="${project.repologname}" data-project-description="${project.description}">
+            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-enroll="${project.enroll}" data-project-repoorg="${project.repoorg}" data-project-repologname="${project.repologname}" data-project-hostname="${project.project_hostname}" data-project-description="${project.description}">
               <i class="bx bx-edit"></i>
             </button>
           </td>
@@ -249,6 +249,7 @@ document.getElementById("addButton").addEventListener("click", () => {
       const description = Swal.getPopup().querySelector("#description").value;
       const repoOrg = Swal.getPopup().querySelector("#repoorg").value;
       const repoLogName = Swal.getPopup().querySelector("#repologname").value;
+      const projectHostname = Swal.getPopup().querySelector("#project_hostname").value;
 
       const namePattern = /^[a-z0-9_-]+$/;
       if (!name || !wagroupid || !description || !repoOrg || !repoLogName) {
@@ -265,6 +266,7 @@ document.getElementById("addButton").addEventListener("click", () => {
           description: description,
           repoorg: repoOrg,
           repologname: repoLogName,
+          project_hostname: projectHostname,
         };
       }
     },
@@ -277,6 +279,7 @@ document.getElementById("addButton").addEventListener("click", () => {
         description: getValue("description"),
         repoorg: getValue("repoorg"),
         repologname: getValue("repologname"),
+        project_hostname: getValue("project_hostname"),
       };
       if (getCookie("login") === "") {
         redirect("/signin");
@@ -533,21 +536,23 @@ function addEditProjectButtonListeners() {
           const repoOrg = Swal.getPopup().querySelector("#repoorg").value;
           const repoLogName =
             Swal.getPopup().querySelector("#repologname").value;
+          const projectHostname = Swal.getPopup().querySelector("#project_hostname").value;
           const description =
             Swal.getPopup().querySelector("#description").value;
           if (!repoOrg || !repoLogName || !description) {
             Swal.showValidationMessage(`Please enter all fields`);
           }
-          return { repoOrg, repoLogName, description };
+          return { repoOrg, repoLogName, projectHostname, description };
         },
       });
 
       if (formValues) {
-        const { repoOrg, repoLogName, description } = formValues;
+        const { repoOrg, repoLogName, projectHostname, description } = formValues;
         const updatedProject = {
           _id: projectId,
           repoorg: repoOrg,
           repologname: repoLogName,
+          project_hostname: projectHostname,
           description: description,
         };
         putJSON(
