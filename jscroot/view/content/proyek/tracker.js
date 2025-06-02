@@ -123,22 +123,26 @@ function responseFunction(result, howLong) {
 
 function generateDateRange(tanggalArray, howLong) {
     if (howLong === 'last_week' || howLong === 'last_month') {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        let start;
+        const nowUTC = new Date();
+        const nowWIB = new Date(nowUTC.getTime() + 7 * 60 * 60 * 1000); // Konversi ke WIB
 
+        nowWIB.setHours(23, 59, 59, 999); // Pastikan rentang mencakup hari ini penuh
+
+        let start;
         if (howLong === 'last_week') {
-            start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+            start = new Date(nowWIB.getTime() - 6 * 24 * 60 * 60 * 1000);
         } else {
-            start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+            start = new Date(nowWIB.getTime() - 29 * 24 * 60 * 60 * 1000);
         }
 
         const dateList = [];
-        const dateIter = new Date(start);
+        const iterDate = new Date(start);
 
-        while (dateIter <= now) {
-            dateList.push(dateIter.toISOString().split('T')[0]);
-            dateIter.setDate(dateIter.getDate() + 1);
+        while (iterDate <= nowWIB) {
+            const localDate = new Date(iterDate.getTime()); // Buat salinan
+            const iso = new Date(localDate.getTime()).toISOString();
+            dateList.push(iso.split('T')[0]);
+            iterDate.setDate(iterDate.getDate() + 1);
         }
 
         return dateList;
