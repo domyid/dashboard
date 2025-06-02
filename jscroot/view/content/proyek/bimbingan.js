@@ -7,89 +7,62 @@ import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js
 import { id,backend } from "/dashboard/jscroot/url/config.js";
 
 export async function main(){    
-    console.log('=== Initializing Bimbingan Page ===');
-    
     onInput('phonenumber', validatePhoneNumber);
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
     getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
-    
-    // Initialize progress to 0 before loading data
-    console.log('Setting initial progress to 0/8');
-    updateSidangProgress(0);
-    
-    // Load bimbingan list which will also update the progress
-    console.log('Loading bimbingan list...');
     getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
     onClick('tombolmintaapproval', checkAndSubmit);
     onChange('bimbingan-name', handleBimbinganChange);
     fetchActivityScore();
     
-    // Add setup for pengajuan sidang modal
+    // Add new functionality for pengajuan sidang
+    checkSidangEligibility();
     setupPengajuanSidangModal();
-    
-    // Double check sidang eligibility after a delay to ensure all data is loaded
-    setTimeout(() => {
-        console.log('Double checking sidang eligibility...');
-        checkSidangEligibility();
-    }, 2000);
 }
 
 // Global variable to track current approval status
 let currentApprovalStatus = null;
 
-// Helper function to check if a value represents approved status
-function isApprovedValue(value) {
-    // Check for various representations of true/approved
-    return value === true || 
-           value === 'true' || 
-           value === 1 ||
-           value === '1' ||
-           value === 'approved' ||
-           value === 'yes' ||
-           value === 'y';
-}
-
 function updateApprovalStatus(result) {
     const statusElement = document.getElementById('approval-status');
     const tombolApproval = document.getElementById('tombolmintaapproval');
     
-    // Convert to boolean for consistent checking
-    const isApproved = isApprovedValue(result);
-    const isNotApproved = result === false || result === 'false' || result === 0 || result === '0' || result === 'no' || result === 'n';
-    
     // Update global status
-    currentApprovalStatus = isApproved ? true : (isNotApproved ? false : null);
+    currentApprovalStatus = result;
 
-    if (isApproved) {
-        statusElement.textContent = 'Disetujui';
-        statusElement.className = 'tag is-success';
-        // Disable tombol if already approved
-        if (tombolApproval) {
-            tombolApproval.disabled = true;
-            tombolApproval.textContent = 'Sudah Disetujui';
-            tombolApproval.classList.remove('is-primary');
-            tombolApproval.classList.add('is-success');
-        }
-    } else if (isNotApproved) {
-        statusElement.textContent = 'Belum Disetujui';
-        statusElement.className = 'tag is-danger';
-        // Enable tombol if not approved
-        if (tombolApproval) {
-            tombolApproval.disabled = false;
-            tombolApproval.textContent = 'Minta Approval';
-            tombolApproval.classList.remove('is-success');
-            tombolApproval.classList.add('is-primary');
-        }
-    } else {
-        statusElement.textContent = '';
-        statusElement.className = '';
-        // Reset tombol to default state
-        if (tombolApproval) {
-            tombolApproval.disabled = false;
-            tombolApproval.textContent = 'Minta Approval';
-            tombolApproval.classList.remove('is-success');
-            tombolApproval.classList.add('is-primary');
-        }
+    switch (result) {
+        case true:
+            statusElement.textContent = 'Disetujui';
+            statusElement.className = 'tag is-success';
+            // Disable tombol if already approved
+            if (tombolApproval) {
+                tombolApproval.disabled = true;
+                tombolApproval.textContent = 'Sudah Disetujui';
+                tombolApproval.classList.remove('is-primary');
+                tombolApproval.classList.add('is-success');
+            }
+            break;
+        case false:
+            statusElement.textContent = 'Belum Disetujui';
+            statusElement.className = 'tag is-danger';
+            // Enable tombol if not approved
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
+            }
+            break;
+        default:
+            statusElement.textContent = '';
+            statusElement.className = '';
+            // Reset tombol to default state
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
+            }
     }
 }
 
@@ -125,23 +98,9 @@ function handleBimbinganChange(target) {
         getJSON(url, 'login', getCookie('login'), function(result) {
             handleActivityScoreResponse(result);
             
-            // Debug log to check data structure
-            console.log('Bimbingan detail response:', result);
-            
-            if (result.status === 200) {
-                // Check multiple possible field names
-                const approvedValue = result.data?.approved || 
-                                    result.data?.is_approved || 
-                                    result.data?.isApproved || 
-                                    (result.data?.status === 'approved' ? true : false);
-                
-                console.log('Approved field value:', approvedValue);
-                console.log('Approved field type:', typeof approvedValue);
-                
-                // Only update approval status if we found an approval field
-                if (approvedValue !== undefined && approvedValue !== null) {
-                    updateApprovalStatus(approvedValue);
-                }
+            // Only update approval status for specific bimbingan entries
+            if (result.status === 200 && result.data.approved !== undefined) {
+                updateApprovalStatus(result.data.approved);
             }
         });
     }
@@ -149,138 +108,15 @@ function handleBimbinganChange(target) {
 
 function getBimbinganList(result) {
     if (result.status === 200) {
-        console.log('Raw bimbingan list data:', result.data);
-        
-        // Store all bimbingan data globally for checking approval status
-        window.bimbinganData = result.data;
-        
-        // First, check if the list API already includes approved field
-        const hasApprovedField = result.data.length > 0 && 
-                                (result.data[0].hasOwnProperty('approved') || 
-                                 result.data[0].hasOwnProperty('is_approved') ||
-                                 result.data[0].hasOwnProperty('isApproved') ||
-                                 result.data[0].hasOwnProperty('status'));
-        
-        if (hasApprovedField) {
-            // If approved field exists in list, use it directly
-            console.log('Approved field found in list API');
-            let approvedCount = 0;
-            
-            result.data.forEach((bimbingan, index) => {
-                // Check multiple possible field names
-                const approvedValue = bimbingan.approved || 
-                                    bimbingan.is_approved || 
-                                    bimbingan.isApproved || 
-                                    (bimbingan.status === 'approved' ? true : false);
-                
-                console.log(`Bimbingan ${bimbingan.bimbinganke}: approved =`, approvedValue, 'type:', typeof approvedValue);
-                
-                const option = document.createElement('option');
-                option.value = bimbingan._id;
+        result.data.forEach((bimbingan) => {
+            console.log({ bimbingan });
+            const option = document.createElement('option');
+            option.value = bimbingan._id;
 
-                const bimbinganText = 'Bimbingan Ke-';
-                let displayText = bimbinganText + (bimbingan.bimbinganke ?? (index + 1));
-                
-                // Check if approved
-                const isApproved = isApprovedValue(approvedValue);
-                
-                if (isApproved) {
-                    displayText += ' ✓';
-                    option.style.color = '#48c78e';
-                    approvedCount++;
-                } else {
-                    displayText += ' ✗';
-                    option.style.color = '#f14668';
-                }
-                
-                option.textContent = displayText;
-                document.getElementById('bimbingan-name').appendChild(option);
-            });
-            
-            console.log(`Total approved from list: ${approvedCount}`);
-            
-            // Update progress immediately
-            updateSidangProgress(approvedCount);
-            updateSidangButton(approvedCount, result.data.length);
-            
-        } else {
-            // If no approved field in list, fetch details for each
-            console.log('No approved field in list, fetching details...');
-            let approvedCount = 0;
-            let processedCount = 0;
-            
-            result.data.forEach((bimbingan, index) => {
-                const url = `${backend.project.assessment}/${bimbingan._id}`;
-                getJSON(url, 'login', getCookie('login'), function(detailResult) {
-                    processedCount++;
-                    
-                    const option = document.createElement('option');
-                    option.value = bimbingan._id;
-
-                    const bimbinganText = 'Bimbingan Ke-';
-                    let displayText = bimbinganText + (bimbingan.bimbinganke ?? (index + 1));
-                    
-                    // Check approval status from detail result
-                    let isApproved = false;
-                    if (detailResult.status === 200) {
-                        console.log(`Detail for Bimbingan ${bimbingan.bimbinganke}:`, detailResult.data);
-                        
-                        // Check multiple possible field names and locations
-                        const approvedValue = detailResult.data.approved || 
-                                            detailResult.data.is_approved || 
-                                            detailResult.data.isApproved || 
-                                            (detailResult.data.status === 'approved' ? true : false);
-                        
-                        console.log(`Approved value:`, approvedValue, 'type:', typeof approvedValue);
-                        
-                        // Check various possible locations and types
-                        if (isApprovedValue(approvedValue)) {
-                            isApproved = true;
-                            approvedCount++;
-                        }
-                    }
-                    
-                    // Add approval status to the text
-                    if (isApproved) {
-                        displayText += ' ✓';
-                        option.style.color = '#48c78e';
-                    } else {
-                        displayText += ' ✗';
-                        option.style.color = '#f14668';
-                    }
-                    
-                    option.textContent = displayText;
-                    
-                    // Add option in correct order
-                    const selectElement = document.getElementById('bimbingan-name');
-                    const existingOptions = Array.from(selectElement.options);
-                    const insertIndex = existingOptions.findIndex(opt => {
-                        const optNumber = parseInt(opt.textContent.match(/\d+/)?.[0] || '0');
-                        const currentNumber = bimbingan.bimbinganke ?? (index + 1);
-                        return optNumber > currentNumber;
-                    });
-                    
-                    if (insertIndex === -1) {
-                        selectElement.appendChild(option);
-                    } else {
-                        selectElement.insertBefore(option, existingOptions[insertIndex]);
-                    }
-                    
-                    // Update progress when all bimbingan have been processed
-                    if (processedCount === result.data.length) {
-                        console.log(`Total approved from details: ${approvedCount}`);
-                        updateSidangProgress(approvedCount);
-                        updateSidangButton(approvedCount, result.data.length);
-                    }
-                });
-            });
-        }
-        
-        // If no bimbingan data, still update progress to 0
-        if (result.data.length === 0) {
-            updateSidangProgress(0);
-            updateSidangButton(0, 0);
-        }
+            const bimbinganText = 'Bimbingan Ke-';
+            option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
+            document.getElementById('bimbingan-name').appendChild(option);
+        });
     } else {
         Swal.fire({
             icon: 'error',
@@ -290,25 +126,8 @@ function getBimbinganList(result) {
     }
 }
 
-// Helper function to update sidang button
-function updateSidangButton(approvedCount, totalCount) {
-    const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-    if (tombolPengajuanSidang) {
-        if (approvedCount < 8) {
-            tombolPengajuanSidang.disabled = true;
-            tombolPengajuanSidang.setAttribute('title', 
-                `Anda memerlukan minimal 8 sesi bimbingan yang disetujui. Saat ini: ${approvedCount} disetujui dari ${totalCount} total`
-            );
-        } else {
-            tombolPengajuanSidang.disabled = false;
-            tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-            checkExistingPengajuan();
-        }
-    }
-}
-
 function checkAndSubmit() {
-    // Check if already approved (handle different data types)
+    // Check if already approved
     if (currentApprovalStatus === true) {
         Swal.fire({
             icon: 'info',
@@ -579,127 +398,27 @@ function checkApprovalButtonConditions() {
     };
 }
 
-// Helper function to check if a value represents approved status
-function isApprovedValue(value) {
-    // Check for various representations of true/approved
-    return value === true || 
-           value === 'true' || 
-           value === 1 ||
-           value === '1' ||
-           value === 'approved' ||
-           value === 'yes' ||
-           value === 'y';
-}
-function updateSidangProgress(approvedCount) {
-    const approvedCountElement = document.getElementById('approved-count');
-    const sidangStatusElement = document.getElementById('sidang-status');
-    const sidangProgressElement = document.getElementById('sidang-progress');
-    
-    // Ensure approvedCount is a number
-    const count = parseInt(approvedCount) || 0;
-    
-    if (approvedCountElement) {
-        approvedCountElement.textContent = `${count}/8`;
-    }
-    
-    if (sidangProgressElement) {
-        sidangProgressElement.value = count;
-    }
-    
-    if (sidangStatusElement) {
-        if (count >= 8) {
-            sidangStatusElement.innerHTML = '<span class="tag is-success">Memenuhi Syarat</span>';
-        } else {
-            sidangStatusElement.innerHTML = '<span class="tag is-warning">Belum Memenuhi Syarat</span>';
-        }
-    }
-    
-    console.log(`Sidang progress updated: ${count}/8`);
-}
-
 // Function to check if student has enough bimbingan sessions to request sidang
 function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            const totalBimbinganCount = result.data.length;
+            const bimbinganCount = result.data.length;
+            const eligibilityMet = bimbinganCount >= 8;
             
-            // If no bimbingan, disable button
-            if (totalBimbinganCount === 0) {
-                updateSidangProgress(0);
-                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-                if (tombolPengajuanSidang) {
-                    tombolPengajuanSidang.disabled = true;
-                    tombolPengajuanSidang.setAttribute('title', 'Anda belum memiliki sesi bimbingan');
-                }
-                return;
-            }
-            
-            // Check if approved field exists in the list
-            const hasApprovedField = result.data[0].hasOwnProperty('approved') ||
-                                   result.data[0].hasOwnProperty('is_approved') ||
-                                   result.data[0].hasOwnProperty('isApproved') ||
-                                   result.data[0].hasOwnProperty('status');
-            
-            if (hasApprovedField) {
-                // If approved field exists, count directly
-                console.log('Using approved field from list API for sidang eligibility');
-                const approvedBimbinganCount = result.data.filter(bimbingan => {
-                    const approvedValue = bimbingan.approved || 
-                                        bimbingan.is_approved || 
-                                        bimbingan.isApproved || 
-                                        (bimbingan.status === 'approved' ? true : false);
-                    return isApprovedValue(approvedValue);
-                }).length;
+            // Enable or disable the "Ajukan Sidang" button based on eligibility
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = !eligibilityMet;
                 
-                // Update UI immediately
-                updateSidangProgress(approvedBimbinganCount);
-                updateSidangButton(approvedBimbinganCount, totalBimbinganCount);
-                
-                // Check existing pengajuan if eligible
-                if (approvedBimbinganCount >= 8) {
+                // Add tooltip to explain why button is disabled
+                if (!eligibilityMet) {
+                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                } else {
+                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                    
+                    // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
-                
-            } else {
-                // If no approved field, fetch details
-                console.log('Fetching details for sidang eligibility check');
-                let approvedBimbinganCount = 0;
-                let checkedCount = 0;
-                
-                // Check each bimbingan's approval status
-                result.data.forEach((bimbingan) => {
-                    const url = `${backend.project.assessment}/${bimbingan._id}`;
-                    getJSON(url, 'login', getCookie('login'), function(detailResult) {
-                        checkedCount++;
-                        
-                        if (detailResult.status === 200) {
-                            console.log(`Checking approval for bimbingan ${bimbingan.bimbinganke}:`, detailResult.data);
-                            
-                            // Check multiple possible field names
-                            const approvedValue = detailResult.data.approved || 
-                                                detailResult.data.is_approved || 
-                                                detailResult.data.isApproved || 
-                                                (detailResult.data.status === 'approved' ? true : false);
-                            
-                            // Check if approved (handle different data types)
-                            if (isApprovedValue(approvedValue)) {
-                                approvedBimbinganCount++;
-                            }
-                        }
-                        
-                        // When all checks are complete
-                        if (checkedCount === totalBimbinganCount) {
-                            // Update UI
-                            updateSidangProgress(approvedBimbinganCount);
-                            updateSidangButton(approvedBimbinganCount, totalBimbinganCount);
-                            
-                            // Check existing pengajuan if eligible
-                            if (approvedBimbinganCount >= 8) {
-                                checkExistingPengajuan();
-                            }
-                        }
-                    });
-                });
             }
         } else {
             console.error('Failed to get bimbingan data:', result);
