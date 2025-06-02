@@ -1,4 +1,4 @@
-import { onClicks, addJS } from "https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.6/element.js";
+import { runAfterDOM, onClicks, onChange, getValue, addJS } from "https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.6/element.js";
 import { getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
@@ -11,17 +11,20 @@ export async function main() {
     await addJS("https://cdn.jsdelivr.net/npm/chart.js");
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
+    runAfterDOM(() => {
+        loadChart("last_day");
+    });
+    onChange('hostname-filter', () => loadChart("last_day"));
     onClicks('tombol-tracker', handleButtonClick);
-    loadChart("last_day");
 }
 
 function getResponseFunction(result) {
     if (result.status === 200) {
         result.data.forEach(project => {
             const option = document.createElement('option');
-            option.value = project._id;
-            option.textContent = project.name;
-            document.getElementById('project-name').appendChild(option);
+            option.value = project.project_hostname;
+            option.textContent = project.project_hostname;
+            document.getElementById('hostname-filter').appendChild(option);
         });
 
     } else {
@@ -45,7 +48,13 @@ function handleButtonClick(buttonElement) {
 
 function responseFunction(result, howLong) {
     if (result.status == 200) {
-        const data = result.data.data;
+        const selectedHostname = getValue("hostname-filter");
+
+        // Filter data sesuai hostname, jika bukan "all"
+        let data = result.data.data;
+        if (selectedHostname !== "all") {
+            data = data.filter(item => item.hostname === selectedHostname);
+        }
 
         if (howLong === "last_day") {
             const nowUTC = new Date();
