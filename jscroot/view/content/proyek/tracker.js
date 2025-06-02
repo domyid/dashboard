@@ -10,7 +10,7 @@ let pengunjungChartInstance = null;
 export async function main() {
     await addJS("https://cdn.jsdelivr.net/npm/chart.js");
     await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
-    getJSON(backend.project.data, 'login', getCookie('login'), getResponseFunction);
+    getJSON(backend.project.anggota, 'login', getCookie('login'), getResponseFunction);
     runAfterDOM(() => {
         loadChart("last_day");
     });
