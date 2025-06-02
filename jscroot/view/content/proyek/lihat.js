@@ -99,7 +99,7 @@ function getResponseFunction(result) {
             <button class="button is-danger removeProjectButton" data-project-name="${project.name}">
               <i class="bx bx-trash"></i>          
             </button>
-            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-enroll="${project.enroll}" data-project-repoorg="${project.repoorg}" data-project-repologname="${project.repologname}" data-project-description="${project.description}">
+            <button class="button is-warning editProjectButton" data-project-id="${project._id}" data-project-name="${project.name}" data-project-wagroupid="${project.wagroupid}" data-project-enroll="${project.enroll}" data-project-repoorg="${project.repoorg}" data-project-hostname="${project.project_hostname}" data-project-repologname="${project.repologname}" data-project-description="${project.description}">
               <i class="bx bx-edit"></i>
             </button>
           </td>
@@ -224,6 +224,12 @@ document.getElementById("addButton").addEventListener("click", () => {
                 <label class="label">Nama Repo Log Meeting</label>
                 <div class="control">
                     <input class="input" type="text" id="repologname" placeholder="repo log meeting">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Project Hostname</label>
+                <div class="control">
+                    <input class="input" type="text" id="project_hostname" placeholder="Example: username.github.io">
                 </div>
             </div>
             <div class="field">
@@ -467,6 +473,9 @@ function addEditProjectButtonListeners() {
       const projectRepologname = button.getAttribute(
         "data-project-repologname"
       );
+      const projectHostname = button.getAttribute(
+        "data-project-hostname"
+      );
       const projectDescription = button.getAttribute(
         "data-project-description"
       );
@@ -502,6 +511,12 @@ function addEditProjectButtonListeners() {
             <label class="label">Nama Repo Log Meeting</label>
             <div class="control">
               <input class="input" type="text" id="repologname" value="${projectRepologname}">
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Project Hostname</label>
+            <div class="control">
+              <input class="input" type="text" id="project_hostname" value="${projectHostname}">
             </div>
           </div>
           <div class="field">
