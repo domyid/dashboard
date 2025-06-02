@@ -22,6 +22,7 @@
                         </select>
                     </div>
                 </div>
+                <p class="help">✓ = Disetujui, ✗ = Belum Disetujui</p>
             </div>
 
             <div class="field">
@@ -73,9 +74,32 @@
                 </div>
             </div>
 
-            <div class="field mt-5">
-                <div class="control">
-                    <button class="button is-info" type="button" id="tombolpengajuansidang" disabled>Ajukan Sidang</button>
+            <!-- Progress Pengajuan Sidang -->
+            <div class="box mt-5">
+                <h2 class="subtitle">Progress Pengajuan Sidang</h2>
+                <div class="field">
+                    <nav class="level">
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Bimbingan Disetujui</p>
+                                <p class="title" id="approved-count">0/8</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Status</p>
+                                <p class="title" id="sidang-status">
+                                    <span class="tag is-warning">Belum Memenuhi Syarat</span>
+                                </p>
+                            </div>
+                        </div>
+                    </nav>
+                    <progress class="progress is-primary" id="sidang-progress" value="0" max="8">0/8</progress>
+                </div>
+                <div class="field mt-3">
+                    <div class="control">
+                        <button class="button is-info" type="button" id="tombolpengajuansidang" disabled>Ajukan Sidang</button>
+                    </div>
                 </div>
             </div>
 

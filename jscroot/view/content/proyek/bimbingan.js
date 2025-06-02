@@ -108,15 +108,41 @@ function handleBimbinganChange(target) {
 
 function getBimbinganList(result) {
     if (result.status === 200) {
+        // Count approved bimbingan for display
+        let approvedCount = 0;
+        
         result.data.forEach((bimbingan) => {
             console.log({ bimbingan });
             const option = document.createElement('option');
             option.value = bimbingan._id;
 
             const bimbinganText = 'Bimbingan Ke-';
-            option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
+            let displayText = bimbinganText + (bimbingan.bimbinganke ?? 1);
+            
+            // Add approval status to the text
+            if (bimbingan.approved === true) {
+                displayText += ' ✓';
+                approvedCount++;
+                option.style.color = '#48c78e'; // Green color for approved
+            } else if (bimbingan.approved === false) {
+                displayText += ' ✗';
+                option.style.color = '#f14668'; // Red color for not approved
+            }
+            
+            option.textContent = displayText;
             document.getElementById('bimbingan-name').appendChild(option);
         });
+        
+        // Update progress display
+        updateSidangProgress(approvedCount);
+        
+        // Update the sidang button with current approved count
+        const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+        if (tombolPengajuanSidang && approvedCount < 8) {
+            tombolPengajuanSidang.setAttribute('title', 
+                `Anda memerlukan minimal 8 sesi bimbingan yang disetujui. Saat ini: ${approvedCount} disetujui`
+            );
+        }
     } else {
         Swal.fire({
             icon: 'error',
@@ -398,12 +424,40 @@ function checkApprovalButtonConditions() {
     };
 }
 
+// Function to update sidang progress display
+function updateSidangProgress(approvedCount) {
+    const approvedCountElement = document.getElementById('approved-count');
+    const sidangStatusElement = document.getElementById('sidang-status');
+    const sidangProgressElement = document.getElementById('sidang-progress');
+    
+    if (approvedCountElement) {
+        approvedCountElement.textContent = `${approvedCount}/8`;
+    }
+    
+    if (sidangProgressElement) {
+        sidangProgressElement.value = approvedCount;
+    }
+    
+    if (sidangStatusElement) {
+        if (approvedCount >= 8) {
+            sidangStatusElement.innerHTML = '<span class="tag is-success">Memenuhi Syarat</span>';
+        } else {
+            sidangStatusElement.innerHTML = '<span class="tag is-warning">Belum Memenuhi Syarat</span>';
+        }
+    }
+}
+
 // Function to check if student has enough bimbingan sessions to request sidang
 function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            const bimbinganCount = result.data.length;
-            const eligibilityMet = bimbinganCount >= 8;
+            // Count only approved bimbingan sessions
+            const approvedBimbinganCount = result.data.filter(bimbingan => bimbingan.approved === true).length;
+            const totalBimbinganCount = result.data.length;
+            const eligibilityMet = approvedBimbinganCount >= 8;
+            
+            // Update progress display
+            updateSidangProgress(approvedBimbinganCount);
             
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
@@ -412,7 +466,10 @@ function checkSidangEligibility() {
                 
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                    tombolPengajuanSidang.setAttribute('title', 
+                        `Anda memerlukan minimal 8 sesi bimbingan yang disetujui untuk mengajukan sidang. ` +
+                        `Saat ini: ${approvedBimbinganCount} disetujui dari ${totalBimbinganCount} total bimbingan`
+                    );
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
                     
