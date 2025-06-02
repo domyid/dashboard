@@ -20,11 +20,21 @@ export async function main() {
 
 function getResponseFunction(result) {
     if (result.status === 200) {
+        const hostnameFilter = document.getElementById('hostname-filter');
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "all";
+        defaultOption.textContent = "Semua";
+        hostnameFilter.appendChild(defaultOption);
+
         result.data.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project.project_hostname;
-            option.textContent = project.project_hostname;
-            document.getElementById('hostname-filter').appendChild(option);
+            // Hanya buat opsi jika hostname ada dan tidak kosong
+            if (project.project_hostname && project.project_hostname.trim() !== "") {
+                const option = document.createElement('option');
+                option.value = project.project_hostname;
+                option.textContent = project.project_hostname;
+                hostnameFilter.appendChild(option);
+            }
         });
 
     } else {
