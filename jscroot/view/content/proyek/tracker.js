@@ -22,19 +22,26 @@ function getResponseFunction(result) {
     if (result.status === 200) {
         const hostnameFilter = document.getElementById('hostname-filter');
 
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "all";
-        defaultOption.textContent = "Semua";
-        hostnameFilter.appendChild(defaultOption);
+        // Ambil hanya project dengan hostname yang valid (tidak kosong)
+        const validHostnames = result.data
+            .map(project => project.project_hostname)
+            .filter(hostname => hostname && hostname.trim() !== "");
 
-        result.data.forEach(project => {
-            // Hanya buat opsi jika hostname ada dan tidak kosong
-            if (project.project_hostname && project.project_hostname.trim() !== "") {
-                const option = document.createElement('option');
-                option.value = project.project_hostname;
-                option.textContent = project.project_hostname;
-                hostnameFilter.appendChild(option);
-            }
+        // Tambahkan opsi "Semua" hanya jika ada lebih dari 1 hostname unik
+        const uniqueHostnames = [...new Set(validHostnames)];
+        if (uniqueHostnames.length > 1) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "all";
+            defaultOption.textContent = "Semua";
+            hostnameFilter.appendChild(defaultOption);
+        }
+
+        // Tambahkan semua opsi hostname valid
+        uniqueHostnames.forEach(hostname => {
+            const option = document.createElement('option');
+            option.value = hostname;
+            option.textContent = hostname;
+            hostnameFilter.appendChild(option);
         });
 
     } else {
