@@ -68,7 +68,7 @@ function responseFunction(result, howLong) {
         const selectedHostname = getValue("hostname-filter");
 
         // Filter data sesuai hostname, jika bukan "all"
-        let data = result.data.data;
+        let data = result.data?.data ?? [];
         if (selectedHostname !== "all") {
             data = data.filter(item => item.hostname === selectedHostname);
         }
