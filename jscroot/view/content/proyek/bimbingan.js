@@ -104,6 +104,9 @@ function handleBimbinganChange(target) {
             }
         });
     }
+    
+    // Refresh the sidang eligibility check to update the count
+    checkSidangEligibility();
 }
 
 function getBimbinganList(result) {
@@ -402,8 +405,29 @@ function checkApprovalButtonConditions() {
 function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            const bimbinganCount = result.data.length;
-            const eligibilityMet = bimbinganCount >= 8;
+            // Filter only approved bimbingan sessions
+            const approvedBimbingan = result.data.filter(bimbingan => bimbingan.approved === true);
+            const approvedCount = approvedBimbingan.length;
+            const totalCount = result.data.length;
+            const eligibilityMet = approvedCount >= 8;
+            
+            // Update the approved count display
+            const approvedCountElement = document.getElementById('approved-bimbingan-count');
+            if (approvedCountElement) {
+                approvedCountElement.textContent = approvedCount;
+                
+                // Update tag color based on progress
+                approvedCountElement.classList.remove('is-success', 'is-warning', 'is-danger', 'is-info', 'is-light');
+                if (approvedCount >= 8) {
+                    approvedCountElement.classList.add('is-success');
+                } else if (approvedCount >= 6) {
+                    approvedCountElement.classList.add('is-warning');
+                } else if (approvedCount >= 4) {
+                    approvedCountElement.classList.add('is-info');
+                } else {
+                    approvedCountElement.classList.add('is-danger', 'is-light');
+                }
+            }
             
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
@@ -412,16 +436,44 @@ function checkSidangEligibility() {
                 
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                    // Show both approved and total count for clarity
+                    tombolPengajuanSidang.setAttribute('title', 
+                        `Anda memerlukan minimal 8 sesi bimbingan yang disetujui untuk mengajukan sidang. ` +
+                        `Saat ini: ${approvedCount} disetujui dari ${totalCount} total bimbingan`
+                    );
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
                     
                     // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
+                
+                // Update button appearance based on eligibility
+                if (!eligibilityMet) {
+                    tombolPengajuanSidang.classList.remove('is-success');
+                    tombolPengajuanSidang.classList.add('is-info');
+                }
             }
+            
+            // Optional: Log for debugging
+            console.log(`Sidang eligibility check: ${approvedCount} approved out of ${totalCount} total bimbingan sessions`);
         } else {
             console.error('Failed to get bimbingan data:', result);
+            
+            // Disable button and show error state if we can't get data
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = true;
+                tombolPengajuanSidang.setAttribute('title', 'Tidak dapat mengambil data bimbingan');
+            }
+            
+            // Update count display to show error
+            const approvedCountElement = document.getElementById('approved-bimbingan-count');
+            if (approvedCountElement) {
+                approvedCountElement.textContent = '?';
+                approvedCountElement.classList.remove('is-success', 'is-warning', 'is-info');
+                approvedCountElement.classList.add('is-danger', 'is-light');
+            }
         }
     });
 }
