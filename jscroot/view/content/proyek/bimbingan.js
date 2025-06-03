@@ -402,11 +402,8 @@ function checkApprovalButtonConditions() {
 function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            // Filter only approved bimbingan sessions
-            const approvedBimbingan = result.data.filter(bimbingan => bimbingan.approved === true);
-            const approvedCount = approvedBimbingan.length;
-            const totalCount = result.data.length;
-            const eligibilityMet = approvedCount >= 8;
+            const bimbinganCount = result.data.length;
+            const eligibilityMet = bimbinganCount >= 8;
             
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
@@ -415,48 +412,16 @@ function checkSidangEligibility() {
                 
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    // Show both approved and total count for clarity
-                    tombolPengajuanSidang.setAttribute('title', 
-                        `Anda memerlukan minimal 8 sesi bimbingan yang disetujui untuk mengajukan sidang. ` +
-                        `Saat ini: ${approvedCount} disetujui dari ${totalCount} total bimbingan`
-                    );
-                    
-                    // Optional: Update button text to show progress
-                    tombolPengajuanSidang.textContent = `Ajukan Sidang (${approvedCount}/8)`;
+                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-                    tombolPengajuanSidang.textContent = 'Ajukan Sidang';
                     
                     // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
-                
-                // Optional: Add visual indicator for progress
-                if (approvedCount < 8) {
-                    // Change button color based on progress
-                    tombolPengajuanSidang.classList.remove('is-success', 'is-warning');
-                    if (approvedCount >= 6) {
-                        tombolPengajuanSidang.classList.add('is-warning'); // Almost there
-                    } else {
-                        tombolPengajuanSidang.classList.add('is-info'); // Default
-                    }
-                } else {
-                    tombolPengajuanSidang.classList.remove('is-warning');
-                    tombolPengajuanSidang.classList.add('is-info');
-                }
             }
-            
-            // Optional: Log for debugging
-            console.log(`Sidang eligibility check: ${approvedCount} approved out of ${totalCount} total bimbingan sessions`);
         } else {
             console.error('Failed to get bimbingan data:', result);
-            
-            // Disable button if we can't get data
-            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-            if (tombolPengajuanSidang) {
-                tombolPengajuanSidang.disabled = true;
-                tombolPengajuanSidang.setAttribute('title', 'Tidak dapat mengambil data bimbingan');
-            }
         }
     });
 }
