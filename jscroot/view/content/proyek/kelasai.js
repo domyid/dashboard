@@ -24,6 +24,7 @@ export async function main(){
     onClick('tombolkirimtugas', checkAndSubmit);
     onChange('tugas-name', handleTugasAIChange);
     fetchTugasScore();
+    hide('tombolkirimtugas');
 }
 
 function handleTugasAIChange(target) {
