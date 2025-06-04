@@ -32,8 +32,8 @@ export function getContentURL(){
             return url.template.content+"proyek/kelasai1.html";
         case "proyek/tracker":
             return url.template.content+"proyek/tracker.html";
-        case "proyek/bimbinganone":
-                return url.template.content+"proyek/bimbinganone.html";    
+        case "proyek/bimbingangetcode":
+                return url.template.content+"proyek/bimbingangetcode.html";    
         case "notifications/blocked":
             return url.template.content+"notifications/blocked.html";
         case "notifications/silenced":

@@ -18,6 +18,10 @@ export async function main(){
     // Add new functionality for pengajuan sidang
     checkSidangEligibility();
     setupPengajuanSidangModal();
+
+        // Add new functionality for claim event
+        checkEventClaimStatus();
+        setupClaimEventModal();
 }
 
 // Global variable to track current approval status
