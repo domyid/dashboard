@@ -1,4 +1,4 @@
-import { onClick, setText, show, hide, addClass, removeClass } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
+import { onClick, setText, show, hide } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js"; // Removed addClass, removeClass
 import { getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import { backend } from "/dashboard/jscroot/url/config.js"; // Adjust path as necessary
@@ -33,38 +33,49 @@ export async function main() {
 
 async function handleGenerateCode() {
     const token = getCookie('login');
+    const generateBtnElement = document.getElementById(ID_GENERATE_BTN);
+
     if (!token) {
         showNotification('Sesi Anda telah berakhir. Silakan login kembali.', 'is-danger');
-        const generateBtnElement = document.getElementById(ID_GENERATE_BTN);
         if (generateBtnElement) {
             generateBtnElement.disabled = true;
         }
         return;
     }
 
-    const generateBtnElement = document.getElementById(ID_GENERATE_BTN);
     generateBtnElement.disabled = true;
-    addClass(generateBtnElement, 'is-loading');
+    generateBtnElement.classList.add('is-loading'); // Use standard classList
+    hide(ID_CODE_DISPLAY_AREA);
 
-    // Assuming the endpoint is defined in config.js as backend.bimbingan.generateEventCode
-    // GET 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode'
-    if (!backend.bimbingan || !backend.bimbingan.generateEventCode) {
-        showNotification('Konfigurasi endpoint untuk generate code tidak ditemukan.', 'is-danger');
+    if (!(backend && backend.bimbingan && backend.bimbingan.generateEventCode)) {
+        const errorMessage = 'Konfigurasi endpoint untuk generate code tidak ditemukan. Harap periksa file config.js dan pastikan backend.bimbingan.generateEventCode sudah benar.';
+        console.error(errorMessage);
+        showNotification(errorMessage, 'is-danger');
         generateBtnElement.disabled = false;
-        removeClass(generateBtnElement, 'is-loading');
+        generateBtnElement.classList.remove('is-loading'); // Use standard classList
         return;
     }
     
     getJSON(backend.bimbingan.generateEventCode, 'login', token, (result) => {
-        generateBtnElement.disabled = false;
-        removeClass(generateBtnElement, 'is-loading');
+        console.log("Backend response for generateEventCode:", result);
 
-        if (result.status === 200 && result.data && result.data.response) {
-            setText(ID_GENERATED_CODE, result.data.response);
+        generateBtnElement.disabled = false;
+        generateBtnElement.classList.remove('is-loading'); // Use standard classList
+
+        if (result.status === 200 && result.data && result.data.Status === "Success" && typeof result.data.Response === 'string') {
+            setText(ID_GENERATED_CODE, result.data.Response);
             show(ID_CODE_DISPLAY_AREA);
             showNotification('Kode event berhasil digenerate!', 'is-success');
         } else {
-            const errorMessage = (result.data && result.data.response) ? result.data.response : 'Gagal generate code. Pastikan Anda adalah owner.';
+            let errorMessage = 'Gagal generate code. Silakan coba lagi.';
+            if (result.data && result.data.Response) {
+                errorMessage = result.data.Response;
+            } else if (result.data && result.data.Status) {
+                 errorMessage = result.data.Status;
+            } else if (result.status !== 200) {
+                errorMessage = `Gagal menghubungi server (status: ${result.status}). Pastikan Anda adalah owner.`;
+            }
+            
             showNotification(errorMessage, 'is-danger');
             hide(ID_CODE_DISPLAY_AREA);
         }
@@ -83,14 +94,14 @@ function handleCopyCode() {
         const originalText = copyBtnElement.textContent;
         
         setText(ID_COPY_BTN, 'Copied!');
-        removeClass(copyBtnElement, 'is-info');
-        addClass(copyBtnElement, 'is-success');
+        copyBtnElement.classList.remove('is-info'); // Use standard classList
+        copyBtnElement.classList.add('is-success');   // Use standard classList
         showNotification('Kode berhasil disalin ke clipboard!', 'is-success');
 
         setTimeout(() => {
             setText(ID_COPY_BTN, originalText);
-            removeClass(copyBtnElement, 'is-success');
-            addClass(copyBtnElement, 'is-info');
+            copyBtnElement.classList.remove('is-success'); // Use standard classList
+            copyBtnElement.classList.add('is-info');     // Use standard classList
         }, 2000);
     }).catch(err => {
         console.error('Error copying code: ', err);
@@ -100,18 +111,26 @@ function handleCopyCode() {
 
 function showNotification(message, type) {
     const notificationAreaElement = document.getElementById(ID_NOTIFICATION_AREA);
+    if (!notificationAreaElement) {
+        console.error("Element notifikasi (ID_NOTIFICATION_AREA) tidak ditemukan di HTML!");
+        return;
+    }
+    const notificationMessageElement = document.getElementById(ID_NOTIFICATION_MESSAGE);
+    if (!notificationMessageElement) {
+        console.error("Elemen pesan notifikasi (ID_NOTIFICATION_MESSAGE) tidak ditemukan di HTML!");
+        return;
+    }
     
     setText(ID_NOTIFICATION_MESSAGE, message);
 
-    // Remove existing type classes
-    notificationAreaElement.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info');
-    // Add new type class
-    addClass(notificationAreaElement, type);
+    // Use standard classList API
+    notificationAreaElement.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+    notificationAreaElement.classList.add(type);
 
     show(ID_NOTIFICATION_AREA);
 
-    // Auto hide after 5 seconds
+    const autoHideDelay = 5000;
     setTimeout(() => {
         hide(ID_NOTIFICATION_AREA);
-    }, 5000);
+    }, autoHideDelay);
 }
