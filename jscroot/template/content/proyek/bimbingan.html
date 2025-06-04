@@ -79,36 +79,12 @@
                 </div>
             </div>
 
-            <div class="modal" id="modal-claim-event">
-                <div class="modal-background"></div>
-                <div class="modal-card">
-                    <header class="modal-card-head">
-                        <p class="modal-card-title">Claim Event Referral Code</p>
-                        <button class="delete" aria-label="close" id="close-modal-claim"></button>
-                    </header>
-                    <section class="modal-card-body">
-                        <div class="field">
-                            <label class="label">Event Referral Code</label>
-                            <div class="control">
-                                <input class="input" type="text" id="event-code-input" placeholder="Enter your event code" required>
-                            </div>
-                        </div>
-                         <div class="notification is-hidden" id="notification-claim-event-modal">
-                            <button class="delete" id="close-notification-claim-modal"></button>
-                            <span id="notification-message-claim-modal"></span>
-                        </div>
-                    </section>
-                    <footer class="modal-card-foot">
-                        <button class="button is-success" id="submit-claim-code">Claim Code</button>
-                        <button class="button" id="cancel-claim-code">Cancel</button>
-                    </footer>
+            <div class="field mt-5">
+                <div class="control">
+                    <button class="button is-warning" type="button" id="tombolclaimevent">Claim Code Referral Event</button>
                 </div>
             </div>
 
-            <div class="notification is-hidden mt-4" id="notification-claim-event">
-                <button class="delete" id="close-notification-claim"></button>
-                <span id="notification-message-claim"></span>
-            </div>
             <!-- Modal for Pengajuan Sidang -->
             <div class="modal" id="modal-pengajuan-sidang">
                 <div class="modal-background"></div>
@@ -156,6 +132,37 @@
                   Telah di-rating oleh dosen
                 </label>
               </div>               -->
+
+              <div class="modal" id="modal-claim-event">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <header class="modal-card-head">
+                        <p class="modal-card-title">Claim Event Referral Code</p>
+                        <button class="delete" aria-label="close" id="close-modal-claim"></button>
+                    </header>
+                    <section class="modal-card-body">
+                        <div class="field">
+                            <label class="label">Event Referral Code</label>
+                            <div class="control">
+                                <input class="input" type="text" id="event-code-input" placeholder="Enter your event code" required>
+                            </div>
+                        </div>
+                         <div class="notification is-hidden" id="notification-claim-event-modal">
+                            <button class="delete" id="close-notification-claim-modal"></button>
+                            <span id="notification-message-claim-modal"></span>
+                        </div>
+                    </section>
+                    <footer class="modal-card-foot">
+                        <button class="button is-success" id="submit-claim-code">Claim Code</button>
+                        <button class="button" id="cancel-claim-code">Cancel</button>
+                    </footer>
+                </div>
+            </div>
+
+            <div class="notification is-hidden mt-4" id="notification-claim-event">
+                <button class="delete" id="close-notification-claim"></button>
+                <span id="notification-message-claim"></span>
+            </div>
 
     </div>
 </section>
