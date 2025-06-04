@@ -77,6 +77,8 @@ export function getURLContentJS(){
             return url.view.content+"proyek/assessment.js";
         case "proyek/bimbingan":
             return url.view.content+"proyek/bimbingan.js";
+        case "proyek/bimbingangetcode":
+            return url.view.content+"proyek/bimbingangetcode.js";
         case "proyek/kelasws":
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":
