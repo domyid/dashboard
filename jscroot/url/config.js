@@ -56,7 +56,6 @@ export const backend = {
         'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/pengajuan',
         dosenpenguji: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/dosenpenguji',
         claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimcode',
-        eventClaimStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimstatus',
         generateEventCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
     },
 };

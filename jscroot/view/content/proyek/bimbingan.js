@@ -19,9 +19,8 @@ export async function main(){
     checkSidangEligibility();
     setupPengajuanSidangModal();
 
-        // Add new functionality for claim event
-        checkEventClaimStatus();
-        setupClaimEventModal();
+    // Add new functionality for claim event - simplified
+    setupClaimEventModal();
 }
 
 // Global variable to track current approval status
@@ -573,34 +572,7 @@ function showNotification(message, type) {
     }, 5000);
 }
 
-// Event Claim Modal Logic
-async function checkEventClaimStatus() {
-    const tombolClaimEvent = document.getElementById('tombolclaimevent');
-    if (!tombolClaimEvent) return;
-
-    getJSON(backend.bimbingan.eventClaimStatus, 'login', getCookie('login'), function(result) { // Path from config.js
-        if (result.status === 200 && result.data) {
-            if (result.data.hasClaimed) {
-                tombolClaimEvent.textContent = 'Event Code Claimed';
-                tombolClaimEvent.disabled = true;
-                tombolClaimEvent.classList.remove('is-warning');
-                tombolClaimEvent.classList.add('is-success');
-                tombolClaimEvent.setAttribute('title', `Code ${result.data.eventCode} claimed on ${new Date(result.data.claimedAt).toLocaleDateString()}`);
-            } else {
-                tombolClaimEvent.textContent = 'Claim Code Referral Event';
-                tombolClaimEvent.disabled = false;
-                tombolClaimEvent.classList.remove('is-success');
-                tombolClaimEvent.classList.add('is-warning');
-                tombolClaimEvent.setAttribute('title', 'Click to claim an event referral code');
-            }
-        } else {
-            console.error("Error checking event claim status:", result.data?.response || "Unknown error");
-            tombolClaimEvent.textContent = 'Claim Code Referral Event';
-            tombolClaimEvent.disabled = false; 
-        }
-    });
-}
-
+// Event Claim Modal Logic - Simplified (No claim status check)
 function setupClaimEventModal() {
     const modal = document.getElementById('modal-claim-event');
     const tombolClaimEvent = document.getElementById('tombolclaimevent');
@@ -618,8 +590,14 @@ function setupClaimEventModal() {
         return;
     }
 
+    // Button is always enabled and ready to use
+    tombolClaimEvent.textContent = 'Claim Code Referral Event';
+    tombolClaimEvent.disabled = false;
+    tombolClaimEvent.classList.remove('is-success');
+    tombolClaimEvent.classList.add('is-warning');
+    tombolClaimEvent.setAttribute('title', 'Click to claim an event referral code');
+
     tombolClaimEvent.addEventListener('click', function() {
-        if (tombolClaimEvent.disabled) return;
         eventCodeInput.value = ''; 
         hideEventNotificationModal();
         modal.classList.add('is-active');
@@ -647,7 +625,7 @@ function setupClaimEventModal() {
 
         const claimData = { code: code };
 
-        postJSON(backend.bimbingan.claimEvent, 'login', getCookie('login'), claimData, function(result) { // Path from config.js
+        postJSON(backend.bimbingan.claimEvent, 'login', getCookie('login'), claimData, function(result) {
             submitBtn.classList.remove('is-loading');
             if (result.status === 200) {
                 closeEventModal();
@@ -657,7 +635,6 @@ function setupClaimEventModal() {
                     text: result.data.response || 'Event code claimed successfully! Your bimbingan has been added.',
                     confirmButtonText: 'Great!'
                 }).then(() => {
-                    checkEventClaimStatus(); 
                     fetchActivityScore(); // Refresh activity score table
                     // Refresh bimbingan list dropdown
                     const bimbinganSelect = document.getElementById('bimbingan-name');
