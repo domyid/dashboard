@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Claim Bimbingan</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        .qr-container {
+            text-align: center;
+            padding: 2rem;
+            border: 2px dashed #dbdbdb;
+            border-radius: 12px;
+            margin: 2rem 0;
+            background-color: #fafafa;
+        }
+        .qr-code {
+            margin: 1rem auto;
+            max-width: 300px;
+        }
+        .countdown {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3273dc;
+            margin: 1rem 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-active {
+            background-color: #23d160;
+            animation: pulse 2s infinite;
+        }
+        .status-inactive {
+            background-color: #ff3860;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .claim-section {
+            background-color: #f5f5f5;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        .admin-controls {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="box mt-5">
+            <h1 class="title has-text-centered">🎯 QR Code Claim Bimbingan</h1>
+            
+            <!-- Admin Controls (Only visible to owners) -->
+            <div id="admin-controls" class="admin-controls hidden">
+                <h2 class="subtitle">🔧 Admin Controls</h2>
+                <div class="buttons">
+                    <button class="button is-success" id="start-qr-btn">
+                        <span class="icon">🟢</span>
+                        <span>Start QR Session</span>
+                    </button>
+                    <button class="button is-danger" id="stop-qr-btn">
+                        <span class="icon">🔴</span>
+                        <span>Stop QR Session</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="notification" id="system-status">
+                <span class="status-indicator" id="status-indicator"></span>
+                <strong>Status Sistem: </strong>
+                <span id="status-text">Memuat...</span>
+            </div>
+
+            <!-- User Status Check -->
+            <div class="notification" id="user-status" style="display: none;">
+            </div>
+
+            <!-- QR Code Display Section -->
+            <div id="qr-display-section">
+                <div class="qr-container">
+                    <h2 class="subtitle">📱 Scan QR Code untuk Claim Bimbingan</h2>
+                    <div id="qr-code-area">
+                        <canvas id="qrcode" class="qr-code"></canvas>
+                    </div>
+                    <div class="countdown" id="countdown">⏱️ Menunggu...</div>
+                    <p class="has-text-grey">QR Code akan refresh setiap 20 detik</p>
+                    <p class="has-text-warning">⚠️ Setiap user hanya bisa claim 1x seumur hidup</p>
+                </div>
+            </div>
+
+            <!-- Manual Claim Section -->
+            <div class="claim-section">
+                <h2 class="subtitle">✋ Manual Claim</h2>
+                <p class="has-text-grey mb-3">Jika tidak bisa scan QR, masukkan kode manual:</p>
+                <div class="field has-addons">
+                    <div class="control is-expanded">
+                        <input class="input" type="text" id="manual-qr-input" placeholder="Masukkan kode QR...">
+                    </div>
+                    <div class="control">
+                        <button class="button is-primary" id="manual-claim-btn">
+                            <span class="icon">🎯</span>
+                            <span>Claim</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="content">
+                <h3>📋 Informasi Penting:</h3>
+                <ul>
+                    <li>🔄 QR Code otomatis refresh setiap 20 detik</li>
+                    <li>⚡ Claim harus dilakukan sebelum QR Code expired</li>
+                    <li>🚫 Setiap user hanya bisa claim 1x seumur hidup</li>
+                    <li>✅ Claim berhasil akan menambah 1 bimbingan dengan rating 5</li>
+                    <li>👨‍🏫 Asesor otomatis: Dirga F</li>
+                </ul>
+            </div>
+
+            <!-- Notifications Area -->
+            <div class="notification is-hidden" id="notification-area">
+                <button class="delete" id="close-notification"></button>
+                <span id="notification-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="bimbinganclaimrefreal.js"></script>
+</body>
+</html>
