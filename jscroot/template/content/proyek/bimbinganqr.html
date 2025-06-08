@@ -6,36 +6,21 @@
     <title>Bimbingan QR Code</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <style>
         .qr-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 300px;
+            min-height: 350px;
             border: 2px dashed #dbdbdb;
             border-radius: 8px;
             margin: 20px 0;
+            background-color: #fafafa;
         }
         .qr-code-canvas {
-            max-width: 256px;
-            max-height: 256px;
-        }
-        .scanner-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            margin: 20px 0;
-        }
-        #video {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 8px;
-        }
-        .controls {
-            margin: 20px 0;
+            max-width: 300px;
+            max-height: 300px;
         }
         .status-indicator {
             display: inline-block;
@@ -61,8 +46,13 @@
             font-weight: bold;
             color: #3273dc;
         }
-        .hidden {
-            display: none;
+        .qr-active {
+            border-color: #48c774;
+            background-color: #f0fff4;
+        }
+        .big-qr-text {
+            font-size: 1.5rem;
+            color: #666;
         }
     </style>
 </head>
@@ -92,7 +82,7 @@
                     </div>
                     <div class="control" id="countdown-container" style="display: none;">
                         <div class="tags has-addons">
-                            <span class="tag">Countdown</span>
+                            <span class="tag">Next Refresh</span>
                             <span class="tag is-warning countdown" id="countdown">-</span>
                         </div>
                     </div>
@@ -102,79 +92,44 @@
             <!-- Owner Controls -->
             <div class="box" id="owner-controls" style="display: none;">
                 <h2 class="subtitle">Kontrol Owner</h2>
-                <div class="field is-grouped">
+                <div class="field is-grouped is-grouped-centered">
                     <div class="control">
-                        <button class="button is-success" id="start-session">
+                        <button class="button is-success is-large" id="start-session">
                             <span class="icon">
                                 <i class="fas fa-play"></i>
                             </span>
-                            <span>Mulai Session QR</span>
+                            <span>Mulai QR Session</span>
                         </button>
                     </div>
                     <div class="control">
-                        <button class="button is-danger" id="stop-session">
+                        <button class="button is-danger is-large" id="stop-session" style="display: none;">
                             <span class="icon">
                                 <i class="fas fa-stop"></i>
                             </span>
-                            <span>Hentikan Session</span>
+                            <span>Stop QR Session</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="columns">
-                <!-- QR Code Display -->
-                <div class="column">
-                    <div class="box">
-                        <h2 class="subtitle has-text-centered">QR Code Display</h2>
-                        <div class="qr-container" id="qr-container">
-                            <div class="has-text-grey-light">
-                                <p class="has-text-centered">QR Code akan muncul di sini</p>
-                                <p class="has-text-centered is-size-7">Session akan refresh setiap 20 detik</p>
-                            </div>
-                        </div>
-                        <div class="has-text-centered">
-                            <button class="button is-info is-small" id="refresh-qr" style="display: none;">
-                                <span class="icon">
-                                    <i class="fas fa-refresh"></i>
-                                </span>
-                                <span>Refresh Manual</span>
-                            </button>
-                        </div>
+            <!-- QR Code Display -->
+            <div class="box">
+                <h2 class="subtitle has-text-centered">QR Code Display</h2>
+                <div class="qr-container" id="qr-container">
+                    <div class="has-text-grey-light has-text-centered">
+                        <i class="fas fa-qrcode" style="font-size: 4rem; margin-bottom: 20px;"></i>
+                        <p class="big-qr-text">QR Code akan muncul di sini</p>
+                        <p class="is-size-6">QR akan refresh otomatis setiap 20 detik</p>
+                        <p class="is-size-7 mt-3">Mahasiswa scan dengan aplikasi QR scanner</p>
                     </div>
                 </div>
-
-                <!-- QR Code Scanner -->
-                <div class="column">
-                    <div class="box">
-                        <h2 class="subtitle has-text-centered">QR Code Scanner</h2>
-                        <div class="scanner-container">
-                            <video id="video" autoplay muted></video>
-                            <canvas id="canvas" style="display: none;"></canvas>
-                        </div>
-                        <div class="field is-grouped is-grouped-centered">
-                            <div class="control">
-                                <button class="button is-primary" id="start-camera">
-                                    <span class="icon">
-                                        <i class="fas fa-camera"></i>
-                                    </span>
-                                    <span>Nyalakan Kamera</span>
-                                </button>
-                            </div>
-                            <div class="control">
-                                <button class="button is-light" id="stop-camera" style="display: none;">
-                                    <span class="icon">
-                                        <i class="fas fa-camera-off"></i>
-                                    </span>
-                                    <span>Matikan Kamera</span>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Claim Status -->
-                        <div class="notification" id="claim-status" style="display: none;">
-                            <span id="claim-message"></span>
-                        </div>
+                
+                <!-- Auto Refresh Info -->
+                <div class="has-text-centered" id="refresh-info" style="display: none;">
+                    <div class="notification is-info is-light">
+                        <p><strong>Auto Refresh Aktif</strong></p>
+                        <p>QR Code akan berganti otomatis setiap 20 detik</p>
+                        <p class="is-size-7">Mahasiswa dapat scan kapan saja selama session aktif</p>
                     </div>
                 </div>
             </div>
@@ -183,13 +138,36 @@
             <div class="box">
                 <h2 class="subtitle">Cara Penggunaan</h2>
                 <div class="content">
+                    <h4>Untuk Owner:</h4>
                     <ol>
-                        <li><strong>Untuk Owner:</strong> Klik "Mulai Session QR" untuk memulai session</li>
-                        <li><strong>Untuk Mahasiswa:</strong> Nyalakan kamera dan scan QR code yang ditampilkan</li>
-                        <li>QR code akan refresh otomatis setiap 20 detik</li>
-                        <li>Setiap mahasiswa hanya bisa claim 1x melalui QR code</li>
-                        <li>Owner bisa menghentikan session kapan saja</li>
+                        <li>Klik <strong>"Mulai QR Session"</strong> untuk memulai</li>
+                        <li>QR code akan muncul dan refresh otomatis setiap 20 detik</li>
+                        <li>Klik <strong>"Stop QR Session"</strong> untuk menghentikan</li>
                     </ol>
+                    
+                    <h4>Untuk Mahasiswa:</h4>
+                    <ol>
+                        <li>Gunakan aplikasi <strong>QR Scanner</strong> di HP Anda</li>
+                        <li>Scan QR code yang ditampilkan di layar</li>
+                        <li>Otomatis mendapat 1x bimbingan bonus</li>
+                        <li>Setiap mahasiswa hanya bisa claim <strong>1x</strong> via QR code</li>
+                    </ol>
+                    
+                    <div class="notification is-warning is-light mt-4">
+                        <p><strong>Catatan:</strong> QR code berubah setiap 20 detik untuk keamanan. Pastikan scan dengan cepat!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Claim Status untuk Mahasiswa -->
+            <div class="box" id="student-info">
+                <h2 class="subtitle">Status Klaim Anda</h2>
+                <div class="notification" id="claim-status" style="display: none;">
+                    <span id="claim-message"></span>
+                </div>
+                <div id="not-claimed" class="notification is-info is-light">
+                    <p>Anda belum pernah menggunakan QR code untuk mendapatkan bimbingan.</p>
+                    <p>Scan QR code di atas saat session aktif untuk mendapatkan bimbingan bonus!</p>
                 </div>
             </div>
 

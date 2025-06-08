@@ -13,12 +13,9 @@ const backend = {
 let currentSession = null;
 let refreshInterval = null;
 let countdownInterval = null;
-let scanInterval = null;
+let sessionCheckInterval = null;
 let isOwner = false;
 let currentUserPhone = '';
-let video = null;
-let canvas = null;
-let context = null;
 
 // DOM Elements
 const elements = {
@@ -32,13 +29,10 @@ const elements = {
     startSession: document.getElementById('start-session'),
     stopSession: document.getElementById('stop-session'),
     qrContainer: document.getElementById('qr-container'),
-    refreshQr: document.getElementById('refresh-qr'),
-    video: document.getElementById('video'),
-    canvas: document.getElementById('canvas'),
-    startCamera: document.getElementById('start-camera'),
-    stopCamera: document.getElementById('stop-camera'),
+    refreshInfo: document.getElementById('refresh-info'),
     claimStatus: document.getElementById('claim-status'),
     claimMessage: document.getElementById('claim-message'),
+    notClaimed: document.getElementById('not-claimed'),
     notification: document.getElementById('notification'),
     notificationMessage: document.getElementById('notification-message'),
     closeNotification: document.getElementById('close-notification')
@@ -46,10 +40,6 @@ const elements = {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    video = elements.video;
-    canvas = elements.canvas;
-    context = canvas.getContext('2d');
-    
     // Check if user is logged in
     const token = getCookie('login');
     if (!token) {
@@ -60,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize user info and check owner status
     await initializeUser();
     
-    // Check claim status
+    // Check claim status for students
     await checkUserClaimStatus();
     
     // Setup event listeners
@@ -98,9 +88,6 @@ async function initializeUser() {
 function setupEventListeners() {
     elements.startSession.addEventListener('click', startQRSession);
     elements.stopSession.addEventListener('click', stopQRSession);
-    elements.refreshQr.addEventListener('click', manualRefreshQR);
-    elements.startCamera.addEventListener('click', startCamera);
-    elements.stopCamera.addEventListener('click', stopCamera);
     elements.closeNotification.addEventListener('click', hideNotification);
 }
 
@@ -126,8 +113,9 @@ async function startQRSession() {
         const result = await response.json();
         
         if (response.ok && result.sessionId) {
-            showNotification('Session QR berhasil dimulai!', 'is-success');
+            showNotification('QR Session berhasil dimulai! QR akan refresh setiap 20 detik.', 'is-success');
             await checkActiveSession();
+            startAutoRefresh();
         } else {
             throw new Error(result.response || result.message || 'Gagal memulai session');
         }
@@ -160,7 +148,8 @@ async function stopQRSession() {
         const result = await response.json();
         
         if (response.ok) {
-            showNotification('Session QR berhasil dihentikan!', 'is-success');
+            showNotification('QR Session berhasil dihentikan!', 'is-success');
+            stopAutoRefresh();
             await checkActiveSession();
         } else {
             throw new Error(result.response || result.message || 'Gagal menghentikan session');
@@ -203,13 +192,27 @@ function updateSessionUI(isActive, sessionId = '', expiresAt = null) {
         elements.statusText.textContent = 'Aktif';
         elements.sessionId.textContent = sessionId;
         elements.countdownContainer.style.display = 'block';
-        elements.refreshQr.style.display = 'inline-block';
+        elements.refreshInfo.style.display = 'block';
+        elements.qrContainer.classList.add('qr-active');
+        
+        // Update owner controls
+        if (isOwner) {
+            elements.startSession.style.display = 'none';
+            elements.stopSession.style.display = 'inline-block';
+        }
     } else {
         elements.statusIndicator.className = 'status-indicator status-inactive';
         elements.statusText.textContent = 'Tidak Aktif';
         elements.sessionId.textContent = '-';
         elements.countdownContainer.style.display = 'none';
-        elements.refreshQr.style.display = 'none';
+        elements.refreshInfo.style.display = 'none';
+        elements.qrContainer.classList.remove('qr-active');
+        
+        // Update owner controls
+        if (isOwner) {
+            elements.startSession.style.display = 'inline-block';
+            elements.stopSession.style.display = 'none';
+        }
     }
 }
 
@@ -227,8 +230,8 @@ function generateQRCode(sessionId) {
     elements.qrContainer.appendChild(qrCodeDiv);
     
     QRCode.toCanvas(qrCodeDiv, qrData, {
-        width: 256,
-        height: 256,
+        width: 300,
+        height: 300,
         margin: 2,
         color: {
             dark: '#000000',
@@ -245,16 +248,49 @@ function generateQRCode(sessionId) {
 // Clear QR Code
 function clearQRCode() {
     elements.qrContainer.innerHTML = `
-        <div class="has-text-grey-light">
-            <p class="has-text-centered">QR Code akan muncul di sini</p>
-            <p class="has-text-centered is-size-7">Session akan refresh setiap 20 detik</p>
+        <div class="has-text-grey-light has-text-centered">
+            <i class="fas fa-qrcode" style="font-size: 4rem; margin-bottom: 20px;"></i>
+            <p class="big-qr-text">QR Code akan muncul di sini</p>
+            <p class="is-size-6">QR akan refresh otomatis setiap 20 detik</p>
+            <p class="is-size-7 mt-3">Mahasiswa scan dengan aplikasi QR scanner</p>
         </div>
     `;
 }
 
-// Manual refresh QR
-async function manualRefreshQR() {
-    await checkActiveSession();
+// Start auto refresh QR
+function startAutoRefresh() {
+    stopAutoRefresh(); // Clear any existing interval
+    
+    refreshInterval = setInterval(async () => {
+        console.log('Auto refreshing QR session...');
+        if (isOwner && currentSession) {
+            // Generate new session automatically
+            try {
+                const response = await fetch(backend.generateSession, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'login': getCookie('login')
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    await checkActiveSession();
+                }
+            } catch (error) {
+                console.error('Auto refresh error:', error);
+            }
+        }
+    }, 20000); // 20 detik
+}
+
+// Stop auto refresh
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
 }
 
 // Start countdown
@@ -266,9 +302,7 @@ function startCountdown(expiresAt) {
         const timeLeft = expiresAt - now;
         
         if (timeLeft <= 0) {
-            elements.countdown.textContent = 'Expired';
-            stopCountdown();
-            setTimeout(checkActiveSession, 1000); // Check for new session
+            elements.countdown.textContent = 'Refreshing...';
         } else {
             const seconds = Math.ceil(timeLeft / 1000);
             elements.countdown.textContent = `${seconds}s`;
@@ -288,114 +322,7 @@ function stopCountdown() {
 // Start periodic checks
 function startPeriodicChecks() {
     // Check for active session every 5 seconds
-    setInterval(checkActiveSession, 5000);
-}
-
-// Start camera for scanning
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'environment' } 
-        });
-        
-        video.srcObject = stream;
-        video.play();
-        
-        elements.startCamera.style.display = 'none';
-        elements.stopCamera.style.display = 'inline-block';
-        
-        // Start scanning
-        startScanning();
-        
-    } catch (error) {
-        showNotification('Error accessing camera: ' + error.message, 'is-danger');
-    }
-}
-
-// Stop camera
-function stopCamera() {
-    if (video.srcObject) {
-        const tracks = video.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
-        video.srcObject = null;
-    }
-    
-    stopScanning();
-    
-    elements.startCamera.style.display = 'inline-block';
-    elements.stopCamera.style.display = 'none';
-}
-
-// Start QR code scanning
-function startScanning() {
-    stopScanning(); // Clear any existing scan interval
-    
-    scanInterval = setInterval(() => {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            
-            if (code) {
-                handleQRCodeScanned(code.data);
-            }
-        }
-    }, 100);
-}
-
-// Stop scanning
-function stopScanning() {
-    if (scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
-    }
-}
-
-// Handle QR code scanned
-async function handleQRCodeScanned(qrData) {
-    try {
-        const data = JSON.parse(qrData);
-        
-        if (data.type === 'bimbingan_qr' && data.sessionId) {
-            stopScanning(); // Stop scanning after successful scan
-            await claimQRBimbingan(data.sessionId);
-        } else {
-            showNotification('QR Code tidak valid untuk bimbingan', 'is-warning');
-        }
-    } catch (error) {
-        showNotification('QR Code format tidak valid', 'is-warning');
-    }
-}
-
-// Claim QR bimbingan
-async function claimQRBimbingan(sessionId) {
-    try {
-        const response = await fetch(backend.claimQR, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'login': getCookie('login')
-            },
-            body: JSON.stringify({ sessionId })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && (result.Status === "Success" || result.status === 200)) {
-            showNotification('QR Code berhasil diklaim! Bimbingan telah ditambahkan.', 'is-success');
-            updateClaimStatus(true);
-            stopCamera(); // Stop camera after successful claim
-        } else {
-            throw new Error(result.Response || result.response || result.message || 'Gagal claim QR code');
-        }
-    } catch (error) {
-        showNotification(`Error: ${error.message}`, 'is-danger');
-        // Resume scanning after error
-        setTimeout(startScanning, 2000);
-    }
+    sessionCheckInterval = setInterval(checkActiveSession, 5000);
 }
 
 // Check user claim status
@@ -410,9 +337,12 @@ async function checkUserClaimStatus() {
         
         if (result.hasClaimed) {
             updateClaimStatus(true, result.claimedAt, result.sessionId);
+        } else {
+            updateClaimStatus(false);
         }
     } catch (error) {
         console.error('Error checking claim status:', error);
+        updateClaimStatus(false);
     }
 }
 
@@ -421,18 +351,11 @@ function updateClaimStatus(hasClaimed, claimedAt = null, sessionId = null) {
     if (hasClaimed) {
         elements.claimStatus.style.display = 'block';
         elements.claimStatus.className = 'notification is-success';
-        elements.claimMessage.textContent = 'Anda sudah pernah menggunakan QR Code untuk mendapatkan bimbingan';
-        
-        // Disable camera if already claimed
-        elements.startCamera.disabled = true;
-        elements.startCamera.textContent = 'Sudah Pernah Claim';
+        elements.claimMessage.textContent = `Anda sudah menggunakan QR Code untuk mendapatkan bimbingan (${new Date(claimedAt).toLocaleDateString()})`;
+        elements.notClaimed.style.display = 'none';
     } else {
         elements.claimStatus.style.display = 'none';
-        elements.startCamera.disabled = false;
-        elements.startCamera.innerHTML = `
-            <span class="icon"><i class="fas fa-camera"></i></span>
-            <span>Nyalakan Kamera</span>
-        `;
+        elements.notClaimed.style.display = 'block';
     }
 }
 
@@ -453,7 +376,9 @@ function hideNotification() {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-    stopCamera();
+    stopAutoRefresh();
     stopCountdown();
-    stopScanning();
+    if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+    }
 });
