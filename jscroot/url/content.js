@@ -36,6 +36,8 @@ export function getContentURL(){
                 return url.template.content+"proyek/bimbingangetcode.html";   
         case "proyek/bimbinganclaimrefreal":
                 return url.template.content+"proyek/bimbinganclaimrefreal.html";  
+        case "proyek/qradmin":
+                return url.template.content+"proyek/qradmin.html";                 
         case "notifications/blocked":
             return url.template.content+"notifications/blocked.html";
         case "notifications/silenced":
@@ -83,6 +85,8 @@ export function getURLContentJS(){
             return url.view.content+"proyek/bimbingangetcode.js";
         case "proyek/bimbinganclaimrefreal":
             return url.view.content+"proyek/bimbinganclaimrefreal.js";
+        case "proyek/qradmin":
+            return url.view.content+"proyek/qradmin.js";
             case "proyek/kelasws":
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":
