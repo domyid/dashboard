@@ -3,146 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Claim Bimbingan</title>
+    <title>Scan QR Code Bimbingan</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        .qr-container {
-            text-align: center;
-            padding: 2rem;
-            border: 2px dashed #dbdbdb;
-            border-radius: 12px;
-            margin: 2rem 0;
-            background-color: #fafafa;
+        .scanner-container {
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .qr-code {
-            margin: 1rem auto;
-            max-width: 300px;
+        .qr-reader {
+            border: 2px solid #3273dc;
+            border-radius: 8px;
+            overflow: hidden;
         }
-        .countdown {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #3273dc;
-            margin: 1rem 0;
+        .manual-input {
+            margin-top: 20px;
         }
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
+        .status-can-claim {
+            background-color: #48c774;
+            color: white;
         }
-        .status-active {
-            background-color: #23d160;
-            animation: pulse 2s infinite;
-        }
-        .status-inactive {
+        .status-already-claimed {
             background-color: #ff3860;
+            color: white;
         }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .status-no-session {
+            background-color: #363636;
+            color: white;
         }
-        .claim-section {
-            background-color: #f5f5f5;
-            padding: 2rem;
-            border-radius: 8px;
-            margin: 2rem 0;
-        }
-        .admin-controls {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-        .hidden {
-            display: none;
+        #qr-reader {
+            width: 100% !important;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="box mt-5">
-            <h1 class="title has-text-centered">🎯 QR Code Claim Bimbingan</h1>
-            
-            <!-- Admin Controls (Only visible to owners) -->
-            <div id="admin-controls" class="admin-controls hidden">
-                <h2 class="subtitle">🔧 Admin Controls</h2>
-                <div class="buttons">
-                    <button class="button is-success" id="start-qr-btn">
-                        <span class="icon">🟢</span>
-                        <span>Start QR Session</span>
-                    </button>
-                    <button class="button is-danger" id="stop-qr-btn">
-                        <span class="icon">🔴</span>
-                        <span>Stop QR Session</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- System Status -->
-            <div class="notification" id="system-status">
-                <span class="status-indicator" id="status-indicator"></span>
-                <strong>Status Sistem: </strong>
-                <span id="status-text">Memuat...</span>
-            </div>
-
-            <!-- User Status Check -->
-            <div class="notification" id="user-status" style="display: none;">
-            </div>
-
-            <!-- QR Code Display Section -->
-            <div id="qr-display-section">
-                <div class="qr-container">
-                    <h2 class="subtitle">📱 Scan QR Code untuk Claim Bimbingan</h2>
-                    <div id="qr-code-area">
-                        <canvas id="qrcode" class="qr-code"></canvas>
-                    </div>
-                    <div class="countdown" id="countdown">⏱️ Menunggu...</div>
-                    <p class="has-text-grey">QR Code akan refresh setiap 20 detik</p>
-                    <p class="has-text-warning">⚠️ Setiap user hanya bisa claim 1x seumur hidup</p>
-                </div>
-            </div>
-
-            <!-- Manual Claim Section -->
-            <div class="claim-section">
-                <h2 class="subtitle">✋ Manual Claim</h2>
-                <p class="has-text-grey mb-3">Jika tidak bisa scan QR, masukkan kode manual:</p>
-                <div class="field has-addons">
-                    <div class="control is-expanded">
-                        <input class="input" type="text" id="manual-qr-input" placeholder="Masukkan kode QR...">
-                    </div>
+        <section class="section">
+            <div class="box">
+                <h1 class="title has-text-centered">Scan QR Code Bimbingan</h1>
+                
+                <!-- Status Session -->
+                <div class="field">
+                    <label class="label">Status:</label>
                     <div class="control">
-                        <button class="button is-primary" id="manual-claim-btn">
-                            <span class="icon">🎯</span>
-                            <span>Claim</span>
+                        <span id="claim-status" class="tag is-large status-no-session">Memuat...</span>
+                    </div>
+                </div>
+
+                <div id="session-active-info" style="display: none;">
+                    <div class="field">
+                        <label class="label">Session ID:</label>
+                        <div class="control">
+                            <span id="active-session-id" class="tag is-info"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="claimed-info" style="display: none;">
+                    <div class="field">
+                        <label class="label">Waktu Claim:</label>
+                        <div class="control">
+                            <span id="claimed-time"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scanner Section -->
+                <div id="scanner-section" style="display: none;">
+                    <h2 class="subtitle has-text-centered">Scan QR Code</h2>
+                    
+                    <div class="scanner-container">
+                        <div id="qr-reader" class="qr-reader"></div>
+                    </div>
+
+                    <div class="manual-input">
+                        <h3 class="subtitle">Atau Masukkan Kode Manual</h3>
+                        <div class="field has-addons">
+                            <div class="control is-expanded">
+                                <input class="input" type="text" id="manual-qr-input" placeholder="Masukkan kode QR...">
+                            </div>
+                            <div class="control">
+                                <button class="button is-primary" id="manual-claim-btn">
+                                    Claim
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="has-text-centered mt-4">
+                        <button class="button is-warning" id="toggle-camera">
+                            Stop Camera
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Info Section -->
-            <div class="content">
-                <h3>📋 Informasi Penting:</h3>
-                <ul>
-                    <li>🔄 QR Code otomatis refresh setiap 20 detik</li>
-                    <li>⚡ Claim harus dilakukan sebelum QR Code expired</li>
-                    <li>🚫 Setiap user hanya bisa claim 1x seumur hidup</li>
-                    <li>✅ Claim berhasil akan menambah 1 bimbingan dengan rating 5</li>
-                    <li>👨‍🏫 Asesor otomatis: Dirga F</li>
-                </ul>
+                <!-- Notification -->
+                <div class="notification is-hidden" id="notification">
+                    <button class="delete" id="close-notification"></button>
+                    <span id="notification-message"></span>
+                </div>
             </div>
-
-            <!-- Notifications Area -->
-            <div class="notification is-hidden" id="notification-area">
-                <button class="delete" id="close-notification"></button>
-                <span id="notification-message"></span>
-            </div>
-        </div>
+        </section>
     </div>
 
-    <script type="module" src="bimbinganclaimrefreal.js"></script>
+    <script type="module">
+        import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+        import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+
+        // Backend URLs - sesuaikan dengan konfigurasi Anda
+        const backend = {
+            claimQR: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/claim',
+            getSessionStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/status',
+            getUserClaimStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/user/claimstatus'
+        };
+
+        // DOM Elements
+        const claimStatus = document.getElementById('claim-status');
+        const sessionActiveInfo = document.getElementById('session-active-info');
+        const activeSessionId = document.getElementById('active-session-id');
+        const claimedInfo = document.getElementById('claimed-info');
+        const claimedTime = document.getElementById('claimed-time');
+        const scannerSection = document.getElementById('scanner-section');
+        const manualQrInput = document.getElementById('manual-qr-input');
+        const manualClaimBtn = document.getElementById('manual-claim-btn');
+        const toggleCameraBtn = document.getElementById('toggle-camera');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        const closeNotification = document.getElementById('close-notification');
+
+        let html5QrCode;
+        let isCameraActive = false;
+
+        // Initialize page
+        checkUserClaimStatus();
+
+        // Event Listeners
+        manualClaimBtn.addEventListener('click', claimManual);
+        toggleCameraBtn.addEventListener('click', toggleCamera);
+        closeNotification.addEventListener('click', hideNotification);
+
+        function checkUserClaimStatus() {
+            const token = getCookie('login');
+            if (!token) {
+                showNotification('Silakan login terlebih dahulu', 'is-danger');
+                claimStatus.textContent = 'BELUM LOGIN';
+                claimStatus.className = 'tag is-large status-no-session';
+                return;
+            }
+
+            getJSON(backend.getUserClaimStatus, 'login', token, function(result) {
+                if (result.status === 200) {
+                    const data = result.data;
+                    
+                    if (data.hasClaimed) {
+                        // User sudah claim
+                        claimStatus.textContent = 'SUDAH CLAIM';
+                        claimStatus.className = 'tag is-large status-already-claimed';
+                        claimedInfo.style.display = 'block';
+                        claimedTime.textContent = new Date(data.claimedAt).toLocaleString();
+                        scannerSection.style.display = 'none';
+                        
+                        if (data.sessionID) {
+                            activeSessionId.textContent = data.sessionID;
+                            sessionActiveInfo.style.display = 'block';
+                        }
+                    } else if (data.canClaim) {
+                        // User bisa claim
+                        claimStatus.textContent = 'DAPAT CLAIM';
+                        claimStatus.className = 'tag is-large status-can-claim';
+                        scannerSection.style.display = 'block';
+                        claimedInfo.style.display = 'none';
+                        
+                        if (data.sessionID) {
+                            activeSessionId.textContent = data.sessionID;
+                            sessionActiveInfo.style.display = 'block';
+                        }
+                        
+                        // Start camera
+                        startCamera();
+                    } else {
+                        // Tidak ada session aktif
+                        claimStatus.textContent = 'TIDAK ADA SESSION';
+                        claimStatus.className = 'tag is-large status-no-session';
+                        scannerSection.style.display = 'none';
+                        claimedInfo.style.display = 'none';
+                        sessionActiveInfo.style.display = 'none';
+                    }
+                } else {
+                    showNotification('Gagal mengecek status: ' + (result.data?.response || ''), 'is-danger');
+                }
+            });
+        }
+
+        function startCamera() {
+            if (isCameraActive) return;
+
+            html5QrCode = new Html5Qrcode("qr-reader");
+            
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    const cameraId = devices[0].id;
+                    
+                    html5QrCode.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
+                        },
+                        (decodedText, decodedResult) => {
+                            // QR Code berhasil di-scan
+                            claimQRCode(decodedText);
+                        },
+                        (errorMessage) => {
+                            // Error scanning (ini normal, jangan tampilkan error)
+                        }
+                    ).then(() => {
+                        isCameraActive = true;
+                        toggleCameraBtn.textContent = 'Stop Camera';
+                    }).catch(err => {
+                        console.error("Error starting camera:", err);
+                        showNotification('Gagal memulai kamera: ' + err, 'is-warning');
+                    });
+                } else {
+                    showNotification('Kamera tidak ditemukan', 'is-warning');
+                }
+            }).catch(err => {
+                console.error("Error getting cameras:", err);
+                showNotification('Gagal mengakses kamera: ' + err, 'is-warning');
+            });
+        }
+
+        function stopCamera() {
+            if (!isCameraActive || !html5QrCode) return;
+
+            html5QrCode.stop().then(() => {
+                isCameraActive = false;
+                toggleCameraBtn.textContent = 'Start Camera';
+            }).catch(err => {
+                console.error("Error stopping camera:", err);
+            });
+        }
+
+        function toggleCamera() {
+            if (isCameraActive) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        }
+
+        function claimManual() {
+            const qrCode = manualQrInput.value.trim();
+            if (!qrCode) {
+                showNotification('Masukkan kode QR terlebih dahulu', 'is-warning');
+                return;
+            }
+            
+            claimQRCode(qrCode);
+        }
+
+        function claimQRCode(qrCode) {
+            const token = getCookie('login');
+            if (!token) {
+                showNotification('Silakan login terlebih dahulu', 'is-danger');
+                return;
+            }
+
+            manualClaimBtn.classList.add('is-loading');
+            
+            const claimData = { qrcode: qrCode };
+            
+            postJSON(backend.claimQR, 'login', token, claimData, function(result) {
+                manualClaimBtn.classList.remove('is-loading');
+                
+                if (result.status === 200) {
+                    showNotification('QR Code berhasil diklaim! Bimbingan telah ditambahkan.', 'is-success');
+                    manualQrInput.value = '';
+                    
+                    // Stop camera dan refresh status
+                    stopCamera();
+                    setTimeout(checkUserClaimStatus, 2000);
+                } else {
+                    showNotification(result.data?.response || 'Gagal claim QR code', 'is-danger');
+                }
+            });
+        }
+
+        function showNotification(message, type) {
+            notificationMessage.textContent = message;
+            notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+            notification.classList.add(type);
+            
+            setTimeout(hideNotification, 5000);
+        }
+
+        function hideNotification() {
+            notification.classList.add('is-hidden');
+        }
+
+        // Check status setiap 30 detik
+        setInterval(checkUserClaimStatus, 30000);
+
+        // Cleanup saat page unload
+        window.addEventListener('beforeunload', function() {
+            if (isCameraActive && html5QrCode) {
+                html5QrCode.stop();
+            }
+        });
+    </script>
 </body>
 </html>

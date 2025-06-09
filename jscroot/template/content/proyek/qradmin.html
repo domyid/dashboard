@@ -3,173 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Admin Control</title>
+    <title>QR Code Bimbingan - Admin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
-        .container {
-            max-width: 800px;
-            margin-top: 50px;
-        }
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .status-active {
-            background-color: #23d160;
-            animation: pulse 2s infinite;
-        }
-        .status-inactive {
-            background-color: #ff3860;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        .qr-display {
-            text-align: center;
-            padding: 2rem;
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
             border: 2px dashed #dbdbdb;
-            border-radius: 12px;
-            background-color: #f5f5f5;
-            margin: 1rem 0;
+            border-radius: 8px;
+            margin: 20px 0;
         }
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            margin: 1rem 0;
-        }
-        .stats-number {
-            font-size: 3rem;
-            font-weight: bold;
-            display: block;
+        .qr-code {
+            border: 2px solid #3273dc;
+            border-radius: 8px;
+            padding: 20px;
         }
         .countdown {
-            font-size: 1.2rem;
+            font-size: 2rem;
             font-weight: bold;
-            color: #3273dc;
-            margin: 0.5rem 0;
+            color: #ff3860;
+        }
+        .status-active {
+            background-color: #48c774;
+            color: white;
+        }
+        .status-inactive {
+            background-color: #f14668;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="box">
-            <h1 class="title has-text-centered">🎛️ QR Code Admin Control Panel</h1>
-            <p class="subtitle has-text-centered has-text-grey">Kelola sistem QR code claim bimbingan</p>
-            
-            <!-- System Status -->
-            <div class="notification" id="system-status">
-                <span class="status-indicator" id="status-indicator"></span>
-                <strong>Status Sistem: </strong>
-                <span id="status-text">Memuat...</span>
-                <span class="is-pulled-right">
-                    <small id="last-updated"></small>
-                </span>
-            </div>
-
-            <!-- Control Buttons -->
-            <div class="field is-grouped is-grouped-centered mb-5">
-                <div class="control">
-                    <button class="button is-large is-success" id="startBtn">
-                        <span class="icon">
-                            <span>🟢</span>
-                        </span>
-                        <span>Start QR Session</span>
-                    </button>
-                </div>
-                <div class="control">
-                    <button class="button is-large is-danger" id="stopBtn">
-                        <span class="icon">
-                            <span>🔴</span>
-                        </span>
-                        <span>Stop QR Session</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Current QR Code Display -->
-            <div id="qr-display" class="qr-display" style="display: none;">
-                <h3 class="subtitle">📱 Current QR Code</h3>
-                <canvas id="currentQR" width="200" height="200"></canvas>
-                <div class="countdown" id="countdown">⏱️ Loading...</div>
-                <div class="field">
-                    <label class="label">QR Code Text:</label>
-                    <input class="input" type="text" id="qr-text" readonly>
-                </div>
-                <p class="has-text-grey">QR code refresh otomatis setiap 20 detik</p>
-            </div>
-
-            <!-- Statistics -->
-            <div class="columns">
-                <div class="column">
-                    <div class="stats-card">
-                        <span class="stats-number" id="total-claims">0</span>
-                        <span>Total Claims</span>
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="stats-card">
-                        <span class="stats-number" id="active-sessions">0</span>
-                        <span>Active Sessions</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
+        <section class="section">
             <div class="box">
-                <h3 class="subtitle">📊 Recent Activity</h3>
-                <div id="recent-activity">
-                    <p class="has-text-grey">Loading activity...</p>
-                </div>
+                <h1 class="title has-text-centered">QR Code Bimbingan - Admin Panel</h1>
+                
+                <!-- Status Session -->
                 <div class="field">
+                    <label class="label">Status Session:</label>
                     <div class="control">
-                        <button class="button is-info" id="refreshStats">
-                            <span class="icon">🔄</span>
-                            <span>Refresh Statistics</span>
+                        <span id="session-status" class="tag is-large status-inactive">TIDAK AKTIF</span>
+                    </div>
+                </div>
+
+                <div id="session-info" style="display: none;">
+                    <div class="field">
+                        <label class="label">Session ID:</label>
+                        <div class="control">
+                            <span id="session-id" class="tag is-info"></span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Waktu Mulai:</label>
+                        <div class="control">
+                            <span id="session-start-time"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="field is-grouped is-grouped-centered">
+                    <div class="control">
+                        <button class="button is-success is-large" id="start-session">
+                            Mulai Session QR
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button class="button is-danger is-large" id="stop-session" disabled>
+                            Stop Session QR
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Instructions -->
-            <div class="content">
-                <h3>📋 Instruksi Penggunaan:</h3>
-                <ol>
-                    <li><strong>Start QR Session:</strong> Aktifkan sistem QR code untuk memulai sesi claim</li>
-                    <li><strong>Monitor:</strong> Pantau QR code yang sedang aktif dan statistik real-time</li>
-                    <li><strong>Stop QR Session:</strong> Hentikan sistem QR code untuk mengakhiri sesi</li>
-                </ol>
-                
-                <h4>⚠️ Catatan Penting:</h4>
-                <ul>
-                    <li>QR code otomatis refresh setiap 20 detik</li>
-                    <li>Setiap user hanya bisa claim 1x seumur hidup</li>
-                    <li>Claims akan tercatat di database untuk tracking</li>
-                    <li>Hanya admin yang dapat mengontrol sistem ini</li>
-                </ul>
-            </div>
+                <!-- QR Code Display -->
+                <div id="qr-display" style="display: none;">
+                    <h2 class="subtitle has-text-centered">QR Code Aktif</h2>
+                    
+                    <div class="qr-container">
+                        <div id="qr-code-wrapper">
+                            <canvas id="qr-canvas"></canvas>
+                        </div>
+                    </div>
 
-            <!-- Error/Success Notifications -->
-            <div class="notification is-danger is-light mt-5" id="errorNotification" style="display: none;">
-                <button class="delete" id="closeError"></button>
-                <span id="errorMessage"></span>
-            </div>
+                    <div class="has-text-centered">
+                        <div class="field">
+                            <label class="label">Kode QR:</label>
+                            <div class="control">
+                                <span id="current-qr-text" class="tag is-primary is-large"></span>
+                            </div>
+                        </div>
 
-            <div class="notification is-success is-light mt-5" id="successNotification" style="display: none;">
-                <button class="delete" id="closeSuccess"></button>
-                <span id="successMessage"></span>
+                        <div class="field">
+                            <label class="label">Refresh dalam:</label>
+                            <div class="control">
+                                <span id="countdown" class="countdown">20</span>
+                                <span class="countdown"> detik</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification -->
+                <div class="notification is-hidden" id="notification">
+                    <button class="delete" id="close-notification"></button>
+                    <span id="notification-message"></span>
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 
-    <script type="module" src="qradmin.js"></script>
+    <script type="module">
+        import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+        import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+
+        // Backend URLs - sesuaikan dengan konfigurasi Anda
+        const backend = {
+            startSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/start',
+            stopSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/stop',
+            getCurrentQR: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/current',
+            getSessionStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/status'
+        };
+
+        // DOM Elements
+        const startBtn = document.getElementById('start-session');
+        const stopBtn = document.getElementById('stop-session');
+        const sessionStatus = document.getElementById('session-status');
+        const sessionInfo = document.getElementById('session-info');
+        const sessionId = document.getElementById('session-id');
+        const sessionStartTime = document.getElementById('session-start-time');
+        const qrDisplay = document.getElementById('qr-display');
+        const qrCanvas = document.getElementById('qr-canvas');
+        const currentQRText = document.getElementById('current-qr-text');
+        const countdown = document.getElementById('countdown');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        const closeNotification = document.getElementById('close-notification');
+
+        let refreshInterval;
+        let countdownInterval;
+        let countdownValue = 20;
+
+        // Initialize page
+        checkSessionStatus();
+
+        // Event Listeners
+        startBtn.addEventListener('click', startSession);
+        stopBtn.addEventListener('click', stopSession);
+        closeNotification.addEventListener('click', hideNotification);
+
+        function startSession() {
+            const token = getCookie('login');
+            if (!token) {
+                showNotification('Silakan login terlebih dahulu', 'is-danger');
+                return;
+            }
+
+            startBtn.classList.add('is-loading');
+            
+            postJSON(backend.startSession, 'login', token, {}, function(result) {
+                startBtn.classList.remove('is-loading');
+                
+                if (result.status === 200) {
+                    showNotification('Session QR berhasil dimulai', 'is-success');
+                    checkSessionStatus();
+                    startQRRefresh();
+                } else {
+                    showNotification(result.data?.response || 'Gagal memulai session', 'is-danger');
+                }
+            });
+        }
+
+        function stopSession() {
+            const token = getCookie('login');
+            if (!token) {
+                showNotification('Silakan login terlebih dahulu', 'is-danger');
+                return;
+            }
+
+            stopBtn.classList.add('is-loading');
+            
+            postJSON(backend.stopSession, 'login', token, {}, function(result) {
+                stopBtn.classList.remove('is-loading');
+                
+                if (result.status === 200) {
+                    showNotification('Session QR berhasil dihentikan', 'is-success');
+                    stopQRRefresh();
+                    checkSessionStatus();
+                } else {
+                    showNotification(result.data?.response || 'Gagal menghentikan session', 'is-danger');
+                }
+            });
+        }
+
+        function checkSessionStatus() {
+            getJSON(backend.getSessionStatus, '', '', function(result) {
+                if (result.status === 200 && result.data.isActive) {
+                    // Session aktif
+                    sessionStatus.textContent = 'AKTIF';
+                    sessionStatus.className = 'tag is-large status-active';
+                    sessionId.textContent = result.data.sessionID;
+                    sessionStartTime.textContent = new Date(result.data.createdAt).toLocaleString();
+                    sessionInfo.style.display = 'block';
+                    
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    
+                    if (!refreshInterval) {
+                        startQRRefresh();
+                    }
+                } else {
+                    // Session tidak aktif
+                    sessionStatus.textContent = 'TIDAK AKTIF';
+                    sessionStatus.className = 'tag is-large status-inactive';
+                    sessionInfo.style.display = 'none';
+                    qrDisplay.style.display = 'none';
+                    
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    
+                    stopQRRefresh();
+                }
+            });
+        }
+
+        function startQRRefresh() {
+            refreshQRCode(); // Generate pertama kali
+            
+            refreshInterval = setInterval(refreshQRCode, 20000); // Refresh setiap 20 detik
+            startCountdown();
+        }
+
+        function stopQRRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            qrDisplay.style.display = 'none';
+        }
+
+        function refreshQRCode() {
+            getJSON(backend.getCurrentQR, '', '', function(result) {
+                if (result.status === 200) {
+                    const qrCode = result.data.qrCode;
+                    currentQRText.textContent = qrCode;
+                    
+                    // Generate QR Code
+                    QRCode.toCanvas(qrCanvas, qrCode, {
+                        width: 300,
+                        height: 300,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    }, function (error) {
+                        if (error) console.error(error);
+                    });
+                    
+                    qrDisplay.style.display = 'block';
+                    resetCountdown();
+                } else {
+                    console.error('Gagal mendapatkan QR code:', result.data?.response);
+                }
+            });
+        }
+
+        function startCountdown() {
+            countdownInterval = setInterval(function() {
+                countdownValue--;
+                countdown.textContent = countdownValue;
+                
+                if (countdownValue <= 0) {
+                    resetCountdown();
+                }
+            }, 1000);
+        }
+
+        function resetCountdown() {
+            countdownValue = 20;
+            countdown.textContent = countdownValue;
+        }
+
+        function showNotification(message, type) {
+            notificationMessage.textContent = message;
+            notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+            notification.classList.add(type);
+            
+            setTimeout(hideNotification, 5000);
+        }
+
+        function hideNotification() {
+            notification.classList.add('is-hidden');
+        }
+
+        // Check session status setiap 30 detik
+        setInterval(checkSessionStatus, 30000);
+    </script>
 </body>
 </html>
