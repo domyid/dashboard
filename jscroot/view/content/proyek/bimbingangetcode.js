@@ -17,6 +17,7 @@ const copyBtn = document.getElementById('copyBtn');
 const generateTimeBtn = document.getElementById('generateTimeBtn');
 const timeCodeContainer = document.getElementById('timeCodeContainer');
 const generatedTimeCode = document.getElementById('generatedTimeCode');
+const displayTimeCode = document.getElementById('displayTimeCode');
 const copyTimeBtn = document.getElementById('copyTimeBtn');
 const durationInput = document.getElementById('durationInput');
 const createdTime = document.getElementById('createdTime');
@@ -112,12 +113,51 @@ generateTimeBtn.addEventListener('click', async () => {
             
             if (result.status === 200) {
                 // Show the generated time code
-                const responseData = result.data;
+                console.log('Response data:', result); // Debug log
+                
+                let responseData;
+                // Handle different response formats
+                if (result.data && result.data.data) {
+                    // Format: {status: "Success", data: {...}}
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    // Direct data format
+                    responseData = result.data;
+                } else {
+                    console.error('Unexpected response format:', result);
+                    showError('Format response tidak valid');
+                    return;
+                }
+                
+                if (!responseData.code || !responseData.expires_at || !responseData.duration) {
+                    console.error('Missing required fields in response:', responseData);
+                    showError('Data response tidak lengkap');
+                    return;
+                }
+                
                 generatedTimeCode.textContent = responseData.code;
+                displayTimeCode.textContent = responseData.code;
                 
                 // Show time information
                 const createdDate = new Date();
-                const expiryDate = new Date(responseData.expires_at);
+                
+                // Parse expiry date - handle different formats
+                let expiryDate;
+                if (responseData.expires_at.includes('T')) {
+                    // ISO format: 2024-01-15T14:30:00Z
+                    expiryDate = new Date(responseData.expires_at);
+                } else {
+                    // Custom format: 2024-01-15 14:30:00
+                    const dateStr = responseData.expires_at.replace(' ', 'T');
+                    expiryDate = new Date(dateStr);
+                }
+                
+                // Validate dates
+                if (isNaN(createdDate.getTime()) || isNaN(expiryDate.getTime())) {
+                    console.error('Invalid date format:', responseData.expires_at);
+                    showError('Format tanggal tidak valid');
+                    return;
+                }
                 
                 createdTime.textContent = createdDate.toLocaleString('id-ID');
                 expiryTime.textContent = expiryDate.toLocaleString('id-ID');
@@ -125,6 +165,13 @@ generateTimeBtn.addEventListener('click', async () => {
                 
                 // Set expiry timestamp for countdown
                 expiryTimestamp = expiryDate.getTime();
+                
+                // Validate expiry timestamp
+                if (isNaN(expiryTimestamp)) {
+                    console.error('Invalid expiry timestamp');
+                    showError('Timestamp kadaluarsa tidak valid');
+                    return;
+                }
                 
                 // Start countdown timer
                 startCountdown();
@@ -134,7 +181,9 @@ generateTimeBtn.addEventListener('click', async () => {
                 showSuccess('Kode time event berhasil di-generate!');
             } else {
                 // Show error
-                showError(result.data?.response || result.data?.status || 'Gagal generate time code');
+                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal generate time code';
+                showError(errorMsg);
+                console.error('Generate time code error:', result);
             }
         });
     } catch (error) {
@@ -195,7 +244,14 @@ function startCountdown() {
         clearInterval(countdownInterval);
     }
     
-    countdownInterval = setInterval(() => {
+    // Validate expiryTimestamp
+    if (!expiryTimestamp || isNaN(expiryTimestamp)) {
+        countdownTimer.innerHTML = '⚠️ <span style="color: #dc2626;">Error: Waktu kadaluarsa tidak valid!</span>';
+        return;
+    }
+    
+    // Function to update countdown
+    function updateCountdown() {
         const now = Date.now();
         const timeLeft = expiryTimestamp - now;
         
@@ -211,6 +267,13 @@ function startCountdown() {
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
         
+        // Validate calculated values
+        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+            countdownTimer.innerHTML = '⚠️ <span style="color: #dc2626;">Error: Perhitungan waktu tidak valid!</span>';
+            clearInterval(countdownInterval);
+            return;
+        }
+        
         // Format and display
         let timeString = '';
         if (hours > 0) {
@@ -221,8 +284,22 @@ function startCountdown() {
         }
         timeString += `${seconds}d`;
         
-        countdownTimer.innerHTML = `⏰ Tersisa: <span style="color: #dc2626;">${timeString}</span>`;
-    }, 1000);
+        // Add color coding based on time left
+        let colorClass = '#dc2626'; // red (default)
+        if (timeLeft > 5 * 60 * 1000) { // more than 5 minutes
+            colorClass = '#059669'; // green
+        } else if (timeLeft > 1 * 60 * 1000) { // more than 1 minute
+            colorClass = '#d97706'; // orange
+        }
+        
+        countdownTimer.innerHTML = `⏰ Tersisa: <span style="color: ${colorClass}; font-weight: bold;">${timeString}</span>`;
+    }
+    
+    // Initial call
+    updateCountdown();
+    
+    // Set interval to update every second
+    countdownInterval = setInterval(updateCountdown, 1000);
 }
 
 // Show error function
