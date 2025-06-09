@@ -257,7 +257,7 @@ function startCountdown() {
         
         if (timeLeft <= 0) {
             // Time expired
-            countdownTimer.innerHTML = '⏰ <span style="color: #dc2626;">KODE SUDAH KADALUARSA!</span>';
+            countdownTimer.innerHTML = '⏰ <span style="color: #dc2626;">-</span>';
             clearInterval(countdownInterval);
             return;
         }
