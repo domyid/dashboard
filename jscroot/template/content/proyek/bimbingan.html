@@ -59,7 +59,6 @@
                 </table>
             </div>
               
-
             <div class="field">
                 <label class="label">Nomor Telepon Dosen Asesor</label>
                 <div class="control">
@@ -82,6 +81,12 @@
             <div class="field mt-5">
                 <div class="control">
                     <button class="button is-warning" type="button" id="tombolclaimevent">Claim Code Referral Event</button>
+                </div>
+            </div>
+
+            <div class="field mt-3">
+                <div class="control">
+                    <button class="button is-danger" type="button" id="tombolclaimtimeevent">Claim Code Event Time</button>
                 </div>
             </div>
 
@@ -126,14 +131,8 @@
                 <span id="notification-message"></span>
             </div>
 
-            <!-- <div class="field">
-                <label class="checkbox">
-                  <input type="checkbox" id="checkbox-approved" disabled>
-                  Telah di-rating oleh dosen
-                </label>
-              </div>               -->
-
-              <div class="modal" id="modal-claim-event">
+            <!-- Modal for Claim Event Code -->
+            <div class="modal" id="modal-claim-event">
                 <div class="modal-background"></div>
                 <div class="modal-card">
                     <header class="modal-card-head">
@@ -159,9 +158,48 @@
                 </div>
             </div>
 
+            <!-- Modal for Claim Event Time Code -->
+            <div class="modal" id="modal-claim-time-event">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <header class="modal-card-head">
+                        <p class="modal-card-title">Claim Event Time Code</p>
+                        <button class="delete" aria-label="close" id="close-modal-claim-time"></button>
+                    </header>
+                    <section class="modal-card-body">
+                        <div class="field">
+                            <label class="label">Event Time Code</label>
+                            <div class="control">
+                                <input class="input" type="text" id="time-event-code-input" placeholder="Enter your time event code (TIME...)" required>
+                            </div>
+                        </div>
+                        <div class="content">
+                            <p class="help is-info">
+                                <strong>Catatan:</strong> Kode time event memiliki waktu kadaluarsa. 
+                                Pastikan kode masih aktif dan Anda belum pernah mengclaim kode ini sebelumnya.
+                            </p>
+                        </div>
+                         <div class="notification is-hidden" id="notification-claim-time-event-modal">
+                            <button class="delete" id="close-notification-claim-time-modal"></button>
+                            <span id="notification-message-claim-time-modal"></span>
+                        </div>
+                    </section>
+                    <footer class="modal-card-foot">
+                        <button class="button is-success" id="submit-claim-time-code">Claim Time Code</button>
+                        <button class="button" id="cancel-claim-time-code">Cancel</button>
+                    </footer>
+                </div>
+            </div>
+
+            <!-- Notifications for main page -->
             <div class="notification is-hidden mt-4" id="notification-claim-event">
                 <button class="delete" id="close-notification-claim"></button>
                 <span id="notification-message-claim"></span>
+            </div>
+
+            <div class="notification is-hidden mt-4" id="notification-claim-time-event">
+                <button class="delete" id="close-notification-claim-time"></button>
+                <span id="notification-message-claim-time"></span>
             </div>
 
     </div>

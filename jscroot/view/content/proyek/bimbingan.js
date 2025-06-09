@@ -21,6 +21,9 @@ export async function main(){
 
     // Add new functionality for claim event - simplified
     setupClaimEventModal();
+    
+    // Add new functionality for claim time event
+    setupClaimTimeEventModal();
 }
 
 // Global variable to track current approval status
@@ -660,6 +663,99 @@ function setupClaimEventModal() {
     }
 
     function hideEventNotificationModal() {
+        if (!notificationModal) return;
+        notificationModal.classList.add('is-hidden');
+    }
+}
+
+// Time Event Claim Modal Logic
+function setupClaimTimeEventModal() {
+    const modal = document.getElementById('modal-claim-time-event');
+    const tombolClaimTimeEvent = document.getElementById('tombolclaimtimeevent');
+    const closeModalBtn = document.getElementById('close-modal-claim-time');
+    const cancelBtn = document.getElementById('cancel-claim-time-code');
+    const submitBtn = document.getElementById('submit-claim-time-code');
+    const timeEventCodeInput = document.getElementById('time-event-code-input');
+
+    const notificationModal = document.getElementById('notification-claim-time-event-modal');
+    const notificationMessageModal = document.getElementById('notification-message-claim-time-modal');
+    const closeNotificationModalBtn = document.getElementById('close-notification-claim-time-modal');
+
+    if (!modal || !tombolClaimTimeEvent || !closeModalBtn || !cancelBtn || !submitBtn || !timeEventCodeInput) {
+        console.error("One or more elements for claim time event modal not found.");
+        return;
+    }
+
+    // Button is always enabled and ready to use
+    tombolClaimTimeEvent.textContent = 'Claim Code Event Time';
+    tombolClaimTimeEvent.disabled = false;
+    tombolClaimTimeEvent.classList.remove('is-success');
+    tombolClaimTimeEvent.classList.add('is-danger');
+    tombolClaimTimeEvent.setAttribute('title', 'Click to claim a time-limited event code');
+
+    tombolClaimTimeEvent.addEventListener('click', function() {
+        timeEventCodeInput.value = ''; 
+        hideTimeEventNotificationModal();
+        modal.classList.add('is-active');
+    });
+
+    function closeTimeEventModal() {
+        modal.classList.remove('is-active');
+    }
+
+    closeModalBtn.addEventListener('click', closeTimeEventModal);
+    cancelBtn.addEventListener('click', closeTimeEventModal);
+    if(closeNotificationModalBtn) {
+        closeNotificationModalBtn.addEventListener('click', hideTimeEventNotificationModal);
+    }
+
+    submitBtn.addEventListener('click', function() {
+        const code = timeEventCodeInput.value.trim();
+        if (!code) {
+            showTimeEventNotificationModal('Please enter a time event code.', 'is-danger');
+            return;
+        }
+
+        hideTimeEventNotificationModal();
+        submitBtn.classList.add('is-loading');
+
+        const claimData = { code: code };
+
+        postJSON(backend.bimbingan.claimTimeEvent, 'login', getCookie('login'), claimData, function(result) {
+            submitBtn.classList.remove('is-loading');
+            if (result.status === 200) {
+                closeTimeEventModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: result.data.response || 'Time event code claimed successfully! Your bimbingan has been added.',
+                    confirmButtonText: 'Great!'
+                }).then(() => {
+                    fetchActivityScore(); // Refresh activity score table
+                    // Refresh bimbingan list dropdown
+                    const bimbinganSelect = document.getElementById('bimbingan-name');
+                    if (bimbinganSelect) {
+                        while (bimbinganSelect.options.length > 1) { // Keep the default option
+                            bimbinganSelect.remove(1);
+                        }
+                    }
+                    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
+                    checkSidangEligibility(); // Re-check sidang eligibility as bimbingan count changed
+                });
+            } else {
+                 showTimeEventNotificationModal(result.data?.response || 'Failed to claim time event code.', 'is-danger');
+            }
+        });
+    });
+
+    function showTimeEventNotificationModal(message, type) {
+        if (!notificationModal || !notificationMessageModal) return;
+        notificationMessageModal.textContent = message;
+        notificationModal.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+        notificationModal.classList.add(type);
+    }
+
+    function hideTimeEventNotificationModal() {
         if (!notificationModal) return;
         notificationModal.classList.add('is-hidden');
     }

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <style>
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin-top: 50px;
         }
         .generated-code {
@@ -24,10 +24,41 @@
         .copy-button {
             margin-top: 10px;
         }
+        .section-divider {
+            margin: 3rem 0;
+            border-top: 2px solid #dbdbdb;
+            position: relative;
+        }
+        .section-divider::after {
+            content: 'ATAU';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 1rem;
+            color: #7a7a7a;
+            font-weight: bold;
+        }
+        .time-info {
+            background-color: #fffbeb;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .countdown-timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #dc2626;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Regular Event Code Section -->
         <div class="box">
             <h1 class="title has-text-centered">Generate Event Code</h1>
             <div class="content">
@@ -53,11 +84,62 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="notification is-danger is-light mt-5" id="errorNotification" style="display: none;">
-                <button class="delete" id="closeError"></button>
-                <span id="errorMessage"></span>
+        </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider"></div>
+
+        <!-- Time Event Code Section -->
+        <div class="box">
+            <h1 class="title has-text-centered">Generate Time Event Code</h1>
+            <div class="content">
+                <p class="has-text-centered">Generate kode event dengan waktu kadaluarsa</p>
+                <p class="has-text-centered has-text-grey">Kode akan kadaluarsa setelah durasi yang ditentukan</p>
             </div>
+            
+            <div class="field">
+                <label class="label">Durasi (dalam detik)</label>
+                <div class="control">
+                    <input class="input" type="number" id="durationInput" placeholder="Contoh: 30 untuk 30 detik" min="1" max="3600" required>
+                </div>
+                <p class="help">Masukkan durasi dalam detik (maksimal 3600 detik = 1 jam)</p>
+            </div>
+            
+            <div class="field">
+                <div class="control has-text-centered">
+                    <button class="button is-danger is-large" id="generateTimeBtn">
+                        Generate Time Code
+                    </button>
+                </div>
+            </div>
+            
+            <div id="timeCodeContainer" style="display: none;">
+                <div class="generated-code" id="generatedTimeCode"></div>
+                <div class="time-info">
+                    <p><strong>Informasi Kode:</strong></p>
+                    <p>📅 Dibuat pada: <span id="createdTime"></span></p>
+                    <p>⏰ Kadaluarsa pada: <span id="expiryTime"></span></p>
+                    <p>⏱️ Durasi: <span id="duration"></span> detik</p>
+                    <div class="countdown-timer" id="countdownTimer"></div>
+                </div>
+                <div class="field">
+                    <div class="control has-text-centered">
+                        <button class="button is-info copy-button" id="copyTimeBtn">
+                            Copy Time Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="notification is-danger is-light mt-5" id="errorNotification" style="display: none;">
+            <button class="delete" id="closeError"></button>
+            <span id="errorMessage"></span>
+        </div>
+
+        <div class="notification is-success is-light mt-5" id="successNotification" style="display: none;">
+            <button class="delete" id="closeSuccess"></button>
+            <span id="successMessage"></span>
         </div>
     </div>
 
