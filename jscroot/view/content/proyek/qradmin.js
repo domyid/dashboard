@@ -1,324 +1,220 @@
+import { onClick, getValue, setValue, addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+import { id, backend } from "/dashboard/jscroot/url/config.js";
 
-// Backend URLs
-const backend = {
-    qr: {
-        generate: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/generate',
-        status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/status',
-        start: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/start',
-        stop: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/stop'
-    }
-};
+// Load QRCode library
+let QRCode;
 
-// Global variables
-let systemIsActive = false;
-let qrRefreshInterval = null;
-let countdownInterval = null;
-let statusCheckInterval = null;
-let currentQRCode = null;
-let qrExpiryTime = null;
-
-// DOM Elements
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const systemStatus = document.getElementById('system-status');
-const statusIndicator = document.getElementById('status-indicator');
-const statusText = document.getElementById('status-text');
-const lastUpdated = document.getElementById('last-updated');
-const qrDisplay = document.getElementById('qr-display');
-const currentQRCanvas = document.getElementById('currentQR');
-const qrTextInput = document.getElementById('qr-text');
-const countdown = document.getElementById('countdown');
-const totalClaims = document.getElementById('total-claims');
-const activeSessions = document.getElementById('active-sessions');
-const recentActivity = document.getElementById('recent-activity');
-const refreshStatsBtn = document.getElementById('refreshStats');
-const errorNotification = document.getElementById('errorNotification');
-const successNotification = document.getElementById('successNotification');
-const errorMessage = document.getElementById('errorMessage');
-const successMessage = document.getElementById('successMessage');
-const closeError = document.getElementById('closeError');
-const closeSuccess = document.getElementById('closeSuccess');
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = getCookie('login');
-    if (!token) {
-        showError('Silakan login terlebih dahulu untuk mengakses halaman admin');
-        return;
-    }
-
-    await checkSystemStatus();
-    setupEventListeners();
+export async function main() {
+    // Load external dependencies
+    await loadQRCodeLibrary();
     
-    // Start periodic status checks
-    statusCheckInterval = setInterval(checkSystemStatus, 5000);
+    // Initialize event listeners
+    onClick('start-session', startSession);
+    onClick('stop-session', stopSession);
+    onClick('close-notification', hideNotification);
     
-    if (systemIsActive) {
-        startQRMonitoring();
-    }
-});
-
-// Setup event listeners
-function setupEventListeners() {
-    startBtn.addEventListener('click', handleStartSystem);
-    stopBtn.addEventListener('click', handleStopSystem);
-    refreshStatsBtn.addEventListener('click', refreshStatistics);
-    closeError.addEventListener('click', hideError);
-    closeSuccess.addEventListener('click', hideSuccess);
+    // Initialize page
+    checkSessionStatus();
+    
+    // Check session status setiap 30 detik
+    setInterval(checkSessionStatus, 30000);
 }
 
-// Check system status
-async function checkSystemStatus() {
-    getJSON(backend.qr.status, '', '', (result) => {
-        if (result.status === 200) {
-            const wasActive = systemIsActive;
-            systemIsActive = result.data.isActive;
-            
-            updateSystemStatusDisplay(result.data);
-            
-            // If system just became active, start monitoring
-            if (!wasActive && systemIsActive) {
-                startQRMonitoring();
-            }
-            // If system just became inactive, stop monitoring
-            else if (wasActive && !systemIsActive) {
-                stopQRMonitoring();
-            }
-        } else {
-            systemIsActive = false;
-            updateSystemStatusDisplay({ isActive: false });
-        }
+// Global variables
+let refreshInterval;
+let countdownInterval;
+let countdownValue = 20;
+
+// Backend URLs
+const qrBackend = {
+    startSession: backend.bimbingan.qr.startSession,
+    stopSession: backend.bimbingan.qr.stopSession,
+    getCurrentQR: backend.bimbingan.qr.getCurrentQR,
+    getSessionStatus: backend.bimbingan.qr.getSessionStatus
+};
+
+async function loadQRCodeLibrary() {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        script.onload = () => {
+            QRCode = window.QRCode;
+            resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
     });
 }
 
-// Update system status display
-function updateSystemStatusDisplay(data) {
-    if (systemIsActive) {
-        statusIndicator.className = 'status-indicator status-active';
-        statusText.textContent = 'Sistem QR Aktif';
-        systemStatus.className = 'notification is-success';
-        
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-    } else {
-        statusIndicator.className = 'status-indicator status-inactive';
-        statusText.textContent = 'Sistem QR Tidak Aktif';
-        systemStatus.className = 'notification is-warning';
-        
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        
-        qrDisplay.style.display = 'none';
-    }
-    
-    if (data.updatedAt) {
-        lastUpdated.textContent = `Last updated: ${new Date(data.updatedAt).toLocaleString('id-ID')}`;
-    }
-}
-
-// Handle start system
-async function handleStartSystem() {
+function startSession() {
     const token = getCookie('login');
     if (!token) {
-        showError('Silakan login terlebih dahulu');
+        showNotification('Silakan login terlebih dahulu', 'is-danger');
         return;
     }
-    
+
+    const startBtn = document.getElementById('start-session');
     startBtn.classList.add('is-loading');
     
-    postJSON(backend.qr.start, 'login', token, {}, (result) => {
+    postJSON(qrBackend.startSession, 'login', token, {}, function(result) {
         startBtn.classList.remove('is-loading');
         
         if (result.status === 200) {
-            showSuccess('Sistem QR berhasil diaktifkan');
-            systemIsActive = true;
-            updateSystemStatusDisplay({ isActive: true });
-            startQRMonitoring();
+            showNotification('Session QR berhasil dimulai', 'is-success');
+            checkSessionStatus();
+            startQRRefresh();
         } else {
-            showError(result.data?.response || 'Gagal mengaktifkan sistem QR');
+            showNotification(result.data?.response || 'Gagal memulai session', 'is-danger');
         }
     });
 }
 
-// Handle stop system
-async function handleStopSystem() {
+function stopSession() {
     const token = getCookie('login');
     if (!token) {
-        showError('Silakan login terlebih dahulu');
+        showNotification('Silakan login terlebih dahulu', 'is-danger');
         return;
     }
-    
+
+    const stopBtn = document.getElementById('stop-session');
     stopBtn.classList.add('is-loading');
     
-    postJSON(backend.qr.stop, 'login', token, {}, (result) => {
+    postJSON(qrBackend.stopSession, 'login', token, {}, function(result) {
         stopBtn.classList.remove('is-loading');
         
         if (result.status === 200) {
-            showSuccess('Sistem QR berhasil dihentikan');
-            systemIsActive = false;
-            updateSystemStatusDisplay({ isActive: false });
-            stopQRMonitoring();
+            showNotification('Session QR berhasil dihentikan', 'is-success');
+            stopQRRefresh();
+            checkSessionStatus();
         } else {
-            showError(result.data?.response || 'Gagal menghentikan sistem QR');
+            showNotification(result.data?.response || 'Gagal menghentikan session', 'is-danger');
         }
     });
 }
 
-// Start QR monitoring
-function startQRMonitoring() {
-    if (!systemIsActive) return;
-    
-    qrDisplay.style.display = 'block';
-    
-    // Generate initial QR
-    generateNewQR();
-    
-    // Set interval for QR refresh
-    qrRefreshInterval = setInterval(() => {
-        if (systemIsActive) {
-            generateNewQR();
+function checkSessionStatus() {
+    getJSON(qrBackend.getSessionStatus, '', '', function(result) {
+        const sessionStatus = document.getElementById('session-status');
+        const sessionInfo = document.getElementById('session-info');
+        const sessionId = document.getElementById('session-id');
+        const sessionStartTime = document.getElementById('session-start-time');
+        const qrDisplay = document.getElementById('qr-display');
+        const startBtn = document.getElementById('start-session');
+        const stopBtn = document.getElementById('stop-session');
+
+        if (result.status === 200 && result.data.isActive) {
+            // Session aktif
+            sessionStatus.textContent = 'AKTIF';
+            sessionStatus.className = 'tag is-large status-active';
+            sessionId.textContent = result.data.sessionID;
+            sessionStartTime.textContent = new Date(result.data.createdAt).toLocaleString();
+            sessionInfo.style.display = 'block';
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+            if (!refreshInterval) {
+                startQRRefresh();
+            }
+        } else {
+            // Session tidak aktif
+            sessionStatus.textContent = 'TIDAK AKTIF';
+            sessionStatus.className = 'tag is-large status-inactive';
+            sessionInfo.style.display = 'none';
+            qrDisplay.style.display = 'none';
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            stopQRRefresh();
         }
-    }, 20000);
+    });
 }
 
-// Stop QR monitoring
-function stopQRMonitoring() {
-    qrDisplay.style.display = 'none';
+function startQRRefresh() {
+    refreshQRCode(); // Generate pertama kali
     
-    if (qrRefreshInterval) {
-        clearInterval(qrRefreshInterval);
-        qrRefreshInterval = null;
+    refreshInterval = setInterval(refreshQRCode, 20000); // Refresh setiap 20 detik
+    startCountdown();
+}
+
+function stopQRRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
     }
-    
     if (countdownInterval) {
         clearInterval(countdownInterval);
         countdownInterval = null;
     }
+    const qrDisplay = document.getElementById('qr-display');
+    qrDisplay.style.display = 'none';
 }
 
-// Generate new QR code
-async function generateNewQR() {
-    getJSON(backend.qr.generate, '', '', (result) => {
+function refreshQRCode() {
+    getJSON(qrBackend.getCurrentQR, '', '', function(result) {
         if (result.status === 200) {
-            currentQRCode = result.data.qrcode;
-            qrExpiryTime = new Date(result.data.expiresAt);
+            const qrCode = result.data.qrCode;
+            const currentQRText = document.getElementById('current-qr-text');
+            const qrCanvas = document.getElementById('qr-canvas');
+            const qrDisplay = document.getElementById('qr-display');
             
-            // Update QR text input
-            qrTextInput.value = currentQRCode;
+            currentQRText.textContent = qrCode;
             
-            // Generate QR code image
-            QRCode.toCanvas(currentQRCanvas, currentQRCode, {
-                width: 200,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
-            }, (error) => {
-                if (error) {
-                    console.error('QR Code generation error:', error);
-                    showError('Gagal generate QR code visual');
-                }
-            });
+            // Generate QR Code
+            if (QRCode) {
+                QRCode.toCanvas(qrCanvas, qrCode, {
+                    width: 300,
+                    height: 300,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                }, function (error) {
+                    if (error) console.error(error);
+                });
+            }
             
-            // Start countdown
-            startCountdown();
-            
+            qrDisplay.style.display = 'block';
+            resetCountdown();
         } else {
-            showError(result.data?.response || 'Gagal generate QR code');
+            console.error('Gagal mendapatkan QR code:', result.data?.response);
         }
     });
 }
 
-// Start countdown timer
 function startCountdown() {
-    if (countdownInterval) {
-        clearInterval(countdownInterval);
-    }
+    const countdown = document.getElementById('countdown');
     
-    countdownInterval = setInterval(() => {
-        const now = new Date();
-        const timeLeft = qrExpiryTime - now;
+    countdownInterval = setInterval(function() {
+        countdownValue--;
+        countdown.textContent = countdownValue;
         
-        if (timeLeft <= 0) {
-            countdown.textContent = '⏱️ QR Expired - Generating new...';
-            clearInterval(countdownInterval);
-            return;
+        if (countdownValue <= 0) {
+            resetCountdown();
         }
-        
-        const seconds = Math.ceil(timeLeft / 1000);
-        countdown.textContent = `⏱️ Expires in: ${seconds} seconds`;
-        
-        // Change color when close to expiry
-        if (seconds <= 5) {
-            countdown.style.color = '#ff3860';
-        } else {
-            countdown.style.color = '#3273dc';
-        }
-    }, 100);
-}
-
-// Refresh statistics
-async function refreshStatistics() {
-    refreshStatsBtn.classList.add('is-loading');
-    
-    // Simulate stats refresh (you can implement actual API calls)
-    setTimeout(() => {
-        // Update mock statistics
-        totalClaims.textContent = Math.floor(Math.random() * 50) + 10;
-        activeSessions.textContent = systemIsActive ? '1' : '0';
-        
-        // Update recent activity
-        recentActivity.innerHTML = `
-            <div class="content">
-                <p><strong>${new Date().toLocaleTimeString('id-ID')}</strong> - System status checked</p>
-                <p><strong>${new Date(Date.now() - 60000).toLocaleTimeString('id-ID')}</strong> - QR code regenerated</p>
-                <p><strong>${new Date(Date.now() - 120000).toLocaleTimeString('id-ID')}</strong> - User claim attempt</p>
-            </div>
-        `;
-        
-        refreshStatsBtn.classList.remove('is-loading');
-        showSuccess('Statistik berhasil diperbarui');
     }, 1000);
 }
 
-// Show error notification
-function showError(message) {
-    errorMessage.textContent = message;
-    errorNotification.style.display = 'block';
-    hideSuccess();
+function resetCountdown() {
+    countdownValue = 20;
+    const countdown = document.getElementById('countdown');
+    countdown.textContent = countdownValue;
+}
+
+function showNotification(message, type) {
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
     
-    // Auto hide after 5 seconds
-    setTimeout(hideError, 5000);
-}
-
-// Show success notification
-function showSuccess(message) {
-    successMessage.textContent = message;
-    successNotification.style.display = 'block';
-    hideError();
+    notificationMessage.textContent = message;
+    notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+    notification.classList.add(type);
     
-    // Auto hide after 5 seconds
-    setTimeout(hideSuccess, 5000);
+    setTimeout(hideNotification, 5000);
 }
 
-// Hide error notification
-function hideError() {
-    errorNotification.style.display = 'none';
+function hideNotification() {
+    const notification = document.getElementById('notification');
+    notification.classList.add('is-hidden');
 }
-
-// Hide success notification
-function hideSuccess() {
-    successNotification.style.display = 'none';
-}
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    stopQRMonitoring();
-    
-    if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-    }
-});

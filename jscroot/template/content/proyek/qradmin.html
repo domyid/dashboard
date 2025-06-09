@@ -1,310 +1,109 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Bimbingan - Admin</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <style>
-        .qr-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 300px;
-            border: 2px dashed #dbdbdb;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .qr-code {
-            border: 2px solid #3273dc;
-            border-radius: 8px;
-            padding: 20px;
-        }
-        .countdown {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ff3860;
-        }
-        .status-active {
-            background-color: #48c774;
-            color: white;
-        }
-        .status-inactive {
-            background-color: #f14668;
-            color: white;
-        }
-    </style>
-</head>
-<body>
+<section class="section">
     <div class="container">
-        <section class="section">
-            <div class="box">
-                <h1 class="title has-text-centered">QR Code Bimbingan - Admin Panel</h1>
-                
-                <!-- Status Session -->
-                <div class="field">
-                    <label class="label">Status Session:</label>
-                    <div class="control">
-                        <span id="session-status" class="tag is-large status-inactive">TIDAK AKTIF</span>
-                    </div>
-                </div>
-
-                <div id="session-info" style="display: none;">
-                    <div class="field">
-                        <label class="label">Session ID:</label>
-                        <div class="control">
-                            <span id="session-id" class="tag is-info"></span>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Waktu Mulai:</label>
-                        <div class="control">
-                            <span id="session-start-time"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Control Buttons -->
-                <div class="field is-grouped is-grouped-centered">
-                    <div class="control">
-                        <button class="button is-success is-large" id="start-session">
-                            Mulai Session QR
-                        </button>
-                    </div>
-                    <div class="control">
-                        <button class="button is-danger is-large" id="stop-session" disabled>
-                            Stop Session QR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- QR Code Display -->
-                <div id="qr-display" style="display: none;">
-                    <h2 class="subtitle has-text-centered">QR Code Aktif</h2>
-                    
-                    <div class="qr-container">
-                        <div id="qr-code-wrapper">
-                            <canvas id="qr-canvas"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="has-text-centered">
-                        <div class="field">
-                            <label class="label">Kode QR:</label>
-                            <div class="control">
-                                <span id="current-qr-text" class="tag is-primary is-large"></span>
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Refresh dalam:</label>
-                            <div class="control">
-                                <span id="countdown" class="countdown">20</span>
-                                <span class="countdown"> detik</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notification -->
-                <div class="notification is-hidden" id="notification">
-                    <button class="delete" id="close-notification"></button>
-                    <span id="notification-message"></span>
+        <div class="box">
+            <h1 class="title has-text-centered">QR Code Bimbingan - Admin Panel</h1>
+            
+            <!-- Status Session -->
+            <div class="field">
+                <label class="label">Status Session:</label>
+                <div class="control">
+                    <span id="session-status" class="tag is-large status-inactive">TIDAK AKTIF</span>
                 </div>
             </div>
-        </section>
+
+            <div id="session-info" style="display: none;">
+                <div class="field">
+                    <label class="label">Session ID:</label>
+                    <div class="control">
+                        <span id="session-id" class="tag is-info"></span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Waktu Mulai:</label>
+                    <div class="control">
+                        <span id="session-start-time"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="field is-grouped is-grouped-centered">
+                <div class="control">
+                    <button class="button is-success is-large" id="start-session">
+                        Mulai Session QR
+                    </button>
+                </div>
+                <div class="control">
+                    <button class="button is-danger is-large" id="stop-session" disabled>
+                        Stop Session QR
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR Code Display -->
+            <div id="qr-display" style="display: none;">
+                <h2 class="subtitle has-text-centered">QR Code Aktif</h2>
+                
+                <div class="qr-container">
+                    <div id="qr-code-wrapper">
+                        <canvas id="qr-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="has-text-centered">
+                    <div class="field">
+                        <label class="label">Kode QR:</label>
+                        <div class="control">
+                            <span id="current-qr-text" class="tag is-primary is-large"></span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Refresh dalam:</label>
+                        <div class="control">
+                            <span id="countdown" class="countdown">20</span>
+                            <span class="countdown"> detik</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification -->
+            <div class="notification is-hidden" id="notification">
+                <button class="delete" id="close-notification"></button>
+                <span id="notification-message"></span>
+            </div>
+        </div>
     </div>
+</section>
 
-    <script type="module">
-        import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
-        import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-
-        // Backend URLs - sesuaikan dengan konfigurasi Anda
-        const backend = {
-            startSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/start',
-            stopSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/stop',
-            getCurrentQR: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/current',
-            getSessionStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/status'
-        };
-
-        // DOM Elements
-        const startBtn = document.getElementById('start-session');
-        const stopBtn = document.getElementById('stop-session');
-        const sessionStatus = document.getElementById('session-status');
-        const sessionInfo = document.getElementById('session-info');
-        const sessionId = document.getElementById('session-id');
-        const sessionStartTime = document.getElementById('session-start-time');
-        const qrDisplay = document.getElementById('qr-display');
-        const qrCanvas = document.getElementById('qr-canvas');
-        const currentQRText = document.getElementById('current-qr-text');
-        const countdown = document.getElementById('countdown');
-        const notification = document.getElementById('notification');
-        const notificationMessage = document.getElementById('notification-message');
-        const closeNotification = document.getElementById('close-notification');
-
-        let refreshInterval;
-        let countdownInterval;
-        let countdownValue = 20;
-
-        // Initialize page
-        checkSessionStatus();
-
-        // Event Listeners
-        startBtn.addEventListener('click', startSession);
-        stopBtn.addEventListener('click', stopSession);
-        closeNotification.addEventListener('click', hideNotification);
-
-        function startSession() {
-            const token = getCookie('login');
-            if (!token) {
-                showNotification('Silakan login terlebih dahulu', 'is-danger');
-                return;
-            }
-
-            startBtn.classList.add('is-loading');
-            
-            postJSON(backend.startSession, 'login', token, {}, function(result) {
-                startBtn.classList.remove('is-loading');
-                
-                if (result.status === 200) {
-                    showNotification('Session QR berhasil dimulai', 'is-success');
-                    checkSessionStatus();
-                    startQRRefresh();
-                } else {
-                    showNotification(result.data?.response || 'Gagal memulai session', 'is-danger');
-                }
-            });
-        }
-
-        function stopSession() {
-            const token = getCookie('login');
-            if (!token) {
-                showNotification('Silakan login terlebih dahulu', 'is-danger');
-                return;
-            }
-
-            stopBtn.classList.add('is-loading');
-            
-            postJSON(backend.stopSession, 'login', token, {}, function(result) {
-                stopBtn.classList.remove('is-loading');
-                
-                if (result.status === 200) {
-                    showNotification('Session QR berhasil dihentikan', 'is-success');
-                    stopQRRefresh();
-                    checkSessionStatus();
-                } else {
-                    showNotification(result.data?.response || 'Gagal menghentikan session', 'is-danger');
-                }
-            });
-        }
-
-        function checkSessionStatus() {
-            getJSON(backend.getSessionStatus, '', '', function(result) {
-                if (result.status === 200 && result.data.isActive) {
-                    // Session aktif
-                    sessionStatus.textContent = 'AKTIF';
-                    sessionStatus.className = 'tag is-large status-active';
-                    sessionId.textContent = result.data.sessionID;
-                    sessionStartTime.textContent = new Date(result.data.createdAt).toLocaleString();
-                    sessionInfo.style.display = 'block';
-                    
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    
-                    if (!refreshInterval) {
-                        startQRRefresh();
-                    }
-                } else {
-                    // Session tidak aktif
-                    sessionStatus.textContent = 'TIDAK AKTIF';
-                    sessionStatus.className = 'tag is-large status-inactive';
-                    sessionInfo.style.display = 'none';
-                    qrDisplay.style.display = 'none';
-                    
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                    
-                    stopQRRefresh();
-                }
-            });
-        }
-
-        function startQRRefresh() {
-            refreshQRCode(); // Generate pertama kali
-            
-            refreshInterval = setInterval(refreshQRCode, 20000); // Refresh setiap 20 detik
-            startCountdown();
-        }
-
-        function stopQRRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-                refreshInterval = null;
-            }
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            qrDisplay.style.display = 'none';
-        }
-
-        function refreshQRCode() {
-            getJSON(backend.getCurrentQR, '', '', function(result) {
-                if (result.status === 200) {
-                    const qrCode = result.data.qrCode;
-                    currentQRText.textContent = qrCode;
-                    
-                    // Generate QR Code
-                    QRCode.toCanvas(qrCanvas, qrCode, {
-                        width: 300,
-                        height: 300,
-                        colorDark: '#000000',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.M
-                    }, function (error) {
-                        if (error) console.error(error);
-                    });
-                    
-                    qrDisplay.style.display = 'block';
-                    resetCountdown();
-                } else {
-                    console.error('Gagal mendapatkan QR code:', result.data?.response);
-                }
-            });
-        }
-
-        function startCountdown() {
-            countdownInterval = setInterval(function() {
-                countdownValue--;
-                countdown.textContent = countdownValue;
-                
-                if (countdownValue <= 0) {
-                    resetCountdown();
-                }
-            }, 1000);
-        }
-
-        function resetCountdown() {
-            countdownValue = 20;
-            countdown.textContent = countdownValue;
-        }
-
-        function showNotification(message, type) {
-            notificationMessage.textContent = message;
-            notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
-            notification.classList.add(type);
-            
-            setTimeout(hideNotification, 5000);
-        }
-
-        function hideNotification() {
-            notification.classList.add('is-hidden');
-        }
-
-        // Check session status setiap 30 detik
-        setInterval(checkSessionStatus, 30000);
-    </script>
-</body>
-</html>
+<style>
+    .qr-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 300px;
+        border: 2px dashed #dbdbdb;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    .qr-code {
+        border: 2px solid #3273dc;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    .countdown {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff3860;
+    }
+    .status-active {
+        background-color: #48c774;
+        color: white;
+    }
+    .status-inactive {
+        background-color: #f14668;
+        color: white;
+    }
+</style>

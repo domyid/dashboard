@@ -57,9 +57,16 @@ export const backend = {
         dosenpenguji: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/dosenpenguji',
         claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimcode',
         generateEventCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
-    },
+        qr: {
+            startSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/start',
+            stopSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/stop',
+            getCurrentQR: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/current',
+            getSessionStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/status',
+            getUserClaimStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/user/claimstatus',
+            claimQR: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/claim'
+        }
+    }
 };
-
 export const croot = folderPath()+"jscroot/";
 
 export const folder={
