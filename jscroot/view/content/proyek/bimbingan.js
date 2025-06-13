@@ -167,17 +167,6 @@ function checkAndSubmit() {
         if (!conditions.webhookpush) missingItems.push("WebHook");
         if (!conditions.presensihari) missingItems.push("Presensi");
         
-        // Check QRIS condition
-        if (!conditions.qrisCondition) {
-            if (activityData.rupiah === 0) {
-                if (activityData.mbc === 0) missingItems.push("Blockchain MBC");
-                if (activityData.rvn === 0) missingItems.push("Blockchain RVN");
-                missingItems.push("(QRIS kosong, butuh MBC dan RVN > 0)");
-            } else {
-                missingItems.push("QRIS");
-            }
-        }
-        
         // Show alert with missing items
         Swal.fire({
             icon: 'warning',
@@ -371,7 +360,7 @@ function checkApprovalButtonConditions() {
     const hasGtmetrixResult = gtmetrixresult && gtmetrixresult.trim() !== '';
     
     // Check if all required activities have quantity > 0
-    // Except for buku (bukukatalog) and jurnal (jurnalcount)
+    // Now excluding buku (bukukatalog), jurnal (jurnalcount), QRIS (rupiah), MBC (mbc), and RVN (rvn)
     const requiredActivitiesPositive = 
         sponsordata > 0 && 
         stravakm > 0 && 
@@ -382,11 +371,9 @@ function checkApprovalButtonConditions() {
         webhookpush > 0 && 
         presensihari > 0;
     
-    // Special condition for QRIS, MBC, and RVN
-    const qrisCondition = rupiah > 0 || (rupiah === 0 && mbc > 0 && rvn > 0);
-    
-    // Combine all conditions
-    const allConditionsMet = requiredActivitiesPositive && qrisCondition;
+    // All conditions are now just the required activities
+    // QRIS, MBC, RVN are now optional like buku and jurnal
+    const allConditionsMet = requiredActivitiesPositive;
     
     return {
         isValid: allConditionsMet,
@@ -395,12 +382,15 @@ function checkApprovalButtonConditions() {
         iqresult: iqresult > 0,
         pomokitsesi: pomokitsesi > 0,
         trackerdata: trackerdata > 0,
-        gtmetrixresult: hasGtmetrixResult, // Changed to check for non-empty string
+        gtmetrixresult: hasGtmetrixResult,
         webhookpush: webhookpush > 0,
         presensihari: presensihari > 0,
-        qrisCondition: qrisCondition,
+        // Optional activities - not checked for approval
         rupiah: rupiah > 0,
-        mbcrvn: rupiah === 0 && mbc > 0 && rvn > 0
+        mbc: mbc > 0,
+        rvn: rvn > 0,
+        bukukatalog: bukukatalog > 0,
+        jurnalcount: jurnalcount > 0
     };
 }
 
