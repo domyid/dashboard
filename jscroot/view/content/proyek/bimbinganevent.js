@@ -223,7 +223,7 @@ function createEventCard(event) {
         // Note: Approved events should not appear in list (event becomes inactive)
         // So we only handle: submitted (waiting approval) or active claims
 
-        if (userClaim.is_submit) {
+        if (userClaim.is_submitted) {
             // Task submitted, waiting for approval - keep locked
             statusClass = 'completed';
             statusText = 'Waiting for Approval ⏳';
@@ -260,7 +260,7 @@ function createEventCard(event) {
                 timers[event._id] = expiresAt;
 
                 actionButton = `
-                    <button class="button is-success is-fullwidth" onclick="window.openSubmitModal('${event._id}', '${event.name}', '${userClaim.claim_id}')">
+                    <button class="button is-success is-fullwidth" onclick="window.openSubmitModal('${event._id}', '${event.name}')">
                         Submit Task
                     </button>
                 `;
@@ -359,7 +359,7 @@ window.openClaimModal = function(eventId, eventName, points) {
     hideClaimNotification();
 };
 
-window.openSubmitModal = function(eventId, eventName, claimId) {
+window.openSubmitModal = function(eventId, eventName) {
     const modal = document.getElementById('submit-modal');
     const eventNameInput = document.getElementById('submit-event-name');
     const taskLinkInput = document.getElementById('submit-task-link');
@@ -367,8 +367,7 @@ window.openSubmitModal = function(eventId, eventName, claimId) {
     if (eventNameInput) eventNameInput.value = eventName;
     if (taskLinkInput) taskLinkInput.value = '';
     if (modal) {
-        modal.dataset.claimId = claimId;
-        modal.dataset.eventId = eventId; // Store eventId for potential future use
+        modal.dataset.eventId = eventId; // Use eventId instead of claimId
         modal.classList.add('is-active');
     }
     hideSubmitNotification();
@@ -469,19 +468,19 @@ async function confirmSubmitTask() {
     
     if (!modal || !taskLinkInput || !confirmBtn) return;
     
-    const claimId = modal.dataset.claimId;
+    const eventId = modal.dataset.eventId;
     const taskLink = taskLinkInput.value.trim();
-    
+
     if (!taskLink) {
         showSubmitNotification('Please enter a task link', 'is-danger');
         return;
     }
-    
+
     confirmBtn.classList.add('is-loading');
-    
+
     try {
         const submitData = {
-            claim_id: claimId,
+            event_id: eventId,
             task_link: taskLink
         };
 
