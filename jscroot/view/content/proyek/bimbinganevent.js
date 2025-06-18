@@ -1,26 +1,74 @@
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
-import { id } from "/dashboard/jscroot/url/config.js";
 
 // Backend URLs
 const backend = {
     listEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/list',
     claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit'
+    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
+    userPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/userpoints'
 };
 
 let currentEvents = [];
 let timers = {};
 
 export async function main() {
-    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
+    console.log('Initializing bimbinganevent...');
     setupEventHandlers();
-    await loadEvents();
+    loadUserPoints();
+    loadEvents();
     startTimerUpdates();
 }
 
 // Auto-initialize when module loads
 document.addEventListener('DOMContentLoaded', main);
+
+async function loadUserPoints() {
+    console.log('Loading user points...');
+
+    try {
+        const token = getCookie('login');
+        if (!token) {
+            console.log('No login token found for points');
+            return;
+        }
+
+        const response = await fetch(backend.userPoints, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': token
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        let responseData = JSON.parse(responseText);
+
+        console.log('User points response:', responseData);
+
+        if (responseData.status === 'Success' && responseData.data) {
+            const pointsData = responseData.data;
+
+            // Update UI
+            const userPointsBox = document.getElementById('user-points-box');
+            const totalPointsEl = document.getElementById('total-points');
+            const eventsCompletedEl = document.getElementById('events-completed');
+
+            if (userPointsBox) userPointsBox.style.display = 'block';
+            if (totalPointsEl) totalPointsEl.textContent = pointsData.total_points || 0;
+            if (eventsCompletedEl) eventsCompletedEl.textContent = pointsData.event_count || 0;
+
+            // Store points data for history modal
+            window.userPointsData = pointsData;
+        }
+    } catch (error) {
+        console.error('Error loading user points:', error);
+        // Don't show error to user, just log it
+    }
+}
 
 function setupEventHandlers() {
     // Close modal handlers
@@ -28,25 +76,31 @@ function setupEventHandlers() {
     const cancelClaimBtn = document.getElementById('cancel-claim-btn');
     const closeSubmitModal = document.getElementById('close-submit-modal');
     const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-    
+    const closePointsModal = document.getElementById('close-points-modal');
+    const closePointsHistoryBtn = document.getElementById('close-points-history-btn');
+
     if (closeClaimModal) closeClaimModal.addEventListener('click', hideClaimModal);
     if (cancelClaimBtn) cancelClaimBtn.addEventListener('click', hideClaimModal);
     if (closeSubmitModal) closeSubmitModal.addEventListener('click', hideSubmitModal);
     if (cancelSubmitBtn) cancelSubmitBtn.addEventListener('click', hideSubmitModal);
-    
+    if (closePointsModal) closePointsModal.addEventListener('click', hidePointsModal);
+    if (closePointsHistoryBtn) closePointsHistoryBtn.addEventListener('click', hidePointsModal);
+
     // Confirm handlers
     const confirmClaimBtn = document.getElementById('confirm-claim-btn');
     const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-    
+
     if (confirmClaimBtn) confirmClaimBtn.addEventListener('click', confirmClaimEvent);
     if (confirmSubmitBtn) confirmSubmitBtn.addEventListener('click', confirmSubmitTask);
-    
+
     // Modal background click handlers
     const claimModalBg = document.querySelector('#claim-modal .modal-background');
     const submitModalBg = document.querySelector('#submit-modal .modal-background');
-    
+    const pointsModalBg = document.querySelector('#points-history-modal .modal-background');
+
     if (claimModalBg) claimModalBg.addEventListener('click', hideClaimModal);
     if (submitModalBg) submitModalBg.addEventListener('click', hideSubmitModal);
+    if (pointsModalBg) pointsModalBg.addEventListener('click', hidePointsModal);
 }
 
 async function loadEvents() {
@@ -162,13 +216,30 @@ function createEventCard(event) {
     if (userClaim) {
         // User has claimed this event
         if (userClaim.is_approved) {
+            // Event approved - card should disappear (event becomes inactive)
             statusClass = 'approved';
             statusText = 'Approved ✅';
+            actionButton = `
+                <button class="button is-success is-fullwidth" disabled>
+                    Task Approved
+                </button>
+            `;
         } else if (userClaim.is_completed) {
+            // Task submitted, waiting for approval - keep locked
             statusClass = 'completed';
             statusText = 'Waiting for Approval ⏳';
+            timerDisplay = `
+                <div class="notification is-info is-size-7">
+                    Task sudah di-submit, menunggu approval dari owner
+                </div>
+            `;
+            actionButton = `
+                <button class="button is-info is-fullwidth" disabled>
+                    Waiting for Approval
+                </button>
+            `;
         } else {
-            // User has active claim
+            // User has active claim but hasn't submitted yet
             statusClass = 'claimed';
             statusText = 'Claimed by You 🔒';
 
@@ -450,7 +521,8 @@ async function confirmSubmitTask() {
             showSubmitNotification('Task submitted successfully! Waiting for approval.', 'is-success');
             setTimeout(() => {
                 hideSubmitModal();
-                loadEvents(); // Reload events
+                loadEvents(); // Reload events to show "Waiting for Approval" status
+                loadUserPoints(); // Reload user points in case of immediate approval
             }, 1500);
         } else {
             showSubmitNotification(responseData.status || responseData.response || 'Failed to submit task', 'is-danger');
@@ -561,3 +633,69 @@ window.forceRefreshEvents = function() {
     console.log('Force refreshing events...');
     loadEvents();
 };
+
+// Points history functions
+window.showPointsHistory = function() {
+    const modal = document.getElementById('points-history-modal');
+    const content = document.getElementById('points-history-content');
+
+    if (modal) modal.classList.add('is-active');
+
+    if (content && window.userPointsData && window.userPointsData.event_history) {
+        const history = window.userPointsData.event_history;
+
+        if (history.length === 0) {
+            content.innerHTML = `
+                <div class="has-text-centered">
+                    <p class="title is-5">No Event History</p>
+                    <p>You haven't completed any events yet.</p>
+                </div>
+            `;
+        } else {
+            let historyHTML = `
+                <div class="table-container">
+                    <table class="table is-fullwidth is-striped">
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Points</th>
+                                <th>Task Link</th>
+                                <th>Approved Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            history.forEach(event => {
+                const approvedDate = new Date(event.approvedat).toLocaleDateString();
+                historyHTML += `
+                    <tr>
+                        <td><strong>${event.eventname}</strong></td>
+                        <td><span class="tag is-success">${event.points} pts</span></td>
+                        <td><a href="${event.tasklink}" target="_blank" class="is-size-7">View Task</a></td>
+                        <td>${approvedDate}</td>
+                    </tr>
+                `;
+            });
+
+            historyHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            content.innerHTML = historyHTML;
+        }
+    } else {
+        content.innerHTML = `
+            <div class="has-text-centered">
+                <p>Loading history...</p>
+            </div>
+        `;
+    }
+};
+
+function hidePointsModal() {
+    const modal = document.getElementById('points-history-modal');
+    if (modal) modal.classList.remove('is-active');
+}

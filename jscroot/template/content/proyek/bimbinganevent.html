@@ -3,6 +3,36 @@
         <h1 class="title">Event Management</h1>
         <p class="subtitle">Claim event dan dapatkan poin</p>
 
+        <!-- User Points Display -->
+        <div class="box" id="user-points-box" style="display: none;">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <div>
+                            <p class="heading">Total Event Points</p>
+                            <p class="title is-3" id="total-points">0</p>
+                        </div>
+                    </div>
+                    <div class="level-item">
+                        <div>
+                            <p class="heading">Events Completed</p>
+                            <p class="title is-4" id="events-completed">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <button class="button is-info" onclick="window.showPointsHistory()">
+                            <span class="icon">
+                                <i class="fas fa-history"></i>
+                            </span>
+                            <span>View History</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="notification is-info is-light">
             <p><strong>Cara Kerja:</strong></p>
             <ul>
@@ -103,6 +133,30 @@
             <footer class="modal-card-foot">
                 <button class="button is-success" id="confirm-submit-btn">Submit Task</button>
                 <button class="button" id="cancel-submit-btn">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Points History Modal -->
+    <div class="modal" id="points-history-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Event Points History</p>
+                <button class="delete" aria-label="close" id="close-points-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <div id="points-history-content">
+                    <div class="has-text-centered">
+                        <span class="icon is-large">
+                            <i class="fas fa-spinner fa-pulse fa-2x"></i>
+                        </span>
+                        <p>Loading history...</p>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button" id="close-points-history-btn">Close</button>
             </footer>
         </div>
     </div>
