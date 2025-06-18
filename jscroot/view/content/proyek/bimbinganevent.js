@@ -146,63 +146,94 @@ function renderEvents(events) {
 function createEventCard(event) {
     const column = document.createElement('div');
     column.className = 'column is-one-third';
-    
+
     const userClaim = event.user_claim;
     let statusClass = 'available';
     let statusText = 'Available';
     let actionButton = '';
     let timerDisplay = '';
-    
+
+    console.log(`Creating card for event ${event._id}:`, {
+        userClaim: userClaim,
+        isAvailable: event.is_available,
+        eventName: event.name
+    });
+
     if (userClaim) {
+        // User has claimed this event
         if (userClaim.is_approved) {
             statusClass = 'approved';
-            statusText = 'Approved';
+            statusText = 'Approved ✅';
         } else if (userClaim.is_completed) {
             statusClass = 'completed';
-            statusText = 'Waiting for Approval';
+            statusText = 'Waiting for Approval ⏳';
         } else {
+            // User has active claim
             statusClass = 'claimed';
-            statusText = 'Claimed by You';
-            
+            statusText = 'Claimed by You 🔒';
+
             // Add countdown timer
             const expiresAt = new Date(userClaim.expires_at);
             const now = new Date();
-            
+
             if (expiresAt > now) {
                 timerDisplay = `
                     <div class="countdown-timer">
                         <span class="event-timer" id="timer-${event._id}">Calculating...</span>
+                        <p class="help is-size-7">Timer akan expired dan event kembali available</p>
                     </div>
                 `;
-                
+
                 // Store timer info
                 timers[event._id] = expiresAt;
-                
+
                 actionButton = `
                     <button class="button is-success is-fullwidth" onclick="window.openSubmitModal('${event._id}', '${event.name}', '${userClaim.claim_id}')">
                         Submit Task
                     </button>
                 `;
             } else {
-                statusText = 'Expired';
+                // Timer expired - this should not happen as backend should clean up
+                statusText = 'Timer Expired - Refreshing...';
                 statusClass = 'expired';
+                timerDisplay = `
+                    <div class="notification is-warning is-size-7">
+                        Timer expired, event akan kembali available
+                    </div>
+                `;
+                // Trigger reload after short delay
+                setTimeout(() => loadEvents(), 2000);
             }
         }
-        
+
         if (userClaim.task_link) {
             timerDisplay += `
                 <div class="field">
                     <label class="label is-small">Submitted Task:</label>
                     <div class="task-link">
-                        <a href="${userClaim.task_link}" target="_blank">${userClaim.task_link}</a>
+                        <a href="${userClaim.task_link}" target="_blank" class="is-size-7">${userClaim.task_link}</a>
                     </div>
                 </div>
             `;
         }
     } else if (!event.is_available) {
+        // Event is claimed by someone else
         statusClass = 'claimed';
-        statusText = 'Claimed by Others';
+        statusText = 'Sedang Dikerjakan 🔒';
+        timerDisplay = `
+            <div class="notification is-info is-size-7">
+                Event sedang dikerjakan oleh user lain
+            </div>
+        `;
+        actionButton = `
+            <button class="button is-light is-fullwidth" disabled>
+                Tidak Tersedia
+            </button>
+        `;
     } else {
+        // Event is available for claiming
+        statusClass = 'available';
+        statusText = 'Available ✨';
         actionButton = `
             <button class="button is-primary is-fullwidth" onclick="window.openClaimModal('${event._id}', '${event.name}', ${event.points})">
                 Claim Event
@@ -473,7 +504,7 @@ function updateTimers() {
         const expiresAt = timers[eventId];
         const now = new Date();
         const timeLeft = expiresAt - now;
-        
+
         const timerElement = document.getElementById(`timer-${eventId}`);
         if (timerElement) {
             if (timeLeft > 0) {
@@ -481,10 +512,10 @@ function updateTimers() {
                 const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
                 timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
             } else {
-                timerElement.textContent = 'Expired';
-                timerElement.style.color = '#ff3860';
+                // Timer expired - event should become available again
+                console.log(`Timer expired for event ${eventId}, reloading events...`);
                 delete timers[eventId];
-                // Reload events to update UI
+                // Reload events to update UI - event should become available again
                 loadEvents();
             }
         }
@@ -524,3 +555,9 @@ function showNotification(message, type) {
 
 // Auto refresh events every 30 seconds
 setInterval(loadEvents, 30000);
+
+// Additional function to force refresh when needed
+window.forceRefreshEvents = function() {
+    console.log('Force refreshing events...');
+    loadEvents();
+};
