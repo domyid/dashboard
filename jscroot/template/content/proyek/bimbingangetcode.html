@@ -142,6 +142,72 @@
             <button class="delete" id="closeSuccess"></button>
             <span id="successMessage"></span>
         </div>
+
+        <!-- Event Management Section -->
+        <div class="section-divider">
+            <span class="section-divider-text">Event Management</span>
+        </div>
+
+        <div class="box">
+            <h1 class="title has-text-centered">Create New Event</h1>
+            <div class="content">
+                <p class="has-text-centered">Buat event baru untuk client dengan reward points</p>
+                <p class="has-text-centered has-text-grey">Hanya dapat diakses oleh owner</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Event Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="eventName" placeholder="Masukkan nama event" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Description (Optional)</label>
+                <div class="control">
+                    <textarea class="textarea" id="eventDescription" placeholder="Deskripsi event (opsional)"></textarea>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Points Reward</label>
+                <div class="control">
+                    <input class="input" type="number" id="eventPoints" placeholder="Jumlah poin yang akan diberikan" min="1" required>
+                </div>
+                <p class="help">Poin yang akan diberikan kepada user setelah event di-approve</p>
+            </div>
+
+            <div class="field">
+                <div class="control has-text-centered">
+                    <button class="button is-success is-large" id="createEventBtn">
+                        Create Event
+                    </button>
+                </div>
+            </div>
+
+            <!-- Event Creation Result -->
+            <div id="eventContainer" class="box" style="display: none;">
+                <h3 class="title is-5">Event Created Successfully!</h3>
+                <div class="field">
+                    <label class="label">Event ID</label>
+                    <div class="control">
+                        <input class="input" type="text" id="createdEventId" readonly>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Event Name</label>
+                    <div class="control">
+                        <input class="input" type="text" id="createdEventName" readonly>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Points</label>
+                    <div class="control">
+                        <input class="input" type="text" id="createdEventPoints" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="bimbingangetcode.js"></script>

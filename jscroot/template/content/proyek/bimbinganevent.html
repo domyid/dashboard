@@ -1,0 +1,159 @@
+<section class="section">
+    <div class="container">
+        <h1 class="title">Event Management</h1>
+        <p class="subtitle">Claim event dan dapatkan poin</p>
+
+        <div class="notification is-info is-light">
+            <p><strong>Cara Kerja:</strong></p>
+            <ul>
+                <li>Pilih event yang tersedia dan klik tombol "Claim Event"</li>
+                <li>Masukkan durasi timer (1 detik input = 1 menit waktu aktual)</li>
+                <li>Selesaikan tugas dalam waktu yang ditentukan</li>
+                <li>Submit link tugas untuk mendapatkan approval dari owner</li>
+                <li>Dapatkan poin setelah di-approve</li>
+            </ul>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="has-text-centered" style="display: none;">
+            <span class="icon is-large">
+                <i class="fas fa-spinner fa-pulse fa-2x"></i>
+            </span>
+            <p>Memuat event...</p>
+        </div>
+
+        <!-- Events container -->
+        <div id="events-container" class="columns is-multiline">
+            <!-- Event cards will be populated here -->
+        </div>
+
+        <!-- No events message -->
+        <div id="no-events-message" class="has-text-centered" style="display: none;">
+            <div class="notification is-warning">
+                <p>Tidak ada event yang tersedia saat ini.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Claim Event Modal -->
+    <div class="modal" id="claim-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Claim Event</p>
+                <button class="delete" aria-label="close" id="close-claim-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">Event Name</label>
+                    <div class="control">
+                        <input class="input" type="text" id="claim-event-name" readonly>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Points</label>
+                    <div class="control">
+                        <input class="input" type="text" id="claim-event-points" readonly>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Timer (detik) - 1 detik = 1 menit waktu aktual</label>
+                    <div class="control">
+                        <input class="input" type="number" id="claim-timer-input" placeholder="Masukkan durasi dalam detik" min="1" required>
+                    </div>
+                    <p class="help">Contoh: 60 detik = 60 menit waktu aktual</p>
+                </div>
+                <div id="claim-notification" class="notification is-hidden">
+                    <p id="claim-notification-message"></p>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="confirm-claim-btn">Claim Event</button>
+                <button class="button" id="cancel-claim-btn">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Submit Task Modal -->
+    <div class="modal" id="submit-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Submit Task</p>
+                <button class="delete" aria-label="close" id="close-submit-modal"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">Event Name</label>
+                    <div class="control">
+                        <input class="input" type="text" id="submit-event-name" readonly>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Task Link</label>
+                    <div class="control">
+                        <input class="input" type="url" id="submit-task-link" placeholder="https://example.com/your-task" required>
+                    </div>
+                    <p class="help">Masukkan link tugas yang sudah Anda kerjakan</p>
+                </div>
+                <div id="submit-notification" class="notification is-hidden">
+                    <p id="submit-notification-message"></p>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="confirm-submit-btn">Submit Task</button>
+                <button class="button" id="cancel-submit-btn">Cancel</button>
+            </footer>
+        </div>
+    </div>
+</section>
+
+<style>
+.event-card {
+    margin-bottom: 1rem;
+}
+
+.event-card .card {
+    height: 100%;
+}
+
+.event-timer {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ff3860;
+}
+
+.event-status {
+    font-weight: bold;
+}
+
+.event-status.available {
+    color: #23d160;
+}
+
+.event-status.claimed {
+    color: #ff3860;
+}
+
+.event-status.completed {
+    color: #3273dc;
+}
+
+.event-status.approved {
+    color: #23d160;
+}
+
+.countdown-timer {
+    background-color: #ffdd57;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+.task-link {
+    word-break: break-all;
+    font-size: 0.9rem;
+}
+</style>
+
+<script type="module" src="bimbinganevent.js"></script>
