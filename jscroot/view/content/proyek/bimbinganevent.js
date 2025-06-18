@@ -221,9 +221,9 @@ function createEventCard(event) {
     if (userClaim) {
         // User has claimed this event
         // Note: Approved events should not appear in list (event becomes inactive)
-        // So we only handle: completed (waiting approval) or active claims
+        // So we only handle: submitted (waiting approval) or active claims
 
-        if (userClaim.is_completed) {
+        if (userClaim.is_submit) {
             // Task submitted, waiting for approval - keep locked
             statusClass = 'completed';
             statusText = 'Waiting for Approval ⏳';
