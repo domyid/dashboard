@@ -82,7 +82,7 @@ export function getURLContentJS(){
         case "proyek/bimbingangetcode":
             return url.view.content+"proyek/bimbingangetcode.js";
         case "proyek/bimbinganevent":
-            return url.template.content+"proyek/bimbinganevent.html";   
+            return url.template.content+"proyek/bimbinganevent.js";   
         case "proyek/kelasws":
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":

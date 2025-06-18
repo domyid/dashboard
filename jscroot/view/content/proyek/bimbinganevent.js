@@ -1,5 +1,7 @@
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
+import { id } from "/dashboard/jscroot/url/config.js";
 
 // Backend URLs
 const backend = {
@@ -12,9 +14,9 @@ let currentEvents = [];
 let timers = {};
 
 export async function main() {
-    console.log('Initializing bimbinganevent...');
+    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
     setupEventHandlers();
-    loadEvents();
+    await loadEvents();
     startTimerUpdates();
 }
 
@@ -48,75 +50,31 @@ function setupEventHandlers() {
     if (submitModalBg) submitModalBg.addEventListener('click', hideSubmitModal);
 }
 
-function loadEvents() {
+async function loadEvents() {
     const loadingIndicator = document.getElementById('loading-indicator');
     const eventsContainer = document.getElementById('events-container');
     const noEventsMessage = document.getElementById('no-events-message');
-
-    console.log('Loading events...');
-    console.log('API URL:', backend.listEvents);
-    console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
-
+    
     if (loadingIndicator) loadingIndicator.style.display = 'block';
     if (eventsContainer) eventsContainer.innerHTML = '';
     if (noEventsMessage) noEventsMessage.style.display = 'none';
-
-    // Use callback pattern like other functions
-    getJSON(backend.listEvents, 'login', getCookie('login'), (response) => {
-        if (loadingIndicator) loadingIndicator.style.display = 'none';
-
-        console.log('Events API Response:', response);
-        console.log('Response type:', typeof response);
-        console.log('Response keys:', response ? Object.keys(response) : 'null');
-
-        if (!response) {
-            console.log('No response received');
-            if (noEventsMessage) noEventsMessage.style.display = 'block';
-            return;
-        }
-
-        // Handle different response formats
-        let eventsData = null;
-
-        if (response.status === 200) {
-            console.log('HTTP 200 response detected');
-
-            if (response.data) {
-                let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                        console.log('Parsed JSON data:', actualData);
-                    } catch (e) {
-                        console.error('Failed to parse JSON:', e);
-                        actualData = response.data;
-                    }
-                } else {
-                    actualData = response.data;
-                }
-
-                if (actualData.status === 'Success' && actualData.data) {
-                    eventsData = actualData.data;
-                    console.log('Success response with data:', eventsData);
-                } else if (actualData.status === 'Success') {
-                    eventsData = actualData;
-                    console.log('Success response without nested data:', eventsData);
-                } else if (Array.isArray(actualData)) {
-                    eventsData = actualData;
-                    console.log('Direct array response:', eventsData);
-                }
-            }
-        }
-
-        if (eventsData && Array.isArray(eventsData) && eventsData.length > 0) {
-            console.log('Rendering', eventsData.length, 'events');
-            currentEvents = eventsData;
+    
+    try {
+        const response = await getJSON(backend.listEvents, 'login', getCookie('login'));
+        
+        if (response.status === 'Success' && response.data && response.data.length > 0) {
+            currentEvents = response.data;
             renderEvents(currentEvents);
         } else {
-            console.log('No events found or invalid data format');
             if (noEventsMessage) noEventsMessage.style.display = 'block';
         }
-    });
+    } catch (error) {
+        console.error('Error loading events:', error);
+        showNotification('Error loading events: ' + error.message, 'is-danger');
+        if (noEventsMessage) noEventsMessage.style.display = 'block';
+    } finally {
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+    }
 }
 
 function renderEvents(events) {
@@ -272,154 +230,88 @@ function hideSubmitModal() {
     if (modal) modal.classList.remove('is-active');
 }
 
-function confirmClaimEvent() {
+async function confirmClaimEvent() {
     const modal = document.getElementById('claim-modal');
     const timerInput = document.getElementById('claim-timer-input');
     const confirmBtn = document.getElementById('confirm-claim-btn');
-
+    
     if (!modal || !timerInput || !confirmBtn) return;
-
+    
     const eventId = modal.dataset.eventId;
     const timerSec = parseInt(timerInput.value);
-
+    
     if (!timerSec || timerSec <= 0) {
         showClaimNotification('Please enter a valid timer duration', 'is-danger');
         return;
     }
-
+    
     confirmBtn.classList.add('is-loading');
-
-    const claimData = {
-        event_id: eventId,
-        timer_sec: timerSec
-    };
-
-    console.log('Claiming event:', claimData);
-
-    // Use callback pattern
-    postJSON(backend.claimEvent, 'login', getCookie('login'), claimData, (response) => {
-        confirmBtn.classList.remove('is-loading');
-
-        console.log('Claim response:', response);
-
-        if (!response) {
-            showClaimNotification('No response received from server', 'is-danger');
-            return;
-        }
-
-        // Handle different response formats
-        let success = false;
-        let message = 'Failed to claim event';
-
-        if (response.status === 200) {
-            if (response.data) {
-                let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                    } catch (e) {
-                        actualData = response.data;
-                    }
-                } else {
-                    actualData = response.data;
-                }
-
-                if (actualData.status === 'Success') {
-                    success = true;
-                    message = 'Event claimed successfully!';
-                } else {
-                    message = actualData.status || actualData.response || 'Failed to claim event';
-                }
-            }
-        } else {
-            message = response.data?.response || response.message || 'Failed to claim event';
-        }
-
-        if (success) {
-            showClaimNotification(message, 'is-success');
+    
+    try {
+        const claimData = {
+            event_id: eventId,
+            timer_sec: timerSec
+        };
+        
+        const response = await postJSON(backend.claimEvent, 'login', getCookie('login'), claimData);
+        
+        if (response.status === 'Success') {
+            showClaimNotification('Event claimed successfully!', 'is-success');
             setTimeout(() => {
                 hideClaimModal();
                 loadEvents(); // Reload events
             }, 1500);
         } else {
-            showClaimNotification(message, 'is-danger');
+            showClaimNotification(response.info || response.response || 'Failed to claim event', 'is-danger');
         }
-    });
+    } catch (error) {
+        console.error('Error claiming event:', error);
+        showClaimNotification('Error: ' + error.message, 'is-danger');
+    } finally {
+        confirmBtn.classList.remove('is-loading');
+    }
 }
 
-function confirmSubmitTask() {
+async function confirmSubmitTask() {
     const modal = document.getElementById('submit-modal');
     const taskLinkInput = document.getElementById('submit-task-link');
     const confirmBtn = document.getElementById('confirm-submit-btn');
-
+    
     if (!modal || !taskLinkInput || !confirmBtn) return;
-
+    
     const claimId = modal.dataset.claimId;
     const taskLink = taskLinkInput.value.trim();
-
+    
     if (!taskLink) {
         showSubmitNotification('Please enter a task link', 'is-danger');
         return;
     }
-
+    
     confirmBtn.classList.add('is-loading');
-
-    const submitData = {
-        claim_id: claimId,
-        task_link: taskLink
-    };
-
-    console.log('Submitting task:', submitData);
-
-    // Use callback pattern
-    postJSON(backend.submitTask, 'login', getCookie('login'), submitData, (response) => {
-        confirmBtn.classList.remove('is-loading');
-
-        console.log('Submit response:', response);
-
-        if (!response) {
-            showSubmitNotification('No response received from server', 'is-danger');
-            return;
-        }
-
-        // Handle different response formats
-        let success = false;
-        let message = 'Failed to submit task';
-
-        if (response.status === 200) {
-            if (response.data) {
-                let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                    } catch (e) {
-                        actualData = response.data;
-                    }
-                } else {
-                    actualData = response.data;
-                }
-
-                if (actualData.status === 'Success') {
-                    success = true;
-                    message = 'Task submitted successfully! Waiting for approval.';
-                } else {
-                    message = actualData.status || actualData.response || 'Failed to submit task';
-                }
-            }
-        } else {
-            message = response.data?.response || response.message || 'Failed to submit task';
-        }
-
-        if (success) {
-            showSubmitNotification(message, 'is-success');
+    
+    try {
+        const submitData = {
+            claim_id: claimId,
+            task_link: taskLink
+        };
+        
+        const response = await postJSON(backend.submitTask, 'login', getCookie('login'), submitData);
+        
+        if (response.status === 'Success') {
+            showSubmitNotification('Task submitted successfully! Waiting for approval.', 'is-success');
             setTimeout(() => {
                 hideSubmitModal();
                 loadEvents(); // Reload events
             }, 1500);
         } else {
-            showSubmitNotification(message, 'is-danger');
+            showSubmitNotification(response.info || response.response || 'Failed to submit task', 'is-danger');
         }
-    });
+    } catch (error) {
+        console.error('Error submitting task:', error);
+        showSubmitNotification('Error: ' + error.message, 'is-danger');
+    } finally {
+        confirmBtn.classList.remove('is-loading');
+    }
 }
 
 function showClaimNotification(message, type) {
