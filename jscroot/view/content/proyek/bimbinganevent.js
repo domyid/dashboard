@@ -213,18 +213,17 @@ function createEventCard(event) {
         eventName: event.name
     });
 
+    // Note: Approved events don't appear in the list because:
+    // 1. When task is approved, event.isactive becomes false (backend)
+    // 2. Only active events are returned by /api/event/list
+    // 3. This follows bimbingan pattern where approved items disappear
+
     if (userClaim) {
         // User has claimed this event
-        if (userClaim.is_approved) {
-            // Event approved - card should disappear (event becomes inactive)
-            statusClass = 'approved';
-            statusText = 'Approved ✅';
-            actionButton = `
-                <button class="button is-success is-fullwidth" disabled>
-                    Task Approved
-                </button>
-            `;
-        } else if (userClaim.is_completed) {
+        // Note: Approved events should not appear in list (event becomes inactive)
+        // So we only handle: completed (waiting approval) or active claims
+
+        if (userClaim.is_completed) {
             // Task submitted, waiting for approval - keep locked
             statusClass = 'completed';
             statusText = 'Waiting for Approval ⏳';
@@ -369,6 +368,7 @@ window.openSubmitModal = function(eventId, eventName, claimId) {
     if (taskLinkInput) taskLinkInput.value = '';
     if (modal) {
         modal.dataset.claimId = claimId;
+        modal.dataset.eventId = eventId; // Store eventId for potential future use
         modal.classList.add('is-active');
     }
     hideSubmitNotification();
