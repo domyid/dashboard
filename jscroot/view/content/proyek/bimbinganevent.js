@@ -229,13 +229,15 @@ function createEventCard(event) {
             statusClass = 'completed';
             statusText = 'Waiting for Approval ⏳';
             timerDisplay = `
-                <div class="notification is-info is-size-7">
-                    Task sudah di-submit, menunggu approval dari owner
+                <div class="notification is-warning is-size-7">
+                    <strong>🔒 Task Submitted - Waiting for Owner Approval</strong><br>
+                    Task sudah di-submit dan sedang menunggu approval dari owner.<br>
+                    Card akan tetap terkunci sampai di-approve atau di-reject.
                 </div>
             `;
             actionButton = `
-                <button class="button is-info is-fullwidth" disabled>
-                    Waiting for Approval
+                <button class="button is-warning is-fullwidth" disabled>
+                    <i class="fas fa-clock"></i> Waiting for Approval
                 </button>
             `;
         } else {
