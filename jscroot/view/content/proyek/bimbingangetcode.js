@@ -362,34 +362,103 @@ createEventBtn.addEventListener('click', async () => {
             points: eventPoints
         };
 
-        const result = await postJSON(backend.createEvent, 'login', getCookie('login'), eventData);
+        console.log('Sending event data:', eventData);
+        console.log('API URL:', backend.createEvent);
+        console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
 
-        if (result.status === 'Success') {
-            // Show success
-            const responseData = result.data;
+        // Add timeout to detect if callback never fires
+        let callbackFired = false;
+        const timeoutId = setTimeout(() => {
+            if (!callbackFired) {
+                createEventBtn.disabled = false;
+                createEventBtn.textContent = 'Create Event';
+                showError('Request timeout - server tidak merespons dalam 30 detik');
+                console.error('postJSON callback timeout');
+            }
+        }, 30000);
 
-            document.getElementById('createdEventId').value = responseData.event_id;
-            document.getElementById('createdEventName').value = eventName;
-            document.getElementById('createdEventPoints').value = eventPoints + ' Points';
+        // Use callback pattern like other functions in this file
+        postJSON(backend.createEvent, 'login', getCookie('login'), eventData, (result) => {
+            callbackFired = true;
+            clearTimeout(timeoutId);
+            createEventBtn.disabled = false;
+            createEventBtn.textContent = 'Create Event';
 
-            eventContainer.style.display = 'block';
-            hideError();
-            showSuccess('Event berhasil dibuat!');
+            console.log('Raw API Response:', result);
+            console.log('Response type:', typeof result);
+            console.log('Response keys:', result ? Object.keys(result) : 'null');
 
-            // Clear form
-            eventNameInput.value = '';
-            eventDescriptionInput.value = '';
-            eventPointsInput.value = '';
-        } else {
-            // Show error
-            const errorMsg = result.info || result.response || result.status || 'Gagal membuat event';
-            showError(errorMsg);
-            console.error('Create event error:', result);
-        }
+            // Check if result exists and has expected structure
+            if (!result) {
+                showError('No response received from server');
+                return;
+            }
+
+            // More detailed response analysis
+            if (result.status === 200) {
+                console.log('HTTP 200 response detected');
+
+                // Handle different response formats
+                let responseData;
+                let actualData;
+
+                if (result.data) {
+                    console.log('result.data exists:', result.data);
+                    console.log('result.data type:', typeof result.data);
+
+                    if (typeof result.data === 'string') {
+                        try {
+                            actualData = JSON.parse(result.data);
+                            console.log('Parsed JSON data:', actualData);
+                        } catch (e) {
+                            console.error('Failed to parse JSON:', e);
+                            actualData = result.data;
+                        }
+                    } else {
+                        actualData = result.data;
+                    }
+
+                    if (actualData.status === 'Success' && actualData.data) {
+                        responseData = actualData.data;
+                        console.log('Success response with data:', responseData);
+                    } else if (actualData.status === 'Success') {
+                        responseData = actualData;
+                        console.log('Success response without nested data:', responseData);
+                    } else {
+                        console.log('Non-success response:', actualData);
+                        showError('Server Error: ' + (actualData.status || 'Unknown error'));
+                        return;
+                    }
+                } else {
+                    console.log('No result.data, using result directly');
+                    responseData = result;
+                }
+
+                console.log('Final response data:', responseData);
+
+                document.getElementById('createdEventId').value = responseData.event_id || 'Generated';
+                document.getElementById('createdEventName').value = eventName;
+                document.getElementById('createdEventPoints').value = eventPoints + ' Points';
+
+                eventContainer.style.display = 'block';
+                hideError();
+                showSuccess('Event berhasil dibuat!');
+
+                // Clear form
+                eventNameInput.value = '';
+                eventDescriptionInput.value = '';
+                eventPointsInput.value = '';
+            } else {
+                console.log('Non-200 response:', result);
+                // Show error
+                const errorMsg = result.data?.response || result.data?.status || result.message || result.status || 'Gagal membuat event';
+                showError('Server Error: ' + errorMsg);
+                console.error('Create event error:', result);
+            }
+        });
     } catch (error) {
+        console.error('Full error details:', error);
         showError('Terjadi kesalahan: ' + error.message);
-        console.error('Create event error:', error);
-    } finally {
         createEventBtn.disabled = false;
         createEventBtn.textContent = 'Create Event';
     }
