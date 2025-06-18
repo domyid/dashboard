@@ -82,13 +82,13 @@ export function getURLContentJS(){
         case "proyek/bimbingangetcode":
             return url.view.content+"proyek/bimbingangetcode.js";
         case "proyek/bimbinganevent":
-            return url.view.content+"proyek/bimbinganevent.js";   
+            return url.view.content+"proyek/bimbinganevent.js";
         case "proyek/kelasws":
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":
             return url.view.content+"proyek/kelasai.js";
         // case "proyek/kelasai1":
-        //     return url.view.content+"proyek/kelasai1.js";
+        //     return url.view.content+"proyek/kelasai1.js"; 
         case "proyek/tracker":
             return url.view.content+"proyek/tracker.js";
         case "notifications/blocked":
