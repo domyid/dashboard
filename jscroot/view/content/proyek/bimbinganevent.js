@@ -1,5 +1,4 @@
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
 import { id } from "/dashboard/jscroot/url/config.js";
 
@@ -60,14 +59,69 @@ async function loadEvents() {
     if (noEventsMessage) noEventsMessage.style.display = 'none';
     
     try {
-        const response = await getJSON(backend.listEvents, 'login', getCookie('login'));
-        
-        if (response.status === 'Success' && response.data && response.data.length > 0) {
-            currentEvents = response.data;
+        console.log('Loading events...');
+        console.log('API URL:', backend.listEvents);
+        console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
+
+        // Use fetch directly instead of getJSON to avoid callback issues
+        const token = getCookie('login');
+        if (!token) {
+            throw new Error('No login token found');
+        }
+
+        const response = await fetch(backend.listEvents, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': token
+            }
+        });
+
+        console.log('Fetch response status:', response.status);
+        console.log('Fetch response ok:', response.ok);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+            console.log('Parsed response data:', responseData);
+        } catch (e) {
+            console.error('Failed to parse JSON response:', e);
+            throw new Error('Invalid JSON response from server');
+        }
+
+        // Handle different response formats
+        let eventsData = null;
+
+        if (responseData.status === 'Success' && responseData.data) {
+            eventsData = responseData.data;
+            console.log('Success response with data:', eventsData);
+        } else if (responseData.status === 'Success') {
+            eventsData = responseData;
+            console.log('Success response without nested data:', eventsData);
+        } else if (Array.isArray(responseData)) {
+            eventsData = responseData;
+            console.log('Direct array response:', eventsData);
+        } else {
+            console.log('Unexpected response format:', responseData);
+            throw new Error('Unexpected response format: ' + (responseData.status || 'Unknown'));
+        }
+
+        if (eventsData && Array.isArray(eventsData) && eventsData.length > 0) {
+            console.log('Rendering', eventsData.length, 'events');
+            currentEvents = eventsData;
             renderEvents(currentEvents);
         } else {
+            console.log('No events found or invalid data format');
             if (noEventsMessage) noEventsMessage.style.display = 'block';
         }
+
     } catch (error) {
         console.error('Error loading events:', error);
         showNotification('Error loading events: ' + error.message, 'is-danger');
@@ -252,17 +306,49 @@ async function confirmClaimEvent() {
             event_id: eventId,
             timer_sec: timerSec
         };
-        
-        const response = await postJSON(backend.claimEvent, 'login', getCookie('login'), claimData);
-        
-        if (response.status === 'Success') {
+
+        console.log('Claiming event:', claimData);
+
+        const token = getCookie('login');
+        if (!token) {
+            throw new Error('No login token found');
+        }
+
+        const response = await fetch(backend.claimEvent, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': token
+            },
+            body: JSON.stringify(claimData)
+        });
+
+        console.log('Claim response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        console.log('Claim response text:', responseText);
+
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+            console.log('Claim response data:', responseData);
+        } catch (e) {
+            console.error('Failed to parse claim response:', e);
+            throw new Error('Invalid JSON response from server');
+        }
+
+        if (responseData.status === 'Success') {
             showClaimNotification('Event claimed successfully!', 'is-success');
             setTimeout(() => {
                 hideClaimModal();
                 loadEvents(); // Reload events
             }, 1500);
         } else {
-            showClaimNotification(response.info || response.response || 'Failed to claim event', 'is-danger');
+            showClaimNotification(responseData.status || responseData.response || 'Failed to claim event', 'is-danger');
         }
     } catch (error) {
         console.error('Error claiming event:', error);
@@ -294,17 +380,49 @@ async function confirmSubmitTask() {
             claim_id: claimId,
             task_link: taskLink
         };
-        
-        const response = await postJSON(backend.submitTask, 'login', getCookie('login'), submitData);
-        
-        if (response.status === 'Success') {
+
+        console.log('Submitting task:', submitData);
+
+        const token = getCookie('login');
+        if (!token) {
+            throw new Error('No login token found');
+        }
+
+        const response = await fetch(backend.submitTask, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'login': token
+            },
+            body: JSON.stringify(submitData)
+        });
+
+        console.log('Submit response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        console.log('Submit response text:', responseText);
+
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+            console.log('Submit response data:', responseData);
+        } catch (e) {
+            console.error('Failed to parse submit response:', e);
+            throw new Error('Invalid JSON response from server');
+        }
+
+        if (responseData.status === 'Success') {
             showSubmitNotification('Task submitted successfully! Waiting for approval.', 'is-success');
             setTimeout(() => {
                 hideSubmitModal();
                 loadEvents(); // Reload events
             }, 1500);
         } else {
-            showSubmitNotification(response.info || response.response || 'Failed to submit task', 'is-danger');
+            showSubmitNotification(responseData.status || responseData.response || 'Failed to submit task', 'is-danger');
         }
     } catch (error) {
         console.error('Error submitting task:', error);
