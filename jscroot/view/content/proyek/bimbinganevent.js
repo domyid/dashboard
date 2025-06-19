@@ -471,7 +471,7 @@ window.confirmClaim = function() {
                     showNotification(message, 'is-success');
                     closeClaimModal();
 
-                    // Refresh data
+                    // Refresh data - event akan hilang karena isactive = false
                     loadEvents();
                     loadUserClaims();
                 } else {
@@ -558,7 +558,7 @@ window.confirmSubmit = function() {
                 }
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner.', 'is-success');
+                    showNotification('Tugas sudah disubmit! Menunggu approval dari owner dalam 24 jam.', 'is-success');
                     closeSubmitModal();
 
                     // Refresh data
