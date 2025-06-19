@@ -1,6 +1,29 @@
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 
+// Fallback postJSON function if the imported one fails
+async function postJSONFallback(url, headerName, headerValue, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [headerName]: headerValue
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        return {
+            status: response.ok ? 200 : response.status,
+            data: result
+        };
+    } catch (error) {
+        console.error('Fallback postJSON error:', error);
+        throw error;
+    }
+}
+
 // Backend URLs
 const backend = {
     getAllEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/all',
@@ -40,42 +63,90 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Load all available events
-async function loadEvents() {
+function loadEvents() {
     try {
         showLoading(true);
         const token = getCookie('login');
-        
-        const response = await getJSON(backend.getAllEvents, 'login', token);
-        
-        if (response.status === 'Success') {
-            currentEvents = response.data || [];
-            displayEvents();
-        } else {
-            showNotification('Error loading events: ' + response.response, 'is-danger');
+
+        if (!token) {
+            showNotification('Silakan login terlebih dahulu', 'is-warning');
+            showLoading(false);
+            return;
         }
+
+        console.log('Loading events from:', backend.getAllEvents);
+        console.log('Token:', token);
+
+        getJSON(backend.getAllEvents, 'login', token, (result) => {
+            showLoading(false);
+
+            console.log('Events response:', result);
+
+            if (result.status === 200) {
+                let responseData;
+                if (result.data && result.data.data) {
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    responseData = result.data;
+                } else {
+                    responseData = [];
+                }
+
+                console.log('Processed events data:', responseData);
+                currentEvents = responseData || [];
+                displayEvents();
+
+                if (currentEvents.length === 0) {
+                    showNotification('Belum ada event yang tersedia', 'is-info');
+                }
+            } else {
+                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal memuat event';
+                showNotification('Error loading events: ' + errorMsg, 'is-danger');
+                console.error('Load events error:', result);
+            }
+        });
     } catch (error) {
-        console.error('Error loading events:', error);
-        showNotification('Gagal memuat data event', 'is-danger');
-    } finally {
         showLoading(false);
+        console.error('Error loading events:', error);
+        showNotification('Gagal memuat data event: ' + error.message, 'is-danger');
     }
 }
 
 // Load user's event claims
-async function loadUserClaims() {
+function loadUserClaims() {
     try {
         const token = getCookie('login');
-        
-        const response = await getJSON(backend.getUserClaims, 'login', token);
-        
-        if (response.status === 'Success') {
-            currentClaims = response.data || [];
-            displayClaims();
-        } else {
-            console.log('No claims found or error:', response.response);
+
+        if (!token) {
             currentClaims = [];
             displayClaims();
+            return;
         }
+
+        console.log('Loading user claims from:', backend.getUserClaims);
+
+        getJSON(backend.getUserClaims, 'login', token, (result) => {
+            console.log('Claims response:', result);
+
+            if (result.status === 200) {
+                let responseData;
+                if (result.data && result.data.data) {
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    responseData = result.data;
+                } else {
+                    responseData = [];
+                }
+
+                console.log('Processed claims data:', responseData);
+                currentClaims = responseData || [];
+                displayClaims();
+            } else {
+                console.log('No claims found or error:', result);
+                currentClaims = [];
+                displayClaims();
+            }
+        });
     } catch (error) {
         console.error('Error loading claims:', error);
         currentClaims = [];
@@ -310,10 +381,15 @@ function showNotification(message, type = 'is-info') {
 }
 
 // Check for expired claims
-async function checkExpiredClaims() {
+function checkExpiredClaims() {
     try {
         const token = getCookie('login');
-        await getJSON(backend.checkExpired, 'login', token);
+        if (!token) return;
+
+        getJSON(backend.checkExpired, 'login', token, (result) => {
+            console.log('Check expired response:', result);
+            // Silently handle the response, no need to show notifications
+        });
     } catch (error) {
         console.error('Error checking expired claims:', error);
     }
@@ -338,7 +414,7 @@ window.closeClaimModal = function() {
     selectedEvent = null;
 };
 
-window.confirmClaim = async function() {
+window.confirmClaim = function() {
     if (!selectedEvent) return;
 
     const confirmBtn = document.getElementById('confirmClaimBtn');
@@ -349,26 +425,50 @@ window.confirmClaim = async function() {
         confirmBtn.disabled = true;
 
         const token = getCookie('login');
-        const response = await postJSON(backend.claimEvent, 'login', token, {
+        const requestData = {
             event_id: selectedEvent._id
+        };
+
+        console.log('Claiming event:', requestData);
+
+        postJSON(backend.claimEvent, 'login', token, requestData, (result) => {
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+
+            console.log('Claim response:', result);
+
+            if (result.status === 200) {
+                let responseData;
+                if (result.data && result.data.data) {
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    responseData = result.data;
+                } else {
+                    responseData = result;
+                }
+
+                if (responseData.status === 'Success' || result.data?.status === 'Success') {
+                    showNotification('Event berhasil di-claim! Selesaikan tugas sebelum deadline.', 'is-success');
+                    closeClaimModal();
+
+                    // Refresh data
+                    loadEvents();
+                    loadUserClaims();
+                } else {
+                    const errorMsg = responseData.response || responseData.status || 'Gagal claim event';
+                    showNotification('Error: ' + errorMsg, 'is-danger');
+                }
+            } else {
+                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal claim event';
+                showNotification('Error: ' + errorMsg, 'is-danger');
+                console.error('Claim event error:', result);
+            }
         });
-
-        if (response.status === 'Success') {
-            showNotification('Event berhasil di-claim! Selesaikan tugas sebelum deadline.', 'is-success');
-            closeClaimModal();
-
-            // Refresh data
-            loadEvents();
-            loadUserClaims();
-        } else {
-            showNotification('Error: ' + response.response, 'is-danger');
-        }
     } catch (error) {
-        console.error('Error claiming event:', error);
-        showNotification('Gagal claim event', 'is-danger');
-    } finally {
         confirmBtn.innerHTML = originalText;
         confirmBtn.disabled = false;
+        console.error('Error claiming event:', error);
+        showNotification('Gagal claim event: ' + error.message, 'is-danger');
     }
 };
 
@@ -389,7 +489,7 @@ window.closeSubmitModal = function() {
     selectedClaim = null;
 };
 
-window.confirmSubmit = async function() {
+window.confirmSubmit = function() {
     if (!selectedClaim) return;
 
     const taskLink = document.getElementById('taskLinkInput').value.trim();
@@ -414,26 +514,50 @@ window.confirmSubmit = async function() {
         confirmBtn.disabled = true;
 
         const token = getCookie('login');
-        const response = await postJSON(backend.submitTask, 'login', token, {
+        const requestData = {
             claim_id: selectedClaim.claim_id,
             task_link: taskLink
+        };
+
+        console.log('Submitting task:', requestData);
+
+        postJSON(backend.submitTask, 'login', token, requestData, (result) => {
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+
+            console.log('Submit response:', result);
+
+            if (result.status === 200) {
+                let responseData;
+                if (result.data && result.data.data) {
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    responseData = result.data;
+                } else {
+                    responseData = result;
+                }
+
+                if (responseData.status === 'Success' || result.data?.status === 'Success') {
+                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner.', 'is-success');
+                    closeSubmitModal();
+
+                    // Refresh data
+                    loadUserClaims();
+                } else {
+                    const errorMsg = responseData.response || responseData.status || 'Gagal submit tugas';
+                    showNotification('Error: ' + errorMsg, 'is-danger');
+                }
+            } else {
+                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal submit tugas';
+                showNotification('Error: ' + errorMsg, 'is-danger');
+                console.error('Submit task error:', result);
+            }
         });
-
-        if (response.status === 'Success') {
-            showNotification('Tugas berhasil disubmit! Menunggu approval dari owner.', 'is-success');
-            closeSubmitModal();
-
-            // Refresh data
-            loadUserClaims();
-        } else {
-            showNotification('Error: ' + response.response, 'is-danger');
-        }
     } catch (error) {
-        console.error('Error submitting task:', error);
-        showNotification('Gagal submit tugas', 'is-danger');
-    } finally {
         confirmBtn.innerHTML = originalText;
         confirmBtn.disabled = false;
+        console.error('Error submitting task:', error);
+        showNotification('Gagal submit tugas: ' + error.message, 'is-danger');
     }
 };
 
