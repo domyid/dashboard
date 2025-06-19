@@ -167,12 +167,7 @@ function createEventCard(event) {
     let statusBadge = '';
     let claimButton = '';
 
-    if (event.is_claimed_by_user) {
-        // User sudah claim event ini
-        cardClass = 'has-background-info-light';
-        statusBadge = '<span class="claimed-badge">Anda Sudah Claim</span>';
-        claimButton = '<p class="has-text-info"><i class="fas fa-info-circle"></i> Anda sudah claim event ini</p>';
-    } else if (event.is_claimed_by_any) {
+    if (event.is_claimed_by_any) {
         // Event sudah di-claim user lain
         cardClass = 'has-background-light';
         statusBadge = '<span class="status-expired">Sudah Diklaim User Lain</span>';
@@ -403,12 +398,7 @@ window.openClaimModal = function(eventId) {
     const event = currentEvents.find(e => e._id === eventId);
     if (!event) return;
 
-    // Check if event is available for claim
-    if (event.is_claimed_by_user) {
-        showNotification('Anda sudah claim event ini sebelumnya', 'is-warning');
-        return;
-    }
-
+    // Check if event is available for claim (hanya cek user lain)
     if (event.is_claimed_by_any) {
         showNotification('Event ini sudah diklaim oleh user lain', 'is-warning');
         return;
