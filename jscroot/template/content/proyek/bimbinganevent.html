@@ -80,6 +80,15 @@
             border-radius: 15px;
             font-size: 0.8rem;
         }
+        .has-background-info-light {
+            background-color: #e3f2fd !important;
+            border: 2px solid #2196f3;
+        }
+        .tag.is-success {
+            background: #27ae60;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -146,7 +155,7 @@
                     <p id="modalEventDescription"></p>
                     <div class="notification is-warning">
                         <strong>⚠️ Perhatian:</strong>
-                        <p>Setelah claim event, Anda memiliki waktu <strong>1 detik</strong> untuk menyelesaikan tugas. 
+                        <p>Setelah claim event, Anda memiliki waktu sesuai yang ditentukan untuk menyelesaikan tugas.
                         Jika melewati batas waktu, event akan tersedia kembali untuk user lain.</p>
                     </div>
                     <div class="field">
@@ -154,6 +163,15 @@
                         <div class="control">
                             <span class="event-points" id="modalEventPoints"></span>
                         </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Waktu Deadline (dalam detik):</label>
+                        <div class="control">
+                            <input class="input" type="number" id="deadlineInput"
+                                   placeholder="Masukkan waktu dalam detik"
+                                   min="1" max="3600" value="60" required>
+                        </div>
+                        <p class="help">Masukkan berapa detik waktu yang Anda butuhkan untuk menyelesaikan tugas (1-3600 detik)</p>
                     </div>
                 </div>
             </section>

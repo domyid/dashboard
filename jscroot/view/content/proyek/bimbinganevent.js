@@ -162,23 +162,39 @@ function displayEvents() {
 function createEventCard(event) {
     const div = document.createElement('div');
     div.className = 'column is-one-third';
-    
-    const isClaimedClass = event.is_claimed ? 'has-background-light' : '';
-    const claimButton = event.is_claimed 
-        ? '<span class="claimed-badge">Sudah Diklaim</span>'
-        : `<button class="button is-primary is-fullwidth" onclick="openClaimModal('${event._id}')">
-             <i class="fas fa-hand-paper"></i> Claim Event
-           </button>`;
-    
+
+    let cardClass = '';
+    let statusBadge = '';
+    let claimButton = '';
+
+    if (event.is_claimed_by_user) {
+        // User sudah claim event ini
+        cardClass = 'has-background-info-light';
+        statusBadge = '<span class="claimed-badge">Anda Sudah Claim</span>';
+        claimButton = '<p class="has-text-info"><i class="fas fa-info-circle"></i> Anda sudah claim event ini</p>';
+    } else if (event.is_claimed_by_any) {
+        // Event sudah di-claim user lain
+        cardClass = 'has-background-light';
+        statusBadge = '<span class="status-expired">Sudah Diklaim User Lain</span>';
+        claimButton = '<p class="has-text-grey"><i class="fas fa-lock"></i> Event sudah diklaim user lain</p>';
+    } else {
+        // Event tersedia untuk di-claim
+        cardClass = '';
+        statusBadge = '<span class="tag is-success">Tersedia</span>';
+        claimButton = `<button class="button is-primary is-fullwidth" onclick="openClaimModal('${event._id}')">
+                         <i class="fas fa-hand-paper"></i> Claim Event
+                       </button>`;
+    }
+
     div.innerHTML = `
-        <div class="card event-card ${isClaimedClass}">
+        <div class="card event-card ${cardClass}">
             <div class="card-content">
                 <div class="media">
                     <div class="media-content">
                         <p class="title is-5">${event.name}</p>
                         <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
                             <span class="event-points">${event.points} Poin</span>
-                            ${event.is_claimed ? '<span class="claimed-badge">Sudah Diklaim</span>' : ''}
+                            ${statusBadge}
                         </div>
                     </div>
                 </div>
@@ -191,7 +207,7 @@ function createEventCard(event) {
             </div>
         </div>
     `;
-    
+
     return div;
 }
 
@@ -387,11 +403,25 @@ window.openClaimModal = function(eventId) {
     const event = currentEvents.find(e => e._id === eventId);
     if (!event) return;
 
+    // Check if event is available for claim
+    if (event.is_claimed_by_user) {
+        showNotification('Anda sudah claim event ini sebelumnya', 'is-warning');
+        return;
+    }
+
+    if (event.is_claimed_by_any) {
+        showNotification('Event ini sudah diklaim oleh user lain', 'is-warning');
+        return;
+    }
+
     selectedEvent = event;
 
     document.getElementById('modalEventName').textContent = event.name;
     document.getElementById('modalEventDescription').textContent = event.description;
     document.getElementById('modalEventPoints').textContent = event.points + ' Poin';
+
+    // Reset deadline input to default value
+    document.getElementById('deadlineInput').value = 60;
 
     document.getElementById('claimModal').classList.add('is-active');
 };
@@ -404,6 +434,16 @@ window.closeClaimModal = function() {
 window.confirmClaim = function() {
     if (!selectedEvent) return;
 
+    // Get deadline from input
+    const deadlineInput = document.getElementById('deadlineInput');
+    const deadlineSeconds = parseInt(deadlineInput.value);
+
+    // Validate deadline
+    if (!deadlineSeconds || deadlineSeconds < 1 || deadlineSeconds > 3600) {
+        showNotification('Deadline harus antara 1-3600 detik', 'is-warning');
+        return;
+    }
+
     const confirmBtn = document.getElementById('confirmClaimBtn');
     const originalText = confirmBtn.innerHTML;
 
@@ -413,7 +453,8 @@ window.confirmClaim = function() {
 
         const token = getCookie('login');
         const requestData = {
-            event_id: selectedEvent._id
+            event_id: selectedEvent._id,
+            deadline_seconds: deadlineSeconds
         };
 
         console.log('Claiming event:', requestData);
@@ -435,7 +476,9 @@ window.confirmClaim = function() {
                 }
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    showNotification('Event berhasil di-claim! Selesaikan tugas sebelum deadline.', 'is-success');
+                    const deadlineSeconds = responseData.deadline_seconds || deadlineSeconds;
+                    const message = responseData.message || `Event berhasil di-claim! Anda memiliki ${deadlineSeconds} detik untuk menyelesaikan tugas.`;
+                    showNotification(message, 'is-success');
                     closeClaimModal();
 
                     // Refresh data
