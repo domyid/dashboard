@@ -153,9 +153,16 @@ async function loadEvents() {
         // Handle different response formats
         let eventsData = null;
 
+        console.log('=== EVENTS RESPONSE DEBUG ===');
+        console.log('Response data status:', responseData.status);
+        console.log('Response data keys:', Object.keys(responseData));
+        console.log('Response data:', responseData);
+
         if (responseData.status === 'Success' && responseData.data) {
             eventsData = responseData.data;
             console.log('Success response with data:', eventsData);
+            console.log('Events data type:', typeof eventsData);
+            console.log('Events data is array:', Array.isArray(eventsData));
         } else if (responseData.status === 'Success') {
             eventsData = responseData;
             console.log('Success response without nested data:', eventsData);

@@ -1,518 +1,490 @@
-import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
-import { addCSSIn } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
-import { id } from "/dashboard/jscroot/url/config.js";
+import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 
-// Backend URLs
+// Backend URLs - sesuaikan dengan konfigurasi Anda
 const backend = {
-    listEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/list',
-    claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit'
+    generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
+    generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime',
+    createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create'
 };
 
-let currentEvents = [];
-let timers = {};
+// DOM Elements
+const generateBtn = document.getElementById('generateBtn');
+const codeContainer = document.getElementById('codeContainer');
+const generatedCode = document.getElementById('generatedCode');
+const copyBtn = document.getElementById('copyBtn');
 
-export async function main() {
-    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css", id.content);
-    setupEventHandlers();
-    await loadEvents();
-    startTimerUpdates();
-}
+// Event Management Elements
+const createEventBtn = document.getElementById('createEventBtn');
+const eventContainer = document.getElementById('eventContainer');
+const eventNameInput = document.getElementById('eventName');
+const eventDescriptionInput = document.getElementById('eventDescription');
+const eventPointsInput = document.getElementById('eventPoints');
 
-// Auto-initialize when module loads
-document.addEventListener('DOMContentLoaded', main);
+// Time Event Elements
+const generateTimeBtn = document.getElementById('generateTimeBtn');
+const timeCodeContainer = document.getElementById('timeCodeContainer');
+const generatedTimeCode = document.getElementById('generatedTimeCode');
+const displayTimeCode = document.getElementById('displayTimeCode');
+const copyTimeBtn = document.getElementById('copyTimeBtn');
+const durationInput = document.getElementById('durationInput');
+const createdTime = document.getElementById('createdTime');
+const expiryTime = document.getElementById('expiryTime');
+const duration = document.getElementById('duration');
+const countdownTimer = document.getElementById('countdownTimer');
 
-function setupEventHandlers() {
-    // Close modal handlers
-    const closeClaimModal = document.getElementById('close-claim-modal');
-    const cancelClaimBtn = document.getElementById('cancel-claim-btn');
-    const closeSubmitModal = document.getElementById('close-submit-modal');
-    const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+// Notification Elements
+const errorNotification = document.getElementById('errorNotification');
+const errorMessage = document.getElementById('errorMessage');
+const closeError = document.getElementById('closeError');
+const successNotification = document.getElementById('successNotification');
+const successMessage = document.getElementById('successMessage');
+const closeSuccess = document.getElementById('closeSuccess');
+
+// Global variables for countdown
+let countdownInterval = null;
+let expiryTimestamp = null;
+
+// Close notification handlers
+closeError.addEventListener('click', () => {
+    errorNotification.style.display = 'none';
+});
+
+closeSuccess.addEventListener('click', () => {
+    successNotification.style.display = 'none';
+});
+
+// Generate regular code function
+generateBtn.addEventListener('click', async () => {
+    // Check if user is logged in
+    const token = getCookie('login');
+    if (!token) {
+        showError('Anda harus login terlebih dahulu');
+        return;
+    }
     
-    if (closeClaimModal) closeClaimModal.addEventListener('click', hideClaimModal);
-    if (cancelClaimBtn) cancelClaimBtn.addEventListener('click', hideClaimModal);
-    if (closeSubmitModal) closeSubmitModal.addEventListener('click', hideSubmitModal);
-    if (cancelSubmitBtn) cancelSubmitBtn.addEventListener('click', hideSubmitModal);
+    // Disable button while processing
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
     
-    // Confirm handlers
-    const confirmClaimBtn = document.getElementById('confirm-claim-btn');
-    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+    try {
+        getJSON(backend.generateCode, 'login', token, (result) => {
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generate Code';
+            
+            if (result.status === 200) {
+                // Show the generated code
+                generatedCode.textContent = result.data.response;
+                codeContainer.style.display = 'block';
+                hideError();
+                showSuccess('Kode event berhasil di-generate!');
+            } else {
+                // Show error
+                showError(result.data.response || 'Gagal generate code');
+            }
+        });
+    } catch (error) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Code';
+        showError('Terjadi kesalahan: ' + error.message);
+    }
+});
+
+// Generate time code function
+generateTimeBtn.addEventListener('click', async () => {
+    // Check if user is logged in
+    const token = getCookie('login');
+    if (!token) {
+        showError('Anda harus login terlebih dahulu');
+        return;
+    }
     
-    if (confirmClaimBtn) confirmClaimBtn.addEventListener('click', confirmClaimEvent);
-    if (confirmSubmitBtn) confirmSubmitBtn.addEventListener('click', confirmSubmitTask);
+    // Validate duration input
+    const durationSeconds = parseInt(durationInput.value);
+    if (!durationSeconds || durationSeconds <= 0 || durationSeconds > 3600) {
+        showError('Durasi harus berupa angka antara 1-3600 detik');
+        return;
+    }
     
-    // Modal background click handlers
-    const claimModalBg = document.querySelector('#claim-modal .modal-background');
-    const submitModalBg = document.querySelector('#submit-modal .modal-background');
+    // Disable button while processing
+    generateTimeBtn.disabled = true;
+    generateTimeBtn.textContent = 'Generating...';
     
-    if (claimModalBg) claimModalBg.addEventListener('click', hideClaimModal);
-    if (submitModalBg) submitModalBg.addEventListener('click', hideSubmitModal);
-}
+    try {
+        const requestData = {
+            duration_seconds: durationSeconds
+        };
+        
+        postJSON(backend.generateTimeCode, 'login', token, requestData, (result) => {
+            generateTimeBtn.disabled = false;
+            generateTimeBtn.textContent = 'Generate Time Code';
+            
+            if (result.status === 200) {
+                // Show the generated time code
+                console.log('Response data:', result); // Debug log
+                
+                let responseData;
+                // Handle different response formats
+                if (result.data && result.data.data) {
+                    // Format: {status: "Success", data: {...}}
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    // Direct data format
+                    responseData = result.data;
+                } else {
+                    console.error('Unexpected response format:', result);
+                    showError('Format response tidak valid');
+                    return;
+                }
+                
+                if (!responseData.code || !responseData.expires_at || !responseData.duration) {
+                    console.error('Missing required fields in response:', responseData);
+                    showError('Data response tidak lengkap');
+                    return;
+                }
+                
+                generatedTimeCode.textContent = responseData.code;
+                displayTimeCode.textContent = responseData.code;
+                
+                // Show time information
+                const createdDate = new Date();
+                
+                // Parse expiry date - handle different formats
+                let expiryDate;
+                if (responseData.expires_at.includes('T')) {
+                    // ISO format: 2024-01-15T14:30:00Z
+                    expiryDate = new Date(responseData.expires_at);
+                } else {
+                    // Custom format: 2024-01-15 14:30:00
+                    const dateStr = responseData.expires_at.replace(' ', 'T');
+                    expiryDate = new Date(dateStr);
+                }
+                
+                // Validate dates
+                if (isNaN(createdDate.getTime()) || isNaN(expiryDate.getTime())) {
+                    console.error('Invalid date format:', responseData.expires_at);
+                    showError('Format tanggal tidak valid');
+                    return;
+                }
+                
+                createdTime.textContent = createdDate.toLocaleString('id-ID');
+                expiryTime.textContent = expiryDate.toLocaleString('id-ID');
+                duration.textContent = responseData.duration;
+                
+                // Set expiry timestamp for countdown
+                expiryTimestamp = expiryDate.getTime();
+                
+                // Validate expiry timestamp
+                if (isNaN(expiryTimestamp)) {
+                    console.error('Invalid expiry timestamp');
+                    showError('Timestamp kadaluarsa tidak valid');
+                    return;
+                }
+                
+                // Start countdown timer
+                startCountdown();
+                
+                timeCodeContainer.style.display = 'block';
+                hideError();
+                showSuccess('Kode time event berhasil di-generate!');
+            } else {
+                // Show error
+                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal generate time code';
+                showError(errorMsg);
+                console.error('Generate time code error:', result);
+            }
+        });
+    } catch (error) {
+        generateTimeBtn.disabled = false;
+        generateTimeBtn.textContent = 'Generate Time Code';
+        showError('Terjadi kesalahan: ' + error.message);
+    }
+});
 
-function loadEvents() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const eventsContainer = document.getElementById('events-container');
-    const noEventsMessage = document.getElementById('no-events-message');
+// Copy regular code function
+copyBtn.addEventListener('click', () => {
+    const code = generatedCode.textContent;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(code).then(() => {
+        // Change button text temporarily
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.remove('is-info');
+        copyBtn.classList.add('is-success');
+        
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+            copyBtn.classList.remove('is-success');
+            copyBtn.classList.add('is-info');
+        }, 2000);
+    }).catch(err => {
+        showError('Gagal menyalin kode: ' + err.message);
+    });
+});
 
-    console.log('Loading events...');
-    console.log('API URL:', backend.listEvents);
-    console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
+// Copy time code function
+copyTimeBtn.addEventListener('click', () => {
+    const code = generatedTimeCode.textContent;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(code).then(() => {
+        // Change button text temporarily
+        const originalText = copyTimeBtn.textContent;
+        copyTimeBtn.textContent = 'Copied!';
+        copyTimeBtn.classList.remove('is-info');
+        copyTimeBtn.classList.add('is-success');
+        
+        setTimeout(() => {
+            copyTimeBtn.textContent = originalText;
+            copyTimeBtn.classList.remove('is-success');
+            copyTimeBtn.classList.add('is-info');
+        }, 2000);
+    }).catch(err => {
+        showError('Gagal menyalin kode: ' + err.message);
+    });
+});
 
-    if (loadingIndicator) loadingIndicator.style.display = 'block';
-    if (eventsContainer) eventsContainer.innerHTML = '';
-    if (noEventsMessage) noEventsMessage.style.display = 'none';
-
-    // Use callback pattern like other functions
-    getJSON(backend.listEvents, 'login', getCookie('login'), (response) => {
-        if (loadingIndicator) loadingIndicator.style.display = 'none';
-
-        console.log('Events API Response:', response);
-        console.log('Response type:', typeof response);
-        console.log('Response keys:', response ? Object.keys(response) : 'null');
-
-        if (!response) {
-            console.log('No response received');
-            if (noEventsMessage) noEventsMessage.style.display = 'block';
+// Countdown timer function
+function startCountdown() {
+    // Clear existing interval if any
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    // Validate expiryTimestamp
+    if (!expiryTimestamp || isNaN(expiryTimestamp)) {
+        countdownTimer.innerHTML = '⚠️ <span style="color: #dc2626;">Error: Waktu kadaluarsa tidak valid!</span>';
+        return;
+    }
+    
+    // Function to update countdown
+    function updateCountdown() {
+        const now = Date.now();
+        const timeLeft = expiryTimestamp - now;
+        
+        if (timeLeft <= 0) {
+            // Time expired
+            countdownTimer.innerHTML = '⏰ <span style="color: #dc2626;">-</span>';
+            clearInterval(countdownInterval);
             return;
         }
-
-        // Handle different response formats
-        let eventsData = null;
-
-        if (response.status === 200) {
-            console.log('HTTP 200 response detected');
-
-            if (response.data) {
-                let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                        console.log('Parsed JSON data:', actualData);
-                    } catch (e) {
-                        console.error('Failed to parse JSON:', e);
-                        actualData = response.data;
-                    }
-                } else {
-                    actualData = response.data;
-                }
-
-                if (actualData.status === 'Success' && actualData.data) {
-                    eventsData = actualData.data;
-                    console.log('Success response with data:', eventsData);
-                } else if (actualData.status === 'Success') {
-                    eventsData = actualData;
-                    console.log('Success response without nested data:', eventsData);
-                } else if (Array.isArray(actualData)) {
-                    eventsData = actualData;
-                    console.log('Direct array response:', eventsData);
-                }
-            }
-        }
-
-        if (eventsData && Array.isArray(eventsData) && eventsData.length > 0) {
-            console.log('Rendering', eventsData.length, 'events');
-            currentEvents = eventsData;
-            renderEvents(currentEvents);
-        } else {
-            console.log('No events found or invalid data format');
-            if (noEventsMessage) noEventsMessage.style.display = 'block';
-        }
-    });
-}
-
-function renderEvents(events) {
-    const container = document.getElementById('events-container');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    events.forEach(event => {
-        const eventCard = createEventCard(event);
-        container.appendChild(eventCard);
-    });
-}
-
-function createEventCard(event) {
-    const column = document.createElement('div');
-    column.className = 'column is-one-third';
-    
-    const userClaim = event.user_claim;
-    let statusClass = 'available';
-    let statusText = 'Available';
-    let actionButton = '';
-    let timerDisplay = '';
-    
-    if (userClaim) {
-        if (userClaim.is_approved) {
-            statusClass = 'approved';
-            statusText = 'Approved';
-        } else if (userClaim.is_completed) {
-            statusClass = 'completed';
-            statusText = 'Waiting for Approval';
-        } else {
-            statusClass = 'claimed';
-            statusText = 'Claimed by You';
-            
-            // Add countdown timer
-            const expiresAt = new Date(userClaim.expires_at);
-            const now = new Date();
-            
-            if (expiresAt > now) {
-                timerDisplay = `
-                    <div class="countdown-timer">
-                        <span class="event-timer" id="timer-${event._id}">Calculating...</span>
-                    </div>
-                `;
-                
-                // Store timer info
-                timers[event._id] = expiresAt;
-                
-                actionButton = `
-                    <button class="button is-success is-fullwidth" onclick="window.openSubmitModal('${event._id}', '${event.name}', '${userClaim.claim_id}')">
-                        Submit Task
-                    </button>
-                `;
-            } else {
-                statusText = 'Expired';
-                statusClass = 'expired';
-            }
+        
+        // Calculate time components
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        // Validate calculated values
+        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+            countdownTimer.innerHTML = '⚠️ <span style="color: #dc2626;">Error: Perhitungan waktu tidak valid!</span>';
+            clearInterval(countdownInterval);
+            return;
         }
         
-        if (userClaim.task_link) {
-            timerDisplay += `
-                <div class="field">
-                    <label class="label is-small">Submitted Task:</label>
-                    <div class="task-link">
-                        <a href="${userClaim.task_link}" target="_blank">${userClaim.task_link}</a>
-                    </div>
-                </div>
-            `;
+        // Format and display
+        let timeString = '';
+        if (hours > 0) {
+            timeString += `${hours}j `;
         }
-    } else if (!event.is_available) {
-        statusClass = 'claimed';
-        statusText = 'Claimed by Others';
-    } else {
-        actionButton = `
-            <button class="button is-primary is-fullwidth" onclick="window.openClaimModal('${event._id}', '${event.name}', ${event.points})">
-                Claim Event
-            </button>
-        `;
+        if (minutes > 0 || hours > 0) {
+            timeString += `${minutes}m `;
+        }
+        timeString += `${seconds}d`;
+        
+        // Add color coding based on time left
+        let colorClass = '#dc2626'; // red (default)
+        if (timeLeft > 5 * 60 * 1000) { // more than 5 minutes
+            colorClass = '#059669'; // green
+        } else if (timeLeft > 1 * 60 * 1000) { // more than 1 minute
+            colorClass = '#d97706'; // orange
+        }
+        
+        countdownTimer.innerHTML = `⏰ Tersisa: <span style="color: ${colorClass}; font-weight: bold;">${timeString}</span>`;
     }
     
-    column.innerHTML = `
-        <div class="card event-card">
-            <div class="card-content">
-                <div class="media">
-                    <div class="media-content">
-                        <p class="title is-4">${event.name}</p>
-                        <p class="subtitle is-6">${event.points} Points</p>
-                    </div>
-                </div>
-                
-                <div class="content">
-                    ${event.description ? `<p>${event.description}</p>` : ''}
-                    <div class="field">
-                        <span class="tag is-medium event-status ${statusClass}">${statusText}</span>
-                    </div>
-                    ${timerDisplay}
-                </div>
-            </div>
-            <footer class="card-footer">
-                <div class="card-footer-item">
-                    ${actionButton}
-                </div>
-            </footer>
-        </div>
-    `;
+    // Initial call
+    updateCountdown();
     
-    return column;
+    // Set interval to update every second
+    countdownInterval = setInterval(updateCountdown, 1000);
 }
 
-// Make functions global for onclick handlers
-window.openClaimModal = function(eventId, eventName, points) {
-    const modal = document.getElementById('claim-modal');
-    const eventNameInput = document.getElementById('claim-event-name');
-    const eventPointsInput = document.getElementById('claim-event-points');
-    const timerInput = document.getElementById('claim-timer-input');
-
-    if (eventNameInput) eventNameInput.value = eventName;
-    if (eventPointsInput) eventPointsInput.value = points + ' Points';
-    if (timerInput) timerInput.value = '';
-    if (modal) {
-        modal.dataset.eventId = eventId;
-        modal.classList.add('is-active');
-    }
-    hideClaimNotification();
-};
-
-window.openSubmitModal = function(eventId, eventName, claimId) {
-    const modal = document.getElementById('submit-modal');
-    const eventNameInput = document.getElementById('submit-event-name');
-    const taskLinkInput = document.getElementById('submit-task-link');
-
-    if (eventNameInput) eventNameInput.value = eventName;
-    if (taskLinkInput) taskLinkInput.value = '';
-    if (modal) {
-        modal.dataset.claimId = claimId;
-        modal.classList.add('is-active');
-    }
-    hideSubmitNotification();
-};
-
-// Make close functions global too
-window.closeClaimModal = hideClaimModal;
-window.closeSubmitModal = hideSubmitModal;
-
-function hideClaimModal() {
-    const modal = document.getElementById('claim-modal');
-    if (modal) modal.classList.remove('is-active');
+// Show error function
+function showError(message) {
+    errorMessage.textContent = message;
+    errorNotification.style.display = 'block';
+    hideSuccess();
 }
 
-function hideSubmitModal() {
-    const modal = document.getElementById('submit-modal');
-    if (modal) modal.classList.remove('is-active');
+// Hide error function
+function hideError() {
+    errorNotification.style.display = 'none';
 }
 
-function confirmClaimEvent() {
-    const modal = document.getElementById('claim-modal');
-    const timerInput = document.getElementById('claim-timer-input');
-    const confirmBtn = document.getElementById('confirm-claim-btn');
+// Show success function
+function showSuccess(message) {
+    successMessage.textContent = message;
+    successNotification.style.display = 'block';
+    hideError();
+}
 
-    if (!modal || !timerInput || !confirmBtn) return;
+// Hide success function
+function hideSuccess() {
+    successNotification.style.display = 'none';
+}
 
-    const eventId = modal.dataset.eventId;
-    const timerSec = parseInt(timerInput.value);
+// Create Event function
+createEventBtn.addEventListener('click', async () => {
+    const eventName = eventNameInput.value.trim();
+    const eventDescription = eventDescriptionInput.value.trim();
+    const eventPoints = parseInt(eventPointsInput.value);
 
-    if (!timerSec || timerSec <= 0) {
-        showClaimNotification('Please enter a valid timer duration', 'is-danger');
+    // Validation
+    if (!eventName) {
+        showError('Nama event tidak boleh kosong');
         return;
     }
 
-    confirmBtn.classList.add('is-loading');
-
-    const claimData = {
-        event_id: eventId,
-        timer_sec: timerSec
-    };
-
-    console.log('Claiming event:', claimData);
-
-    // Use callback pattern
-    postJSON(backend.claimEvent, 'login', getCookie('login'), claimData, (response) => {
-        confirmBtn.classList.remove('is-loading');
-
-        console.log('Claim response:', response);
-
-        if (!response) {
-            showClaimNotification('No response received from server', 'is-danger');
-            return;
-        }
-
-        // Handle different response formats
-        let success = false;
-        let message = 'Failed to claim event';
-
-        if (response.status === 200) {
-            if (response.data) {
-                let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                    } catch (e) {
-                        actualData = response.data;
-                    }
-                } else {
-                    actualData = response.data;
-                }
-
-                if (actualData.status === 'Success') {
-                    success = true;
-                    message = 'Event claimed successfully!';
-                } else {
-                    message = actualData.status || actualData.response || 'Failed to claim event';
-                }
-            }
-        } else {
-            message = response.data?.response || response.message || 'Failed to claim event';
-        }
-
-        if (success) {
-            showClaimNotification(message, 'is-success');
-            setTimeout(() => {
-                hideClaimModal();
-                loadEvents(); // Reload events
-            }, 1500);
-        } else {
-            showClaimNotification(message, 'is-danger');
-        }
-    });
-}
-
-function confirmSubmitTask() {
-    const modal = document.getElementById('submit-modal');
-    const taskLinkInput = document.getElementById('submit-task-link');
-    const confirmBtn = document.getElementById('confirm-submit-btn');
-
-    if (!modal || !taskLinkInput || !confirmBtn) return;
-
-    const claimId = modal.dataset.claimId;
-    const taskLink = taskLinkInput.value.trim();
-
-    if (!taskLink) {
-        showSubmitNotification('Please enter a task link', 'is-danger');
+    if (!eventPoints || eventPoints <= 0) {
+        showError('Points harus lebih dari 0');
         return;
     }
 
-    confirmBtn.classList.add('is-loading');
+    // Disable button and show loading
+    createEventBtn.disabled = true;
+    createEventBtn.textContent = 'Creating...';
 
-    const submitData = {
-        claim_id: claimId,
-        task_link: taskLink
-    };
+    try {
+        const eventData = {
+            name: eventName,
+            description: eventDescription,
+            points: eventPoints
+        };
 
-    console.log('Submitting task:', submitData);
+        console.log('Sending event data:', eventData);
+        console.log('API URL:', backend.createEvent);
+        console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
 
-    // Use callback pattern
-    postJSON(backend.submitTask, 'login', getCookie('login'), submitData, (response) => {
-        confirmBtn.classList.remove('is-loading');
+        // Add timeout to detect if callback never fires
+        let callbackFired = false;
+        const timeoutId = setTimeout(() => {
+            if (!callbackFired) {
+                createEventBtn.disabled = false;
+                createEventBtn.textContent = 'Create Event';
+                showError('Request timeout - server tidak merespons dalam 30 detik');
+                console.error('postJSON callback timeout');
+            }
+        }, 30000);
 
-        console.log('Submit response:', response);
+        // Use callback pattern like other functions in this file
+        postJSON(backend.createEvent, 'login', getCookie('login'), eventData, (result) => {
+            callbackFired = true;
+            clearTimeout(timeoutId);
+            createEventBtn.disabled = false;
+            createEventBtn.textContent = 'Create Event';
 
-        if (!response) {
-            showSubmitNotification('No response received from server', 'is-danger');
-            return;
-        }
+            console.log('=== CREATE EVENT DEBUG ===');
+            console.log('Raw API Response:', result);
+            console.log('Response type:', typeof result);
+            console.log('Response keys:', result ? Object.keys(result) : 'null');
+            console.log('Response status:', result?.status);
+            console.log('Response data:', result?.data);
 
-        // Handle different response formats
-        let success = false;
-        let message = 'Failed to submit task';
+            // Check if result exists and has expected structure
+            if (!result) {
+                showError('No response received from server');
+                return;
+            }
 
-        if (response.status === 200) {
-            if (response.data) {
+            // More detailed response analysis
+            if (result.status === 200) {
+                console.log('HTTP 200 response detected');
+
+                // Handle different response formats
+                let responseData;
                 let actualData;
-                if (typeof response.data === 'string') {
-                    try {
-                        actualData = JSON.parse(response.data);
-                    } catch (e) {
-                        actualData = response.data;
+
+                if (result.data) {
+                    console.log('result.data exists:', result.data);
+                    console.log('result.data type:', typeof result.data);
+
+                    if (typeof result.data === 'string') {
+                        try {
+                            actualData = JSON.parse(result.data);
+                            console.log('Parsed JSON data:', actualData);
+                        } catch (e) {
+                            console.error('Failed to parse JSON:', e);
+                            actualData = result.data;
+                        }
+                    } else {
+                        actualData = result.data;
+                    }
+
+                    // Check for Success status in the response
+                    if (actualData && actualData.status === 'Success') {
+                        if (actualData.data) {
+                            responseData = actualData.data;
+                            console.log('Success response with nested data:', responseData);
+                        } else {
+                            responseData = actualData;
+                            console.log('Success response without nested data:', responseData);
+                        }
+                    } else {
+                        console.log('Non-success response:', actualData);
+                        const errorMsg = actualData?.status || actualData?.response || 'Unknown error';
+                        showError('Server Error: ' + errorMsg);
+                        return;
                     }
                 } else {
-                    actualData = response.data;
+                    console.log('No result.data, using result directly');
+                    responseData = result;
                 }
 
-                if (actualData.status === 'Success') {
-                    success = true;
-                    message = 'Task submitted successfully! Waiting for approval.';
-                } else {
-                    message = actualData.status || actualData.response || 'Failed to submit task';
-                }
-            }
-        } else {
-            message = response.data?.response || response.message || 'Failed to submit task';
-        }
+                console.log('Final response data:', responseData);
 
-        if (success) {
-            showSubmitNotification(message, 'is-success');
-            setTimeout(() => {
-                hideSubmitModal();
-                loadEvents(); // Reload events
-            }, 1500);
-        } else {
-            showSubmitNotification(message, 'is-danger');
-        }
-    });
-}
+                // Update UI with success
+                document.getElementById('createdEventId').value = responseData.event_id || responseData.message || 'Generated';
+                document.getElementById('createdEventName').value = eventName;
+                document.getElementById('createdEventPoints').value = eventPoints + ' Points';
 
-function showClaimNotification(message, type) {
-    const notification = document.getElementById('claim-notification');
-    const messageEl = document.getElementById('claim-notification-message');
-    
-    if (notification && messageEl) {
-        messageEl.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.classList.remove('is-hidden');
-    }
-}
+                eventContainer.style.display = 'block';
+                hideError();
+                showSuccess('Event berhasil dibuat!');
 
-function hideClaimNotification() {
-    const notification = document.getElementById('claim-notification');
-    if (notification) notification.classList.add('is-hidden');
-}
-
-function showSubmitNotification(message, type) {
-    const notification = document.getElementById('submit-notification');
-    const messageEl = document.getElementById('submit-notification-message');
-    
-    if (notification && messageEl) {
-        messageEl.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.classList.remove('is-hidden');
-    }
-}
-
-function hideSubmitNotification() {
-    const notification = document.getElementById('submit-notification');
-    if (notification) notification.classList.add('is-hidden');
-}
-
-function startTimerUpdates() {
-    setInterval(updateTimers, 1000);
-}
-
-function updateTimers() {
-    Object.keys(timers).forEach(eventId => {
-        const expiresAt = timers[eventId];
-        const now = new Date();
-        const timeLeft = expiresAt - now;
-        
-        const timerElement = document.getElementById(`timer-${eventId}`);
-        if (timerElement) {
-            if (timeLeft > 0) {
-                const minutes = Math.floor(timeLeft / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                // Clear form
+                eventNameInput.value = '';
+                eventDescriptionInput.value = '';
+                eventPointsInput.value = '';
             } else {
-                timerElement.textContent = 'Expired';
-                timerElement.style.color = '#ff3860';
-                delete timers[eventId];
-                // Reload events to update UI
-                loadEvents();
+                console.log('Non-200 response:', result);
+                // Show error
+                const errorMsg = result.data?.response || result.data?.status || result.message || result.status || 'Gagal membuat event';
+                showError('Server Error: ' + errorMsg);
+                console.error('Create event error:', result);
             }
-        }
-    });
-}
+        });
+    } catch (error) {
+        console.error('Full error details:', error);
+        showError('Terjadi kesalahan: ' + error.message);
+        createEventBtn.disabled = false;
+        createEventBtn.textContent = 'Create Event';
+    }
+});
 
-function showNotification(message, type) {
-    // Create a temporary notification
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <button class="delete"></button>
-        ${message}
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Position it at the top
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.maxWidth = '400px';
-    
-    // Add close functionality
-    notification.querySelector('.delete').addEventListener('click', () => {
-        notification.remove();
-    });
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
+// Check login on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const token = getCookie('login');
+    if (!token) {
+        generateBtn.disabled = true;
+        generateTimeBtn.disabled = true;
+        createEventBtn.disabled = true;
+        showError('Silakan login terlebih dahulu untuk menggunakan fitur ini');
+    }
+});
 
-// Auto refresh events every 30 seconds
-setInterval(loadEvents, 30000);
+// Auto-hide notifications after 5 seconds
+setTimeout(() => {
+    hideError();
+    hideSuccess();
+}, 5000);
