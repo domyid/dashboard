@@ -47,20 +47,7 @@ const claimsContainer = document.getElementById('claimsContainer');
 const emptyEvents = document.getElementById('emptyEvents');
 const emptyClaims = document.getElementById('emptyClaims');
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    loadEvents();
-    loadUserClaims();
-    
-    // Check for expired claims every 30 seconds
-    setInterval(checkExpiredClaims, 30000);
-    
-    // Refresh data every 60 seconds
-    setInterval(() => {
-        loadEvents();
-        loadUserClaims();
-    }, 60000);
-});
+// Note: Initialization moved to main() function for dashboard routing compatibility
 
 // Load all available events
 function loadEvents() {
@@ -581,3 +568,90 @@ document.addEventListener('keydown', function(e) {
 window.addEventListener('beforeunload', function() {
     Object.values(timers).forEach(timer => clearInterval(timer));
 });
+
+// Main function required by dashboard routing system
+export function main() {
+    console.log('Bimbinganevent main function called');
+    console.log('Backend URLs:', backend);
+
+    // Check if user is logged in
+    const token = getCookie('login');
+    console.log('Login token:', token ? 'Found' : 'Not found');
+
+    if (!token) {
+        showNotification('Silakan login terlebih dahulu', 'is-warning');
+        return;
+    }
+
+    // Initialize the page
+    console.log('Initializing bimbinganevent page...');
+    loadEvents();
+    loadUserClaims();
+
+    // Check for expired claims every 30 seconds
+    setInterval(checkExpiredClaims, 30000);
+
+    // Refresh data every 60 seconds
+    setInterval(() => {
+        console.log('Auto-refreshing data...');
+        loadEvents();
+        loadUserClaims();
+    }, 60000);
+
+    // Add manual test button for debugging
+    addDebugButton();
+}
+
+// Add debug button for manual testing
+function addDebugButton() {
+    const debugButton = document.createElement('button');
+    debugButton.className = 'button is-info is-small';
+    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Test';
+    debugButton.style.position = 'fixed';
+    debugButton.style.top = '10px';
+    debugButton.style.right = '10px';
+    debugButton.style.zIndex = '9999';
+
+    debugButton.addEventListener('click', function() {
+        console.log('=== DEBUG TEST ===');
+        console.log('Current events:', currentEvents);
+        console.log('Current claims:', currentClaims);
+        console.log('Backend URLs:', backend);
+        console.log('Login token:', getCookie('login'));
+
+        // Manual API test
+        testAPIManually();
+    });
+
+    document.body.appendChild(debugButton);
+}
+
+// Manual API test function
+async function testAPIManually() {
+    const token = getCookie('login');
+    console.log('Testing API manually...');
+
+    try {
+        const response = await fetch(backend.getAllEvents, {
+            method: 'GET',
+            headers: {
+                'login': token
+            }
+        });
+
+        console.log('Manual API test response status:', response.status);
+        console.log('Manual API test response headers:', response.headers);
+
+        const result = await response.json();
+        console.log('Manual API test result:', result);
+
+        if (response.ok) {
+            showNotification('API test berhasil! Check console untuk detail.', 'is-success');
+        } else {
+            showNotification('API test gagal: ' + result.status, 'is-danger');
+        }
+    } catch (error) {
+        console.error('Manual API test error:', error);
+        showNotification('API test error: ' + error.message, 'is-danger');
+    }
+}
