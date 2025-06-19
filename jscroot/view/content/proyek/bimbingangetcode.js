@@ -1,6 +1,29 @@
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 
+// Fallback postJSON function if the imported one fails
+async function postJSONFallback(url, headerName, headerValue, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [headerName]: headerValue
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        return {
+            status: response.ok ? 200 : response.status,
+            data: result
+        };
+    } catch (error) {
+        console.error('Fallback postJSON error:', error);
+        throw error;
+    }
+}
+
 // Backend URLs - sesuaikan dengan konfigurasi Anda
 const backend = {
     generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
@@ -335,7 +358,7 @@ function hideSuccess() {
 }
 
 // Create Event functionality
-createEventBtn.addEventListener('click', async () => {
+createEventBtn.addEventListener('click', () => {
     const name = eventName.value.trim();
     const description = eventDescription.value.trim();
     const points = parseInt(eventPoints.value);
@@ -346,41 +369,151 @@ createEventBtn.addEventListener('click', async () => {
         return;
     }
 
-    try {
-        // Show loading state
-        createEventBtn.disabled = true;
-        createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    // Check if user is logged in
+    const token = getCookie('login');
+    if (!token) {
+        showError('Anda harus login terlebih dahulu');
+        return;
+    }
 
-        const token = getCookie('login');
-        const response = await postJSON(backend.createEvent, 'login', token, {
+    // Show loading state
+    createEventBtn.disabled = true;
+    createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+    try {
+        const requestData = {
             name: name,
             description: description,
             points: points
-        });
+        };
 
-        if (response.status === 'Success') {
-            // Show success
-            document.getElementById('createdEventId').textContent = response.data.event_id;
-            document.getElementById('createdEventName').textContent = name;
-            document.getElementById('createdEventPoints').textContent = points + ' poin';
-            eventResult.style.display = 'block';
+        console.log('Sending create event request:', requestData);
+        console.log('URL:', backend.createEvent);
+        console.log('Token:', token);
 
-            // Clear form
-            eventName.value = '';
-            eventDescription.value = '';
-            eventPoints.value = '';
+        // Try using the imported postJSON first
+        try {
+            postJSON(backend.createEvent, 'login', token, requestData, (result) => {
+            createEventBtn.disabled = false;
+            createEventBtn.innerHTML = '<i class="fas fa-plus"></i> Create Event';
 
-            showSuccess('Event berhasil dibuat!');
-        } else {
-            showError('Error: ' + response.response);
+            console.log('Create event full response:', result); // Debug log
+            console.log('Response type:', typeof result);
+            console.log('Response status:', result?.status);
+            console.log('Response data:', result?.data);
+
+            // Handle different response formats
+            if (result && (result.status === 200 || result.status === 'Success')) {
+                // Handle successful response
+                let responseData;
+
+                // Try different response structures
+                if (result.data && result.data.data) {
+                    responseData = result.data.data;
+                } else if (result.data) {
+                    responseData = result.data;
+                } else if (result.response) {
+                    responseData = result;
+                } else {
+                    responseData = result;
+                }
+
+                console.log('Processed response data:', responseData);
+
+                // Show success
+                if (responseData.event_id) {
+                    document.getElementById('createdEventId').textContent = responseData.event_id;
+                } else {
+                    document.getElementById('createdEventId').textContent = 'Generated Successfully';
+                }
+                document.getElementById('createdEventName').textContent = name;
+                document.getElementById('createdEventPoints').textContent = points + ' poin';
+                eventResult.style.display = 'block';
+
+                // Clear form
+                eventName.value = '';
+                eventDescription.value = '';
+                eventPoints.value = '';
+
+                hideError();
+                showSuccess('Event berhasil dibuat!');
+            } else {
+                // Show error
+                let errorMsg = 'Gagal membuat event';
+
+                if (result && result.data) {
+                    if (typeof result.data === 'string') {
+                        errorMsg = result.data;
+                    } else if (result.data.response) {
+                        errorMsg = result.data.response;
+                    } else if (result.data.status) {
+                        errorMsg = result.data.status;
+                    }
+                } else if (result && result.response) {
+                    errorMsg = result.response;
+                } else if (result && result.message) {
+                    errorMsg = result.message;
+                }
+
+                showError('Error: ' + errorMsg);
+                console.error('Create event error:', result);
+            }
+            });
+        } catch (postJSONError) {
+            console.error('postJSON failed, trying fallback:', postJSONError);
+
+            // Use fallback method
+            postJSONFallback(backend.createEvent, 'login', token, requestData)
+                .then(result => {
+                    createEventBtn.disabled = false;
+                    createEventBtn.innerHTML = '<i class="fas fa-plus"></i> Create Event';
+
+                    console.log('Fallback response:', result);
+
+                    if (result.status === 200 && result.data.status === 'Success') {
+                        // Show success
+                        if (result.data.data && result.data.data.event_id) {
+                            document.getElementById('createdEventId').textContent = result.data.data.event_id;
+                        } else {
+                            document.getElementById('createdEventId').textContent = 'Generated Successfully';
+                        }
+                        document.getElementById('createdEventName').textContent = name;
+                        document.getElementById('createdEventPoints').textContent = points + ' poin';
+                        eventResult.style.display = 'block';
+
+                        // Clear form
+                        eventName.value = '';
+                        eventDescription.value = '';
+                        eventPoints.value = '';
+
+                        hideError();
+                        showSuccess('Event berhasil dibuat!');
+                    } else {
+                        const errorMsg = result.data?.response || result.data?.status || 'Gagal membuat event';
+                        showError('Error: ' + errorMsg);
+                    }
+                })
+                .catch(fallbackError => {
+                    createEventBtn.disabled = false;
+                    createEventBtn.innerHTML = '<i class="fas fa-plus"></i> Create Event';
+                    console.error('Fallback also failed:', fallbackError);
+                    showError('Gagal membuat event: ' + fallbackError.message);
+                });
         }
     } catch (error) {
-        console.error('Error creating event:', error);
-        showError('Terjadi kesalahan: ' + error.message);
-    } finally {
-        // Reset button
         createEventBtn.disabled = false;
         createEventBtn.innerHTML = '<i class="fas fa-plus"></i> Create Event';
+        console.error('Error creating event:', error);
+        console.error('Error stack:', error.stack);
+
+        let errorMessage = 'Terjadi kesalahan tidak terduga';
+        if (error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+
+        showError('Terjadi kesalahan: ' + errorMessage);
     }
 });
 
