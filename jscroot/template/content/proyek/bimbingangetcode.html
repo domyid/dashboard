@@ -142,6 +142,60 @@
             <button class="delete" id="closeSuccess"></button>
             <span id="successMessage"></span>
         </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider"></div>
+
+        <!-- Create Event Section -->
+        <div class="box">
+            <h1 class="title has-text-centered">Create Event</h1>
+            <div class="content">
+                <p class="has-text-centered">Buat event baru untuk mahasiswa</p>
+                <p class="has-text-centered has-text-grey">Hanya dapat diakses oleh owner</p>
+            </div>
+
+            <div class="columns">
+                <div class="column is-8 is-offset-2">
+                    <div class="field">
+                        <label class="label">Nama Event</label>
+                        <div class="control">
+                            <input class="input" type="text" id="eventName" placeholder="Masukkan nama event">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Deskripsi Event</label>
+                        <div class="control">
+                            <textarea class="textarea" id="eventDescription" placeholder="Masukkan deskripsi event" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Poin</label>
+                        <div class="control">
+                            <input class="input" type="number" id="eventPoints" placeholder="Masukkan jumlah poin" min="1">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="control has-text-centered">
+                            <button class="button is-success is-large" id="createEventBtn">
+                                <i class="fas fa-plus"></i> Create Event
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="eventResult" style="display: none;">
+                <div class="notification is-success">
+                    <p><strong>Event berhasil dibuat!</strong></p>
+                    <p>Event ID: <span id="createdEventId"></span></p>
+                    <p>Nama: <span id="createdEventName"></span></p>
+                    <p>Poin: <span id="createdEventPoints"></span></p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="bimbingangetcode.js"></script>

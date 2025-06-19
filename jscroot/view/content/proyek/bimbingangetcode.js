@@ -4,7 +4,8 @@ import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croo
 // Backend URLs - sesuaikan dengan konfigurasi Anda
 const backend = {
     generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
-    generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime'
+    generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime',
+    createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create'
 };
 
 // DOM Elements
@@ -12,6 +13,13 @@ const generateBtn = document.getElementById('generateBtn');
 const codeContainer = document.getElementById('codeContainer');
 const generatedCode = document.getElementById('generatedCode');
 const copyBtn = document.getElementById('copyBtn');
+
+// Event creation elements
+const createEventBtn = document.getElementById('createEventBtn');
+const eventName = document.getElementById('eventName');
+const eventDescription = document.getElementById('eventDescription');
+const eventPoints = document.getElementById('eventPoints');
+const eventResult = document.getElementById('eventResult');
 
 // Time Event Elements
 const generateTimeBtn = document.getElementById('generateTimeBtn');
@@ -326,12 +334,63 @@ function hideSuccess() {
     successNotification.style.display = 'none';
 }
 
+// Create Event functionality
+createEventBtn.addEventListener('click', async () => {
+    const name = eventName.value.trim();
+    const description = eventDescription.value.trim();
+    const points = parseInt(eventPoints.value);
+
+    // Validation
+    if (!name || !description || !points || points <= 0) {
+        showError('Semua field harus diisi dengan benar');
+        return;
+    }
+
+    try {
+        // Show loading state
+        createEventBtn.disabled = true;
+        createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+        const token = getCookie('login');
+        const response = await postJSON(backend.createEvent, 'login', token, {
+            name: name,
+            description: description,
+            points: points
+        });
+
+        if (response.status === 'Success') {
+            // Show success
+            document.getElementById('createdEventId').textContent = response.data.event_id;
+            document.getElementById('createdEventName').textContent = name;
+            document.getElementById('createdEventPoints').textContent = points + ' poin';
+            eventResult.style.display = 'block';
+
+            // Clear form
+            eventName.value = '';
+            eventDescription.value = '';
+            eventPoints.value = '';
+
+            showSuccess('Event berhasil dibuat!');
+        } else {
+            showError('Error: ' + response.response);
+        }
+    } catch (error) {
+        console.error('Error creating event:', error);
+        showError('Terjadi kesalahan: ' + error.message);
+    } finally {
+        // Reset button
+        createEventBtn.disabled = false;
+        createEventBtn.innerHTML = '<i class="fas fa-plus"></i> Create Event';
+    }
+});
+
 // Check login on page load
 document.addEventListener('DOMContentLoaded', () => {
     const token = getCookie('login');
     if (!token) {
         generateBtn.disabled = true;
         generateTimeBtn.disabled = true;
+        createEventBtn.disabled = true;
         showError('Silakan login terlebih dahulu untuk menggunakan fitur ini');
     }
 });
