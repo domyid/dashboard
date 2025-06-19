@@ -60,12 +60,12 @@ export const backend = {
         generateEventCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
         generateTimeEventCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime',
         checkTimeClaimStatus: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimtimestatus',
-          // New Event Management URLs
-          createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create',
-          listEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/list',
-          claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-          submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
-          approveTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/approve',
+         // New Event Management URLs
+        createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create',
+        listEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/list',
+        claimEventNew: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
+        submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
+        approveTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/approve',
           qr: {
             startSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/start',
             stopSession: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/qr/session/stop',

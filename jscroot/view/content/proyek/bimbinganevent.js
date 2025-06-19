@@ -1,12 +1,6 @@
+import { postJSON, getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-
-// Backend URLs
-const backend = {
-    listEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/list',
-    claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
-    userPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/userpoints'
-};
+import { backend } from "/dashboard/jscroot/url/config.js";
 
 let currentEvents = [];
 let timers = {};
@@ -32,7 +26,7 @@ async function loadUserPoints() {
             return;
         }
 
-        const response = await fetch(backend.userPoints, {
+        const response = await fetch(backend.bimbingan.userPoints, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -114,7 +108,7 @@ async function loadEvents() {
     
     try {
         console.log('Loading events...');
-        console.log('API URL:', backend.listEvents);
+        console.log('API URL:', backend.bimbingan.listEvents);
         console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
 
         // Use fetch directly instead of getJSON to avoid callback issues
@@ -123,7 +117,7 @@ async function loadEvents() {
             throw new Error('No login token found');
         }
 
-        const response = await fetch(backend.listEvents, {
+        const response = await fetch(backend.bimbingan.listEvents, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -418,13 +412,15 @@ async function confirmClaimEvent() {
         };
 
         console.log('Claiming event:', claimData);
+        console.log('Using URL:', backend.bimbingan.claimEventNew);
 
         const token = getCookie('login');
         if (!token) {
             throw new Error('No login token found');
         }
+        console.log('Using token:', token ? 'Present' : 'Missing');
 
-        const response = await fetch(backend.claimEvent, {
+        const response = await fetch(backend.bimbingan.claimEventNew, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -434,9 +430,13 @@ async function confirmClaimEvent() {
         });
 
         console.log('Claim response status:', response.status);
+        console.log('Claim response headers:', [...response.headers.entries()]);
+        console.log('Claim response URL:', response.url);
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.log('Error response text:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
 
         const responseText = await response.text();
@@ -498,7 +498,7 @@ async function confirmSubmitTask() {
             throw new Error('No login token found');
         }
 
-        const response = await fetch(backend.submitTask, {
+        const response = await fetch(backend.bimbingan.submitTask, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

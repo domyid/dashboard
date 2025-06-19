@@ -1,12 +1,6 @@
-import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+import { postJSON, getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-
-// Backend URLs - sesuaikan dengan konfigurasi Anda
-const backend = {
-    generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
-    generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime',
-    createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create'
-};
+import { backend } from "/dashboard/jscroot/url/config.js";
 
 // DOM Elements
 const generateBtn = document.getElementById('generateBtn');
@@ -68,7 +62,7 @@ generateBtn.addEventListener('click', async () => {
     generateBtn.textContent = 'Generating...';
     
     try {
-        getJSON(backend.generateCode, 'login', token, (result) => {
+        getJSON(backend.bimbingan.generateEventCode, 'login', token, (result) => {
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generate Code';
             
@@ -115,7 +109,7 @@ generateTimeBtn.addEventListener('click', async () => {
             duration_seconds: durationSeconds
         };
         
-        postJSON(backend.generateTimeCode, 'login', token, requestData, (result) => {
+        postJSON(backend.bimbingan.generateTimeEventCode, 'login', token, requestData, (result) => {
             generateTimeBtn.disabled = false;
             generateTimeBtn.textContent = 'Generate Time Code';
             
@@ -363,7 +357,7 @@ createEventBtn.addEventListener('click', async () => {
         };
 
         console.log('Sending event data:', eventData);
-        console.log('API URL:', backend.createEvent);
+        console.log('API URL:', backend.bimbingan.createEvent);
         console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
 
         // Add timeout to detect if callback never fires
@@ -378,7 +372,7 @@ createEventBtn.addEventListener('click', async () => {
         }, 30000);
 
         // Use callback pattern like other functions in this file
-        postJSON(backend.createEvent, 'login', getCookie('login'), eventData, (result) => {
+        postJSON(backend.bimbingan.createEvent, 'login', getCookie('login'), eventData, (result) => {
             callbackFired = true;
             clearTimeout(timeoutId);
             createEventBtn.disabled = false;
