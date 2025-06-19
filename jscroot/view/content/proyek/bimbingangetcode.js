@@ -1,19 +1,17 @@
-import { postJSON, getJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
-import { backend } from "/dashboard/jscroot/url/config.js";
+
+// Backend URLs - sesuaikan dengan konfigurasi Anda
+const backend = {
+    generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
+    generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime'
+};
 
 // DOM Elements
 const generateBtn = document.getElementById('generateBtn');
 const codeContainer = document.getElementById('codeContainer');
 const generatedCode = document.getElementById('generatedCode');
 const copyBtn = document.getElementById('copyBtn');
-
-// Event Management Elements
-const createEventBtn = document.getElementById('createEventBtn');
-const eventContainer = document.getElementById('eventContainer');
-const eventNameInput = document.getElementById('eventName');
-const eventDescriptionInput = document.getElementById('eventDescription');
-const eventPointsInput = document.getElementById('eventPoints');
 
 // Time Event Elements
 const generateTimeBtn = document.getElementById('generateTimeBtn');
@@ -62,7 +60,7 @@ generateBtn.addEventListener('click', async () => {
     generateBtn.textContent = 'Generating...';
     
     try {
-        getJSON(backend.bimbingan.generateEventCode, 'login', token, (result) => {
+        getJSON(backend.generateCode, 'login', token, (result) => {
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generate Code';
             
@@ -109,7 +107,7 @@ generateTimeBtn.addEventListener('click', async () => {
             duration_seconds: durationSeconds
         };
         
-        postJSON(backend.bimbingan.generateTimeEventCode, 'login', token, requestData, (result) => {
+        postJSON(backend.generateTimeCode, 'login', token, requestData, (result) => {
             generateTimeBtn.disabled = false;
             generateTimeBtn.textContent = 'Generate Time Code';
             
@@ -328,151 +326,12 @@ function hideSuccess() {
     successNotification.style.display = 'none';
 }
 
-// Create Event function
-createEventBtn.addEventListener('click', async () => {
-    const eventName = eventNameInput.value.trim();
-    const eventDescription = eventDescriptionInput.value.trim();
-    const eventPoints = parseInt(eventPointsInput.value);
-
-    // Validation
-    if (!eventName) {
-        showError('Nama event tidak boleh kosong');
-        return;
-    }
-
-    if (!eventPoints || eventPoints <= 0) {
-        showError('Points harus lebih dari 0');
-        return;
-    }
-
-    // Disable button and show loading
-    createEventBtn.disabled = true;
-    createEventBtn.textContent = 'Creating...';
-
-    try {
-        const eventData = {
-            name: eventName,
-            description: eventDescription,
-            points: eventPoints
-        };
-
-        console.log('Sending event data:', eventData);
-        console.log('API URL:', backend.bimbingan.createEvent);
-        console.log('Login token:', getCookie('login') ? 'Present' : 'Missing');
-
-        // Add timeout to detect if callback never fires
-        let callbackFired = false;
-        const timeoutId = setTimeout(() => {
-            if (!callbackFired) {
-                createEventBtn.disabled = false;
-                createEventBtn.textContent = 'Create Event';
-                showError('Request timeout - server tidak merespons dalam 30 detik');
-                console.error('postJSON callback timeout');
-            }
-        }, 30000);
-
-        // Use callback pattern like other functions in this file
-        postJSON(backend.bimbingan.createEvent, 'login', getCookie('login'), eventData, (result) => {
-            callbackFired = true;
-            clearTimeout(timeoutId);
-            createEventBtn.disabled = false;
-            createEventBtn.textContent = 'Create Event';
-
-            console.log('=== CREATE EVENT DEBUG ===');
-            console.log('Raw API Response:', result);
-            console.log('Response type:', typeof result);
-            console.log('Response keys:', result ? Object.keys(result) : 'null');
-            console.log('Response status:', result?.status);
-            console.log('Response data:', result?.data);
-
-            // Check if result exists and has expected structure
-            if (!result) {
-                showError('No response received from server');
-                return;
-            }
-
-            // More detailed response analysis
-            if (result.status === 200) {
-                console.log('HTTP 200 response detected');
-
-                // Handle different response formats
-                let responseData;
-                let actualData;
-
-                if (result.data) {
-                    console.log('result.data exists:', result.data);
-                    console.log('result.data type:', typeof result.data);
-
-                    if (typeof result.data === 'string') {
-                        try {
-                            actualData = JSON.parse(result.data);
-                            console.log('Parsed JSON data:', actualData);
-                        } catch (e) {
-                            console.error('Failed to parse JSON:', e);
-                            actualData = result.data;
-                        }
-                    } else {
-                        actualData = result.data;
-                    }
-
-                    // Check for Success status in the response
-                    if (actualData && actualData.status === 'Success') {
-                        if (actualData.data) {
-                            responseData = actualData.data;
-                            console.log('Success response with nested data:', responseData);
-                        } else {
-                            responseData = actualData;
-                            console.log('Success response without nested data:', responseData);
-                        }
-                    } else {
-                        console.log('Non-success response:', actualData);
-                        const errorMsg = actualData?.status || actualData?.response || 'Unknown error';
-                        showError('Server Error: ' + errorMsg);
-                        return;
-                    }
-                } else {
-                    console.log('No result.data, using result directly');
-                    responseData = result;
-                }
-
-                console.log('Final response data:', responseData);
-
-                // Update UI with success
-                document.getElementById('createdEventId').value = responseData.event_id || responseData.message || 'Generated';
-                document.getElementById('createdEventName').value = eventName;
-                document.getElementById('createdEventPoints').value = eventPoints + ' Points';
-
-                eventContainer.style.display = 'block';
-                hideError();
-                showSuccess('Event berhasil dibuat!');
-
-                // Clear form
-                eventNameInput.value = '';
-                eventDescriptionInput.value = '';
-                eventPointsInput.value = '';
-            } else {
-                console.log('Non-200 response:', result);
-                // Show error
-                const errorMsg = result.data?.response || result.data?.status || result.message || result.status || 'Gagal membuat event';
-                showError('Server Error: ' + errorMsg);
-                console.error('Create event error:', result);
-            }
-        });
-    } catch (error) {
-        console.error('Full error details:', error);
-        showError('Terjadi kesalahan: ' + error.message);
-        createEventBtn.disabled = false;
-        createEventBtn.textContent = 'Create Event';
-    }
-});
-
 // Check login on page load
 document.addEventListener('DOMContentLoaded', () => {
     const token = getCookie('login');
     if (!token) {
         generateBtn.disabled = true;
         generateTimeBtn.disabled = true;
-        createEventBtn.disabled = true;
         showError('Silakan login terlebih dahulu untuk menggunakan fitur ini');
     }
 });
