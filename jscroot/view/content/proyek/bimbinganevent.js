@@ -510,8 +510,10 @@ function loadUserPoints() {
             console.log('Response status:', result.status);
             console.log('Response data:', result.data);
 
-            if (result.status === 200 && result.data?.Status === 'Success') {
-                const pointsData = result.data.Data;
+            // Check for both possible response structures
+            if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
+                // Handle both response structures
+                const pointsData = result.data.Data || result.data.data;
                 console.log('Points data:', pointsData);
                 console.log('Total event points:', pointsData.total_event_points);
                 updatePointsDisplay(pointsData.total_event_points || 0);
@@ -860,10 +862,11 @@ async function testAPIManually() {
         if (pointsResponse.ok) {
             showNotification('Points API test berhasil! Check console untuk detail.', 'is-success');
 
-            // Update points display with result
-            if (pointsResult.Status === 'Success' && pointsResult.Data) {
-                console.log('Updating points display with:', pointsResult.Data.total_event_points);
-                updatePointsDisplay(pointsResult.Data.total_event_points || 0);
+            // Update points display with result - handle both response structures
+            if ((pointsResult.Status === 'Success' || pointsResult.status === 'Success')) {
+                const pointsData = pointsResult.Data || pointsResult.data;
+                console.log('Updating points display with:', pointsData.total_event_points);
+                updatePointsDisplay(pointsData.total_event_points || 0);
             }
         } else {
             showNotification('Points API test gagal: ' + pointsResult.Status, 'is-danger');

@@ -90,8 +90,10 @@ function loadUserPoints() {
         console.log('Response status:', result.status);
         console.log('Response data:', result.data);
 
-        if (result.status === 200 && result.data?.Status === 'Success') {
-            userPointsData = result.data.Data;
+        // Check for both possible response structures
+        if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
+            // Handle both response structures
+            userPointsData = result.data.Data || result.data.data;
             console.log('Points data:', userPointsData);
             console.log('Total event points:', userPointsData.total_event_points);
             updatePointsDisplay(userPointsData.total_event_points || 0);
@@ -100,7 +102,7 @@ function loadUserPoints() {
             console.error('Failed to load user points:', result);
             console.error('Status:', result.status);
             console.error('Data:', result.data);
-            showNotification('Gagal memuat data poin: ' + (result.data?.Response || 'Unknown error'), 'is-danger');
+            showNotification('Gagal memuat data poin: ' + (result.data?.Response || result.data?.response || 'Unknown error'), 'is-danger');
             buyCodeBtn.disabled = true;
             // Set default data
             userPointsData = { total_event_points: 0 };
@@ -301,12 +303,14 @@ async function testPointsAPIManually() {
         const result = await response.json();
         console.log('Manual Points API result:', result);
 
-        if (response.ok && result.Status === 'Success') {
-            showNotification('Points API test berhasil! Points: ' + result.Data.total_event_points, 'is-success');
+        if (response.ok && (result.Status === 'Success' || result.status === 'Success')) {
+            // Handle both response structures
+            const pointsData = result.Data || result.data;
+            showNotification('Points API test berhasil! Points: ' + pointsData.total_event_points, 'is-success');
 
             // Update display with result
-            userPointsData = result.Data;
-            updatePointsDisplay(result.Data.total_event_points || 0);
+            userPointsData = pointsData;
+            updatePointsDisplay(pointsData.total_event_points || 0);
             updateBuyButton();
         } else {
             showNotification('Points API test gagal: ' + (result.Response || result.Status), 'is-danger');
