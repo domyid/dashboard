@@ -254,13 +254,40 @@ function createClaimCard(claim) {
             break;
         case 'submitted':
             statusBadge = '<span class="status-submitted">Menunggu Approval</span>';
+
+            // Get approval deadline dari backend response atau calculate manual
+            let approvalDeadline;
+            if (claim.approval_deadline) {
+                approvalDeadline = new Date(claim.approval_deadline);
+            } else {
+                // Fallback: calculate manual jika backend belum update
+                const submittedTime = new Date(claim.submitted_at);
+                approvalDeadline = new Date(submittedTime.getTime() + (86400 * 1000)); // 24 jam dari submit
+            }
+
+            const approvalCountdownId = `approval-countdown-${claim.claim_id}`;
+
             actionButton = `
                 <div class="notification is-info">
                     <p><strong>Tugas sudah disubmit!</strong></p>
                     <p>Link: <a href="${claim.task_link}" target="_blank">${claim.task_link}</a></p>
                     <p>Menunggu approval dari owner...</p>
+                    <div class="mt-3">
+                        <p><strong>⏰ Sisa waktu approval:</strong></p>
+                        <p id="${approvalCountdownId}" class="has-text-weight-bold has-text-primary" style="font-size: 1.2em;">
+                            Menghitung...
+                        </p>
+                        <p class="is-size-7 has-text-grey">
+                            Jika tidak di-approve dalam 24 jam, event akan tersedia lagi untuk user lain
+                        </p>
+                    </div>
                 </div>
             `;
+
+            // Start approval countdown setelah DOM ready
+            setTimeout(() => {
+                startApprovalCountdown(approvalCountdownId, approvalDeadline, claim.claim_id);
+            }, 100);
             break;
         case 'approved':
             statusBadge = '<span class="status-approved">Approved</span>';
@@ -307,16 +334,16 @@ function createClaimCard(claim) {
 function startTimer(claimId, deadline) {
     const timerElement = document.getElementById(`timer-${claimId}`);
     if (!timerElement) return;
-    
+
     const updateTimer = () => {
         const now = new Date();
         const timeLeft = deadline - now;
-        
+
         if (timeLeft <= 0) {
             timerElement.innerHTML = 'Waktu Habis!';
             timerElement.classList.add('timer-expired');
             clearInterval(timers[claimId]);
-            
+
             // Refresh data to update UI
             setTimeout(() => {
                 loadEvents();
@@ -324,11 +351,11 @@ function startTimer(claimId, deadline) {
             }, 1000);
             return;
         }
-        
+
         const seconds = Math.floor(timeLeft / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
-        
+
         let display = '';
         if (hours > 0) {
             display = `${hours}j ${minutes % 60}m ${seconds % 60}s`;
@@ -337,12 +364,68 @@ function startTimer(claimId, deadline) {
         } else {
             display = `${seconds}s`;
         }
-        
+
         timerElement.innerHTML = `⏰ Sisa waktu: ${display}`;
     };
-    
+
     updateTimer();
     timers[claimId] = setInterval(updateTimer, 1000);
+}
+
+// Start approval countdown timer (24 jam)
+function startApprovalCountdown(countdownId, approvalDeadline, claimId) {
+    const countdownElement = document.getElementById(countdownId);
+    if (!countdownElement) return;
+
+    const updateCountdown = () => {
+        const now = new Date();
+        const timeLeft = approvalDeadline - now;
+
+        if (timeLeft <= 0) {
+            countdownElement.innerHTML = '⏰ Waktu approval habis!';
+            countdownElement.classList.add('has-text-danger');
+            clearInterval(timers[`approval-${claimId}`]);
+
+            // Show notification
+            showNotification('Waktu approval habis! Event akan tersedia lagi untuk user lain.', 'is-warning');
+
+            // Refresh data to update UI
+            setTimeout(() => {
+                loadEvents();
+                loadUserClaims();
+            }, 2000);
+            return;
+        }
+
+        const totalSeconds = Math.floor(timeLeft / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        let display = '';
+        if (hours > 0) {
+            display = `${hours} jam ${minutes} menit`;
+        } else if (minutes > 0) {
+            display = `${minutes} menit ${seconds} detik`;
+        } else {
+            display = `${seconds} detik`;
+        }
+
+        // Change color based on time left
+        if (hours < 1) {
+            countdownElement.classList.remove('has-text-primary');
+            countdownElement.classList.add('has-text-warning');
+        }
+        if (minutes < 30 && hours === 0) {
+            countdownElement.classList.remove('has-text-warning');
+            countdownElement.classList.add('has-text-danger');
+        }
+
+        countdownElement.innerHTML = display;
+    };
+
+    updateCountdown();
+    timers[`approval-${claimId}`] = setInterval(updateCountdown, 1000);
 }
 
 // Show/hide loading spinner
@@ -378,18 +461,32 @@ function showNotification(message, type = 'is-info') {
     });
 }
 
-// Check for expired claims
+// Check for expired claims - call backend untuk recovery 24 jam timeout
 function checkExpiredClaims() {
     try {
-        const token = getCookie('login');
-        if (!token) return;
+        // Call backend endpoint untuk check dan recovery expired approvals
+        fetch(backend.checkExpired)
+            .then(response => response.json())
+            .then(result => {
+                console.log('Check expired response:', result);
 
-        getJSON(backend.checkExpired, 'login', token, (result) => {
-            console.log('Check expired response:', result);
-            // Silently handle the response, no need to show notifications
-        });
+                // Jika ada recovery, refresh data untuk update UI
+                if (result.Status === 'Success' && result.Data && result.Data.processed > 0) {
+                    console.log(`✅ Recovered ${result.Data.processed} expired events`);
+
+                    // Refresh events dan claims untuk show recovered events
+                    setTimeout(() => {
+                        loadEvents();
+                        loadUserClaims();
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking expired claims:', error);
+                // Silent fail - tidak mengganggu user experience
+            });
     } catch (error) {
-        console.error('Error checking expired claims:', error);
+        console.error('Error in checkExpiredClaims:', error);
     }
 }
 
@@ -558,7 +655,7 @@ window.confirmSubmit = function() {
                 }
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner.', 'is-success');
+                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner dalam 24 jam. Countdown akan muncul di card Anda.', 'is-success');
                     closeSubmitModal();
 
                     // Refresh data
@@ -602,10 +699,50 @@ window.addEventListener('beforeunload', function() {
     Object.values(timers).forEach(timer => clearInterval(timer));
 });
 
+// Add CSS for countdown styling
+function addCountdownCSS() {
+    if (document.getElementById('countdown-css')) return; // Prevent duplicate
+
+    const style = document.createElement('style');
+    style.id = 'countdown-css';
+    style.textContent = `
+        .approval-countdown {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            margin: 8px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .approval-countdown.has-text-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        }
+
+        .approval-countdown.has-text-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Main function required by dashboard routing system
 export function main() {
     console.log('Bimbinganevent main function called');
     console.log('Backend URLs:', backend);
+
+    // Add countdown CSS
+    addCountdownCSS();
 
     // Check if user is logged in
     const token = getCookie('login');
@@ -621,7 +758,7 @@ export function main() {
     loadEvents();
     loadUserClaims();
 
-    // Check for expired claims every 30 seconds
+    // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
     setInterval(checkExpiredClaims, 30000);
 
     // Refresh data every 60 seconds
