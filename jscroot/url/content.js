@@ -35,7 +35,9 @@ export function getContentURL(){
             case "proyek/bimbingangetcode":
                 return url.template.content+"proyek/bimbingangetcode.html";
             case "proyek/bimbinganevent":
-                return url.template.content+"proyek/bimbinganevent.html";                  
+                return url.template.content+"proyek/bimbinganevent.html";
+            case "proyek/bimbinganstore":
+                return url.template.content+"proyek/bimbinganstore.html";                   
         case "notifications/blocked":
             return url.template.content+"notifications/blocked.html";
         case "notifications/silenced":
@@ -83,6 +85,8 @@ export function getURLContentJS(){
                 return url.view.content+"proyek/bimbingangetcode.js";
             case "proyek/bimbinganevent":
                 return url.view.content+"proyek/bimbinganevent.js";
+            case "proyek/bimbinganstore":
+                return url.view.content+"proyek/bimbinganstore.js";
             case "proyek/kelasws":
             return url.view.content+"proyek/kelasws.js";
         case "proyek/kelasai":
