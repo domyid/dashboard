@@ -108,6 +108,7 @@ function loadUserPoints() {
                 updatePointsDisplay(userPointsData.total_event_points || 0);
                 updateBuyButton();
                 console.log('✅ Points loaded successfully:', userPointsData.total_event_points);
+            window.bimbinganstorePointsLoaded = true;
             } else {
                 console.error('Failed to load user points:', result);
                 console.error('Status:', result.status);
@@ -158,6 +159,7 @@ async function loadUserPointsFallback() {
                 updateBuyButton();
                 console.log('✅ Fallback points loaded successfully:', pointsData.total_event_points);
                 showNotification('Points berhasil dimuat (fallback method)', 'is-success');
+                window.bimbinganstorePointsLoaded = true;
             } else {
                 throw new Error('Invalid response structure');
             }
@@ -314,27 +316,43 @@ window.copyCode = function() {
     });
 };
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing bimbinganstore page...');
+// Main function required by dashboard routing system
+export function main() {
+    console.log('Bimbinganstore main function called');
+    console.log('Backend URLs:', backend);
 
-    // Check login on page load
+    // Prevent double initialization
+    if (window.bimbinganstoreInitialized) {
+        console.log('Already initialized, skipping...');
+        return;
+    }
+    window.bimbinganstoreInitialized = true;
+
+    // Check if user is logged in
     const token = getCookie('login');
+    console.log('Login token:', token ? 'Found' : 'Not found');
+
     if (!token) {
         buyCodeBtn.disabled = true;
         showNotification('Silakan login terlebih dahulu untuk menggunakan store', 'is-warning');
         return;
     }
 
+    // Initialize the page
+    console.log('Initializing bimbinganstore page...');
+
     // Load points immediately and aggressively
     console.log('🚀 Starting aggressive points loading...');
+
+    // Reset loading flag
+    window.bimbinganstorePointsLoaded = false;
 
     // Try quick load first
     quickLoadPoints();
 
     // Fallback to normal load after 1 second
     setTimeout(() => {
-        if (!userPointsData || userPointsData.total_event_points === undefined) {
+        if (!window.bimbinganstorePointsLoaded && (!userPointsData || userPointsData.total_event_points === undefined)) {
             console.log('🔄 Quick load didn\'t work, trying normal load...');
             loadUserPoints();
         }
@@ -342,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Final fallback after 3 seconds
     setTimeout(() => {
-        if (!userPointsData || userPointsData.total_event_points === undefined) {
+        if (!window.bimbinganstorePointsLoaded && (!userPointsData || userPointsData.total_event_points === undefined)) {
             console.log('🔄 Normal load slow, trying fallback...');
             loadUserPointsFallback();
         }
@@ -350,6 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add debug button
     addDebugButton();
+}
+
+// Initialize page (fallback for direct access)
+document.addEventListener('DOMContentLoaded', () => {
+    // Only run if not already initialized by main()
+    if (!window.bimbinganstoreInitialized) {
+        console.log('DOMContentLoaded fallback initialization...');
+        main();
+        window.bimbinganstoreInitialized = true;
+    }
 });
 
 // Quick load function for immediate response
@@ -359,9 +387,15 @@ function quickLoadPoints() {
 
     console.log('⚡ Quick loading points...');
 
+    // Show loading immediately
+    updatePointsDisplay('Loading...');
+
     // Use fetch with shorter timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log('⚡ Quick load timeout, trying normal method...');
+    }, 2000); // 2 second timeout for quick response
 
     fetch(backend.getUserPoints, {
         method: 'GET',
@@ -373,6 +407,9 @@ function quickLoadPoints() {
     })
     .then(response => {
         clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         return response.json();
     })
     .then(result => {
@@ -384,19 +421,29 @@ function quickLoadPoints() {
             updatePointsDisplay(pointsData.total_event_points || 0);
             updateBuyButton();
             console.log('⚡ Quick load successful:', pointsData.total_event_points);
+
+            // Clear any pending fallbacks
+            window.bimbinganstorePointsLoaded = true;
+        } else {
+            throw new Error('Invalid response status');
         }
     })
     .catch(error => {
         clearTimeout(timeoutId);
-        console.log('Quick load failed, falling back to normal load:', error.message);
-        loadUserPoints(); // Fallback to normal load
+        if (error.name !== 'AbortError') {
+            console.log('Quick load failed:', error.message);
+        }
+        // Don't call fallback here - let the timeout handlers do it
     });
 }
 
-// Auto-refresh points every 60 seconds
+// Auto-refresh points every 60 seconds (only if page is active)
 setInterval(() => {
-    console.log('Auto-refreshing user points...');
-    loadUserPoints();
+    if (document.visibilityState === 'visible' && window.bimbinganstoreInitialized) {
+        console.log('Auto-refreshing user points...');
+        window.bimbinganstorePointsLoaded = false; // Reset flag for refresh
+        quickLoadPoints();
+    }
 }, 60000);
 
 // Add debug button for manual testing
