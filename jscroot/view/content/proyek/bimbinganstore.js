@@ -70,13 +70,11 @@ function showNotification(message, type = 'is-info') {
     }, 5000);
 }
 
-// Load user points
+// Load user points with timeout and fallback
 function loadUserPoints() {
-    showLoading();
-
     const token = getCookie('login');
     if (!token) {
-        hideLoading();
+        console.log('No login token found for loadUserPoints');
         showNotification('Anda harus login terlebih dahulu', 'is-warning');
         buyCodeBtn.disabled = true;
         return;
@@ -84,36 +82,114 @@ function loadUserPoints() {
 
     console.log('Loading user points from:', backend.getUserPoints);
 
-    getJSON(backend.getUserPoints, 'login', token, (result) => {
-        hideLoading();
-        console.log('User points response:', result);
-        console.log('Response status:', result.status);
-        console.log('Response data:', result.data);
+    // Set loading state
+    updatePointsDisplay('Loading...');
 
-        // Check for both possible response structures
-        if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
-            // Handle both response structures
-            userPointsData = result.data.Data || result.data.data;
-            console.log('Points data:', userPointsData);
-            console.log('Total event points:', userPointsData.total_event_points);
-            updatePointsDisplay(userPointsData.total_event_points || 0);
-            updateBuyButton();
-        } else {
-            console.error('Failed to load user points:', result);
-            console.error('Status:', result.status);
-            console.error('Data:', result.data);
-            showNotification('Gagal memuat data poin: ' + (result.data?.Response || result.data?.response || 'Unknown error'), 'is-danger');
-            buyCodeBtn.disabled = true;
-            // Set default data
-            userPointsData = { total_event_points: 0 };
-            updatePointsDisplay(0);
-        }
-    });
+    // Set timeout for slow loading
+    const timeoutId = setTimeout(() => {
+        console.log('⚠️ Points loading timeout, trying fallback...');
+        loadUserPointsFallback();
+    }, 5000); // 5 second timeout
+
+    try {
+        getJSON(backend.getUserPoints, 'login', token, (result) => {
+            clearTimeout(timeoutId); // Clear timeout if successful
+
+            console.log('User points response:', result);
+            console.log('Response status:', result.status);
+            console.log('Response data:', result.data);
+
+            // Check for both possible response structures
+            if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
+                // Handle both response structures
+                userPointsData = result.data.Data || result.data.data;
+                console.log('Points data:', userPointsData);
+                console.log('Total event points:', userPointsData.total_event_points);
+                updatePointsDisplay(userPointsData.total_event_points || 0);
+                updateBuyButton();
+                console.log('✅ Points loaded successfully:', userPointsData.total_event_points);
+            } else {
+                console.error('Failed to load user points:', result);
+                console.error('Status:', result.status);
+                console.error('Data:', result.data);
+                showNotification('Gagal memuat data poin: ' + (result.data?.Response || result.data?.response || 'Unknown error'), 'is-danger');
+                buyCodeBtn.disabled = true;
+                // Set default data
+                userPointsData = { total_event_points: 0 };
+                updatePointsDisplay(0);
+            }
+        });
+    } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('Error in loadUserPoints:', error);
+        loadUserPointsFallback();
+    }
 }
 
-// Update points display
+// Fallback function using fetch API
+async function loadUserPointsFallback() {
+    const token = getCookie('login');
+    if (!token) return;
+
+    console.log('🔄 Using fallback method to load points...');
+
+    try {
+        const response = await fetch(backend.getUserPoints, {
+            method: 'GET',
+            headers: {
+                'login': token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Fallback response status:', response.status);
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Fallback response data:', result);
+
+            // Check for both possible response structures
+            if ((result.Status === 'Success' || result.status === 'Success')) {
+                const pointsData = result.Data || result.data;
+                console.log('Fallback points data:', pointsData);
+
+                userPointsData = pointsData;
+                updatePointsDisplay(pointsData.total_event_points || 0);
+                updateBuyButton();
+                console.log('✅ Fallback points loaded successfully:', pointsData.total_event_points);
+                showNotification('Points berhasil dimuat (fallback method)', 'is-success');
+            } else {
+                throw new Error('Invalid response structure');
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Fallback also failed:', error);
+        userPointsData = { total_event_points: 0 };
+        updatePointsDisplay(0);
+        buyCodeBtn.disabled = true;
+        showNotification('Gagal memuat points. Silakan refresh halaman.', 'is-warning');
+    }
+}
+
+// Update points display with loading animation
 function updatePointsDisplay(points) {
-    userPointsElement.textContent = `${points} Poin`;
+    if (typeof points === 'string') {
+        userPointsElement.textContent = points; // For "Loading..." message
+        userPointsElement.style.opacity = '0.6';
+        userPointsElement.style.animation = 'pulse 1s infinite';
+    } else {
+        userPointsElement.textContent = `${points} Poin`;
+        userPointsElement.style.opacity = '1';
+        userPointsElement.style.animation = 'none';
+
+        // Add success animation
+        userPointsElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            userPointsElement.style.transform = 'scale(1)';
+        }, 200);
+    }
 }
 
 // Update buy button state
@@ -241,18 +317,81 @@ window.copyCode = function() {
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing bimbinganstore page...');
-    loadUserPoints();
 
     // Check login on page load
     const token = getCookie('login');
     if (!token) {
         buyCodeBtn.disabled = true;
         showNotification('Silakan login terlebih dahulu untuk menggunakan store', 'is-warning');
+        return;
     }
+
+    // Load points immediately and aggressively
+    console.log('🚀 Starting aggressive points loading...');
+
+    // Try quick load first
+    quickLoadPoints();
+
+    // Fallback to normal load after 1 second
+    setTimeout(() => {
+        if (!userPointsData || userPointsData.total_event_points === undefined) {
+            console.log('🔄 Quick load didn\'t work, trying normal load...');
+            loadUserPoints();
+        }
+    }, 1000);
+
+    // Final fallback after 3 seconds
+    setTimeout(() => {
+        if (!userPointsData || userPointsData.total_event_points === undefined) {
+            console.log('🔄 Normal load slow, trying fallback...');
+            loadUserPointsFallback();
+        }
+    }, 3000);
 
     // Add debug button
     addDebugButton();
 });
+
+// Quick load function for immediate response
+function quickLoadPoints() {
+    const token = getCookie('login');
+    if (!token) return;
+
+    console.log('⚡ Quick loading points...');
+
+    // Use fetch with shorter timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+    fetch(backend.getUserPoints, {
+        method: 'GET',
+        headers: {
+            'login': token,
+            'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+    })
+    .then(response => {
+        clearTimeout(timeoutId);
+        return response.json();
+    })
+    .then(result => {
+        console.log('Quick load result:', result);
+
+        if ((result.Status === 'Success' || result.status === 'Success')) {
+            const pointsData = result.Data || result.data;
+            userPointsData = pointsData;
+            updatePointsDisplay(pointsData.total_event_points || 0);
+            updateBuyButton();
+            console.log('⚡ Quick load successful:', pointsData.total_event_points);
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        console.log('Quick load failed, falling back to normal load:', error.message);
+        loadUserPoints(); // Fallback to normal load
+    });
+}
 
 // Auto-refresh points every 60 seconds
 setInterval(() => {
