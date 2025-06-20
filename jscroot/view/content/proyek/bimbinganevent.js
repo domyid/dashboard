@@ -191,6 +191,9 @@ function createEventCard(event) {
                             <span class="event-points">${event.points} Poin</span>
                             ${statusBadge}
                         </div>
+                        <div class="mb-2">
+                            <span class="tag is-light">⏱️ ${event.deadline_seconds} detik</span>
+                        </div>
                     </div>
                 </div>
                 <div class="content">
@@ -507,9 +510,6 @@ window.openClaimModal = function(eventId) {
     document.getElementById('modalEventDescription').textContent = event.description;
     document.getElementById('modalEventPoints').textContent = event.points + ' Poin';
 
-    // Reset deadline input to default value
-    document.getElementById('deadlineInput').value = 60;
-
     document.getElementById('claimModal').classList.add('is-active');
 };
 
@@ -521,16 +521,6 @@ window.closeClaimModal = function() {
 window.confirmClaim = function() {
     if (!selectedEvent) return;
 
-    // Get deadline from input
-    const deadlineInput = document.getElementById('deadlineInput');
-    const deadlineSeconds = parseInt(deadlineInput.value);
-
-    // Validate deadline
-    if (!deadlineSeconds || deadlineSeconds < 1 || deadlineSeconds > 3600) {
-        showNotification('Deadline harus antara 1-3600 detik', 'is-warning');
-        return;
-    }
-
     const confirmBtn = document.getElementById('confirmClaimBtn');
     const originalText = confirmBtn.innerHTML;
 
@@ -540,8 +530,7 @@ window.confirmClaim = function() {
 
         const token = getCookie('login');
         const requestData = {
-            event_id: selectedEvent._id,
-            deadline_seconds: deadlineSeconds
+            event_id: selectedEvent._id
         };
 
         console.log('Claiming event:', requestData);
@@ -563,8 +552,7 @@ window.confirmClaim = function() {
                 }
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    const deadlineSeconds = responseData.deadline_seconds || deadlineSeconds;
-                    const message = responseData.message || `Event berhasil di-claim! Anda memiliki ${deadlineSeconds} detik untuk menyelesaikan tugas.`;
+                    const message = responseData.message || `Event berhasil di-claim! Silakan cek deadline di card Anda.`;
                     showNotification(message, 'is-success');
                     closeClaimModal();
 

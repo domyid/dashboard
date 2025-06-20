@@ -362,10 +362,17 @@ createEventBtn.addEventListener('click', () => {
     const name = eventName.value.trim();
     const description = eventDescription.value.trim();
     const points = parseInt(eventPoints.value);
+    const deadlineSeconds = parseInt(document.getElementById('eventDeadline').value);
 
     // Validation
-    if (!name || !description || !points || points <= 0) {
+    if (!name || !description || !points || points <= 0 || !deadlineSeconds || deadlineSeconds <= 0) {
         showError('Semua field harus diisi dengan benar');
+        return;
+    }
+
+    // Validate deadline range
+    if (deadlineSeconds > 3600) {
+        showError('Deadline maksimal 3600 detik (1 jam)');
         return;
     }
 
@@ -384,7 +391,8 @@ createEventBtn.addEventListener('click', () => {
         const requestData = {
             name: name,
             description: description,
-            points: points
+            points: points,
+            deadline_seconds: deadlineSeconds
         };
 
         console.log('Sending create event request:', requestData);
@@ -428,12 +436,14 @@ createEventBtn.addEventListener('click', () => {
                 }
                 document.getElementById('createdEventName').textContent = name;
                 document.getElementById('createdEventPoints').textContent = points + ' poin';
+                document.getElementById('createdEventDeadline').textContent = deadlineSeconds;
                 eventResult.style.display = 'block';
 
                 // Clear form
                 eventName.value = '';
                 eventDescription.value = '';
                 eventPoints.value = '';
+                document.getElementById('eventDeadline').value = '300';
 
                 hideError();
                 showSuccess('Event berhasil dibuat!');
@@ -479,12 +489,14 @@ createEventBtn.addEventListener('click', () => {
                         }
                         document.getElementById('createdEventName').textContent = name;
                         document.getElementById('createdEventPoints').textContent = points + ' poin';
+                        document.getElementById('createdEventDeadline').textContent = deadlineSeconds;
                         eventResult.style.display = 'block';
 
                         // Clear form
                         eventName.value = '';
                         eventDescription.value = '';
                         eventPoints.value = '';
+                        document.getElementById('eventDeadline').value = '300';
 
                         hideError();
                         showSuccess('Event berhasil dibuat!');

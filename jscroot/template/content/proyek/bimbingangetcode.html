@@ -178,6 +178,14 @@
                     </div>
 
                     <div class="field">
+                        <label class="label">Waktu Deadline (dalam detik)</label>
+                        <div class="control">
+                            <input class="input" type="number" id="eventDeadline" placeholder="Masukkan deadline dalam detik" min="1" max="3600" value="300">
+                        </div>
+                        <p class="help">Waktu yang diberikan kepada user untuk menyelesaikan tugas (1-3600 detik)</p>
+                    </div>
+
+                    <div class="field">
                         <div class="control has-text-centered">
                             <button class="button is-success is-large" id="createEventBtn">
                                 <i class="fas fa-plus"></i> Create Event
@@ -193,6 +201,7 @@
                     <p>Event ID: <span id="createdEventId"></span></p>
                     <p>Nama: <span id="createdEventName"></span></p>
                     <p>Poin: <span id="createdEventPoints"></span></p>
+                    <p>Deadline: <span id="createdEventDeadline"></span> detik</p>
                 </div>
             </div>
         </div>
