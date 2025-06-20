@@ -32,7 +32,6 @@ let userPointsData = null;
 const loadingSpinner = document.getElementById('loadingSpinner');
 const userPointsElement = document.getElementById('userPoints');
 const buyCodeBtn = document.getElementById('buyCodeBtn');
-const durationInput = document.getElementById('durationInput');
 const successModal = document.getElementById('successModal');
 const generatedCodeElement = document.getElementById('generatedCode');
 const remainingPointsElement = document.getElementById('remainingPoints');
@@ -121,34 +120,26 @@ function updateBuyButton() {
 window.buyBimbinganCode = function() {
     const currentPoints = userPointsData?.total_event_points || 0;
     const requiredPoints = 15;
-    const duration = parseInt(durationInput.value);
-    
+
     // Validation
     if (currentPoints < requiredPoints) {
         showNotification(`Poin tidak cukup! Anda memiliki ${currentPoints} poin, butuh ${requiredPoints} poin.`, 'is-warning');
         return;
     }
-    
-    if (!duration || duration < 1 || duration > 3600) {
-        showNotification('Durasi harus antara 1-3600 detik', 'is-warning');
-        return;
-    }
-    
+
     const token = getCookie('login');
     if (!token) {
         showNotification('Anda harus login terlebih dahulu', 'is-warning');
         return;
     }
-    
+
     // Disable button and show loading
     buyCodeBtn.disabled = true;
     buyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-    
-    const requestData = {
-        duration_seconds: duration
-    };
-    
-    console.log('Buying bimbingan code with data:', requestData);
+
+    const requestData = {};
+
+    console.log('Buying bimbingan code...');
     
     try {
         // Try using the imported postJSON first
@@ -194,15 +185,15 @@ function handleBuyResponse(result) {
         const codeData = responseData.Data || responseData.data || {};
         const generatedCode = codeData.code || codeData.generated_code || 'CODE_ERROR';
         const newPoints = codeData.remaining_points !== undefined ? codeData.remaining_points : (userPointsData.total_event_points - 15);
-        
+
         showSuccessModal(generatedCode, newPoints);
-        
+
         // Update user points
         userPointsData.total_event_points = newPoints;
         updatePointsDisplay(newPoints);
         updateBuyButton();
-        
-        showNotification('Code bimbingan berhasil dibeli!', 'is-success');
+
+        showNotification('Code bimbingan sekali pakai berhasil dibeli! Bagikan kepada user lain.', 'is-success');
     } else {
         // Error
         const errorMsg = responseData.Response || responseData.response || responseData.message || 'Gagal membeli code';

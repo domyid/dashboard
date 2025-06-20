@@ -120,16 +120,16 @@
                                     </div>
                                 </div>
                                 <div class="content">
-                                    <p>Code bimbingan yang dapat digunakan untuk mengakses sesi bimbingan. Code ini memiliki durasi tertentu dan dapat digunakan sesuai kebutuhan.</p>
-                                    
-                                    <div class="field">
-                                        <label class="label">Durasi Code (detik)</label>
-                                        <div class="control">
-                                            <input class="input" type="number" id="durationInput" 
-                                                   min="1" max="3600" value="300" 
-                                                   placeholder="Masukkan durasi dalam detik">
-                                        </div>
-                                        <p class="help">Durasi code bimbingan (1-3600 detik)</p>
+                                    <p>Code bimbingan sekali pakai yang dapat digunakan oleh satu user untuk mendapatkan sesi bimbingan. Code ini dapat di-claim oleh user lain untuk mendapatkan bimbingan.</p>
+
+                                    <div class="notification is-info is-light">
+                                        <strong>📝 Catatan:</strong>
+                                        <ul class="mt-2">
+                                            <li>Code bersifat <strong>sekali pakai</strong></li>
+                                            <li>Dapat di-claim oleh <strong>user lain</strong></li>
+                                            <li>User yang claim akan mendapat <strong>bimbingan gratis</strong></li>
+                                            <li>Sama seperti <strong>Generate Event Code</strong></li>
+                                        </ul>
                                     </div>
 
                                     <div class="is-flex is-justify-content-space-between is-align-items-center mt-4">
@@ -204,9 +204,12 @@
                     <div class="box has-background-light">
                         <p class="title is-4 has-text-primary" id="generatedCode">ABC123</p>
                     </div>
-                    <p>Simpan code ini untuk mengakses bimbingan. Code berlaku sesuai durasi yang dipilih.</p>
+                    <p>Code ini dapat digunakan <strong>sekali</strong> oleh user lain untuk mendapatkan bimbingan gratis. Bagikan code ini kepada user yang membutuhkan bimbingan.</p>
                     <div class="notification is-info is-light">
                         <strong>Sisa Poin:</strong> <span id="remainingPoints">0</span> poin
+                    </div>
+                    <div class="notification is-warning is-light">
+                        <strong>⚠️ Penting:</strong> Code ini bersifat sekali pakai dan akan habis setelah di-claim oleh satu user.
                     </div>
                 </div>
             </section>
