@@ -85,26 +85,33 @@ function updateBuyButton() {
 
 // Buy bimbingan code
 window.buyBimbinganCode = function() {
+    console.log('=== BUY FUNCTION CALLED ===');
+    console.log('Backend object:', backend);
+    console.log('Buy endpoint URL:', backend.buyBimbinganCode);
+    console.log('Timestamp:', new Date().toISOString());
+
     const currentPoints = userPointsData?.total_event_points || 0;
     const requiredPoints = 15;
-    
+
     if (currentPoints < requiredPoints) {
         showNotification(`Poin tidak cukup! Anda memiliki ${currentPoints} poin, butuh ${requiredPoints} poin.`, 'is-warning');
         return;
     }
-    
+
     const token = getCookie('login');
     if (!token) {
         showNotification('Anda harus login terlebih dahulu', 'is-warning');
         return;
     }
-    
+
     const buyBtn = document.getElementById('buyCodeBtn');
     buyBtn.disabled = true;
     buyBtn.innerHTML = '<span class="icon"><i class="fas fa-spinner fa-spin"></i></span><span>Memproses...</span>';
-    
+
     const requestData = {};
-    
+
+    console.log('About to call postJSON with URL:', backend.buyBimbinganCode);
+
     postJSON(backend.buyBimbinganCode, 'login', token, requestData, (result) => {
         console.log('Buy response:', result);
         console.log('Response status:', result.status);
@@ -174,30 +181,40 @@ async function testBuyEndpoint() {
     const token = getCookie('login');
     console.log('Testing buy endpoint manually...');
 
-    try {
-        const response = await fetch(backend.buyBimbinganCode, {
-            method: 'POST',
-            headers: {
-                'login': token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
-        });
+    // Test both endpoints to see which one works
+    const endpoints = [
+        'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/store/buy-bimbingan-code',
+        'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/buy-bimbingan-code'
+    ];
 
-        console.log('Manual buy test response status:', response.status);
-        console.log('Manual buy test response headers:', [...response.headers.entries()]);
+    for (const endpoint of endpoints) {
+        console.log(`Testing endpoint: ${endpoint}`);
 
-        const result = await response.json();
-        console.log('Manual buy test result:', result);
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'login': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
 
-        if (response.ok) {
-            showNotification('Buy endpoint test berhasil! Check console untuk detail.', 'is-success');
-        } else {
-            showNotification('Buy endpoint test gagal: ' + result.response, 'is-danger');
+            console.log(`${endpoint} - Status:`, response.status);
+            console.log(`${endpoint} - Headers:`, [...response.headers.entries()]);
+
+            const result = await response.json();
+            console.log(`${endpoint} - Result:`, result);
+
+            if (response.ok) {
+                showNotification(`✅ ${endpoint} - WORKS!`, 'is-success');
+            } else {
+                showNotification(`❌ ${endpoint} - ${response.status}: ${result.response}`, 'is-danger');
+            }
+        } catch (error) {
+            console.error(`${endpoint} - Error:`, error);
+            showNotification(`❌ ${endpoint} - Error: ${error.message}`, 'is-danger');
         }
-    } catch (error) {
-        console.error('Manual buy test error:', error);
-        showNotification('Buy endpoint test error: ' + error.message, 'is-danger');
     }
 }
 
@@ -225,12 +242,37 @@ function addDebugButton() {
     });
 
     document.body.appendChild(debugButton);
+
+    // Add hard refresh button
+    const refreshButton = document.createElement('button');
+    refreshButton.className = 'button is-warning is-small';
+    refreshButton.innerHTML = '<i class="fas fa-sync"></i> Hard Refresh';
+    refreshButton.style.position = 'fixed';
+    refreshButton.style.top = '50px';
+    refreshButton.style.right = '10px';
+    refreshButton.style.zIndex = '9999';
+
+    refreshButton.addEventListener('click', function() {
+        console.log('Hard refreshing page...');
+        // Clear all caches and reload
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+        location.reload(true);
+    });
+
+    document.body.appendChild(refreshButton);
 }
 
 // Main function (required by dashboard routing)
 export function main() {
-    console.log('Bimbinganstore main function called');
+    console.log('Bimbinganstore main function called - Version 2.0');
     console.log('Backend URLs:', backend);
+    console.log('Current timestamp:', new Date().toISOString());
 
     const token = getCookie('login');
     console.log('Login token:', token ? 'Found' : 'Not found');
@@ -245,6 +287,11 @@ export function main() {
 
     // Add debug button
     addDebugButton();
+
+    // Add cache info
+    console.log('=== CACHE DEBUG ===');
+    console.log('Script loaded at:', new Date().toISOString());
+    console.log('Buy endpoint:', backend.buyBimbinganCode);
 }
 
 // Auto-refresh points every 60 seconds
