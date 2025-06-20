@@ -4,7 +4,7 @@ import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croo
 // Backend endpoints
 const backend = {
     getUserPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/mypoints',
-    buyBimbinganCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/buy-bimbingan-code'
+    buyBimbinganCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/store/buy-bimbingan-code'
 };
 
 // Global variables
@@ -107,27 +107,41 @@ window.buyBimbinganCode = function() {
     
     postJSON(backend.buyBimbinganCode, 'login', token, requestData, (result) => {
         console.log('Buy response:', result);
-        
+        console.log('Response status:', result.status);
+        console.log('Response data:', result.data);
+
         buyBtn.disabled = false;
         updateBuyButton();
-        
-        const responseData = result.data || result;
-        
-        if (responseData.Status === 'Success' || responseData.status === 'Success') {
-            const codeData = responseData.Data || responseData.data || {};
-            const generatedCode = codeData.code || 'ERROR';
-            const newPoints = codeData.remaining_points !== undefined ? codeData.remaining_points : (currentPoints - 15);
-            
-            showSuccessModal(generatedCode, newPoints);
-            
-            // Update points
-            userPointsData.total_event_points = newPoints;
-            updatePointsDisplay(newPoints);
-            updateBuyButton();
-            
-            showNotification('Code bimbingan berhasil dibeli!', 'is-success');
+
+        // Handle different response structures
+        if (result.status === 200) {
+            const responseData = result.data || result;
+
+            if (responseData.Status === 'Success' || responseData.status === 'Success') {
+                const codeData = responseData.Data || responseData.data || {};
+                const generatedCode = codeData.code || 'ERROR';
+                const newPoints = codeData.remaining_points !== undefined ? codeData.remaining_points : (currentPoints - 15);
+
+                console.log('Generated code:', generatedCode);
+                console.log('Remaining points:', newPoints);
+
+                showSuccessModal(generatedCode, newPoints);
+
+                // Update points
+                userPointsData.total_event_points = newPoints;
+                updatePointsDisplay(newPoints);
+                updateBuyButton();
+
+                showNotification('Code bimbingan berhasil dibeli!', 'is-success');
+            } else {
+                const errorMsg = responseData.Response || responseData.response || 'Gagal membeli code';
+                console.error('Purchase failed:', errorMsg);
+                showNotification('Error: ' + errorMsg, 'is-danger');
+            }
         } else {
-            const errorMsg = responseData.Response || responseData.response || 'Gagal membeli code';
+            // Handle HTTP errors
+            const errorMsg = result.data?.response || result.data?.Response || `HTTP ${result.status} Error`;
+            console.error('HTTP Error:', result.status, errorMsg);
             showNotification('Error: ' + errorMsg, 'is-danger');
         }
     });
@@ -155,6 +169,38 @@ window.copyCode = function() {
     });
 };
 
+// Test buy endpoint manually
+async function testBuyEndpoint() {
+    const token = getCookie('login');
+    console.log('Testing buy endpoint manually...');
+
+    try {
+        const response = await fetch(backend.buyBimbinganCode, {
+            method: 'POST',
+            headers: {
+                'login': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+
+        console.log('Manual buy test response status:', response.status);
+        console.log('Manual buy test response headers:', [...response.headers.entries()]);
+
+        const result = await response.json();
+        console.log('Manual buy test result:', result);
+
+        if (response.ok) {
+            showNotification('Buy endpoint test berhasil! Check console untuk detail.', 'is-success');
+        } else {
+            showNotification('Buy endpoint test gagal: ' + result.response, 'is-danger');
+        }
+    } catch (error) {
+        console.error('Manual buy test error:', error);
+        showNotification('Buy endpoint test error: ' + error.message, 'is-danger');
+    }
+}
+
 // Add debug button
 function addDebugButton() {
     const debugButton = document.createElement('button');
@@ -173,6 +219,9 @@ function addDebugButton() {
 
         // Test points loading
         loadUserPoints();
+
+        // Test buy endpoint
+        testBuyEndpoint();
     });
 
     document.body.appendChild(debugButton);
