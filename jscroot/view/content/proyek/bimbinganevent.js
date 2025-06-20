@@ -30,7 +30,8 @@ const backend = {
     claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
     submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
     getUserClaims: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/myclaims',
-    checkExpired: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/checkexpired'
+    checkExpired: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/checkexpired',
+    getUserPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/mypoints'
 };
 
 // Global variables
@@ -493,6 +494,40 @@ function checkExpiredClaims() {
     }
 }
 
+// Load user event points
+function loadUserPoints() {
+    try {
+        const token = getCookie('login');
+        if (!token) return;
+
+        getJSON(backend.getUserPoints, 'login', token, (result) => {
+            console.log('User points response:', result);
+
+            if (result.status === 200 && result.data?.Status === 'Success') {
+                const pointsData = result.data.Data;
+                updatePointsDisplay(pointsData.total_event_points || 0);
+            }
+        });
+    } catch (error) {
+        console.error('Error loading user points:', error);
+    }
+}
+
+// Update points display in UI
+function updatePointsDisplay(totalPoints) {
+    // Update points di header atau sidebar jika ada
+    const pointsElement = document.getElementById('userEventPoints');
+    if (pointsElement) {
+        pointsElement.textContent = totalPoints;
+    }
+
+    // Update points di stats card jika ada
+    const statsElement = document.getElementById('totalEventPoints');
+    if (statsElement) {
+        statsElement.textContent = `${totalPoints} Poin`;
+    }
+}
+
 // Modal functions
 window.openClaimModal = function(eventId) {
     const event = currentEvents.find(e => e._id === eventId);
@@ -648,6 +683,7 @@ window.confirmSubmit = function() {
 
                     // Refresh data
                     loadUserClaims();
+                    loadUserPoints(); // Refresh points juga
                 } else {
                     const errorMsg = responseData.response || responseData.status || 'Gagal submit tugas';
                     showNotification('Error: ' + errorMsg, 'is-danger');
@@ -745,6 +781,7 @@ export function main() {
     console.log('Initializing bimbinganevent page...');
     loadEvents();
     loadUserClaims();
+    loadUserPoints();
 
     // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
     setInterval(checkExpiredClaims, 30000);
@@ -754,6 +791,7 @@ export function main() {
         console.log('Auto-refreshing data...');
         loadEvents();
         loadUserClaims();
+        loadUserPoints();
     }, 60000);
 
     // Add manual test button for debugging

@@ -94,12 +94,24 @@
 <body>
     <div class="container">
         <div class="section">
-            <h1 class="title has-text-centered">
-                <i class="fas fa-calendar-star"></i> Event Bimbingan
-            </h1>
-            <p class="subtitle has-text-centered">
-                Pilih event dan dapatkan poin dengan menyelesaikan tugas
-            </p>
+            <div class="columns is-vcentered">
+                <div class="column">
+                    <h1 class="title has-text-centered">
+                        <i class="fas fa-calendar-star"></i> Event Bimbingan
+                    </h1>
+                    <p class="subtitle has-text-centered">
+                        Pilih event dan dapatkan poin dengan menyelesaikan tugas
+                    </p>
+                </div>
+                <div class="column is-narrow">
+                    <div class="box has-background-primary-light">
+                        <div class="has-text-centered">
+                            <p class="heading has-text-primary">Total Poin Event</p>
+                            <p class="title is-4 has-text-primary" id="totalEventPoints">0 Poin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Loading Spinner -->
             <div class="loading-spinner" id="loadingSpinner">
