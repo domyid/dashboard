@@ -498,18 +498,34 @@ function checkExpiredClaims() {
 function loadUserPoints() {
     try {
         const token = getCookie('login');
-        if (!token) return;
+        if (!token) {
+            console.log('No login token found for loadUserPoints');
+            return;
+        }
+
+        console.log('Loading user points from:', backend.getUserPoints);
 
         getJSON(backend.getUserPoints, 'login', token, (result) => {
             console.log('User points response:', result);
+            console.log('Response status:', result.status);
+            console.log('Response data:', result.data);
 
             if (result.status === 200 && result.data?.Status === 'Success') {
                 const pointsData = result.data.Data;
+                console.log('Points data:', pointsData);
+                console.log('Total event points:', pointsData.total_event_points);
                 updatePointsDisplay(pointsData.total_event_points || 0);
+            } else {
+                console.error('Failed to load user points:', result);
+                console.error('Status:', result.status);
+                console.error('Data:', result.data);
+                // Set default 0 if failed
+                updatePointsDisplay(0);
             }
         });
     } catch (error) {
         console.error('Error loading user points:', error);
+        updatePointsDisplay(0);
     }
 }
 
@@ -828,6 +844,32 @@ async function testAPIManually() {
     console.log('Testing API manually...');
 
     try {
+        // Test getUserPoints endpoint
+        console.log('Testing getUserPoints endpoint:', backend.getUserPoints);
+        const pointsResponse = await fetch(backend.getUserPoints, {
+            method: 'GET',
+            headers: {
+                'login': token
+            }
+        });
+
+        console.log('Points API response status:', pointsResponse.status);
+        const pointsResult = await pointsResponse.json();
+        console.log('Points API result:', pointsResult);
+
+        if (pointsResponse.ok) {
+            showNotification('Points API test berhasil! Check console untuk detail.', 'is-success');
+
+            // Update points display with result
+            if (pointsResult.Status === 'Success' && pointsResult.Data) {
+                console.log('Updating points display with:', pointsResult.Data.total_event_points);
+                updatePointsDisplay(pointsResult.Data.total_event_points || 0);
+            }
+        } else {
+            showNotification('Points API test gagal: ' + pointsResult.Status, 'is-danger');
+        }
+
+        // Test getAllEvents endpoint
         const response = await fetch(backend.getAllEvents, {
             method: 'GET',
             headers: {
@@ -835,16 +877,14 @@ async function testAPIManually() {
             }
         });
 
-        console.log('Manual API test response status:', response.status);
-        console.log('Manual API test response headers:', response.headers);
-
+        console.log('Events API test response status:', response.status);
         const result = await response.json();
-        console.log('Manual API test result:', result);
+        console.log('Events API test result:', result);
 
         if (response.ok) {
-            showNotification('API test berhasil! Check console untuk detail.', 'is-success');
+            showNotification('Events API test berhasil! Check console untuk detail.', 'is-success');
         } else {
-            showNotification('API test gagal: ' + result.status, 'is-danger');
+            showNotification('Events API test gagal: ' + result.status, 'is-danger');
         }
     } catch (error) {
         console.error('Manual API test error:', error);

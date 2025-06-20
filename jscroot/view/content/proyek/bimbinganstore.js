@@ -73,7 +73,7 @@ function showNotification(message, type = 'is-info') {
 // Load user points
 function loadUserPoints() {
     showLoading();
-    
+
     const token = getCookie('login');
     if (!token) {
         hideLoading();
@@ -82,17 +82,29 @@ function loadUserPoints() {
         return;
     }
 
+    console.log('Loading user points from:', backend.getUserPoints);
+
     getJSON(backend.getUserPoints, 'login', token, (result) => {
         hideLoading();
         console.log('User points response:', result);
-        
+        console.log('Response status:', result.status);
+        console.log('Response data:', result.data);
+
         if (result.status === 200 && result.data?.Status === 'Success') {
             userPointsData = result.data.Data;
+            console.log('Points data:', userPointsData);
+            console.log('Total event points:', userPointsData.total_event_points);
             updatePointsDisplay(userPointsData.total_event_points || 0);
             updateBuyButton();
         } else {
-            showNotification('Gagal memuat data poin', 'is-danger');
+            console.error('Failed to load user points:', result);
+            console.error('Status:', result.status);
+            console.error('Data:', result.data);
+            showNotification('Gagal memuat data poin: ' + (result.data?.Response || 'Unknown error'), 'is-danger');
             buyCodeBtn.disabled = true;
+            // Set default data
+            userPointsData = { total_event_points: 0 };
+            updatePointsDisplay(0);
         }
     });
 }
@@ -228,13 +240,16 @@ window.copyCode = function() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing bimbinganstore page...');
     loadUserPoints();
-    
+
     // Check login on page load
     const token = getCookie('login');
     if (!token) {
         buyCodeBtn.disabled = true;
         showNotification('Silakan login terlebih dahulu untuk menggunakan store', 'is-warning');
     }
+
+    // Add debug button
+    addDebugButton();
 });
 
 // Auto-refresh points every 60 seconds
@@ -242,3 +257,62 @@ setInterval(() => {
     console.log('Auto-refreshing user points...');
     loadUserPoints();
 }, 60000);
+
+// Add debug button for manual testing
+function addDebugButton() {
+    const debugButton = document.createElement('button');
+    debugButton.className = 'button is-info is-small';
+    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Points';
+    debugButton.style.position = 'fixed';
+    debugButton.style.top = '10px';
+    debugButton.style.right = '10px';
+    debugButton.style.zIndex = '9999';
+
+    debugButton.addEventListener('click', function() {
+        console.log('=== STORE DEBUG TEST ===');
+        console.log('Backend URLs:', backend);
+        console.log('Login token:', getCookie('login'));
+        console.log('User points data:', userPointsData);
+
+        // Manual API test
+        testPointsAPIManually();
+    });
+
+    document.body.appendChild(debugButton);
+}
+
+// Manual API test function for points
+async function testPointsAPIManually() {
+    const token = getCookie('login');
+    console.log('Testing Points API manually...');
+
+    try {
+        console.log('Testing endpoint:', backend.getUserPoints);
+        const response = await fetch(backend.getUserPoints, {
+            method: 'GET',
+            headers: {
+                'login': token
+            }
+        });
+
+        console.log('Manual Points API response status:', response.status);
+        console.log('Manual Points API response headers:', [...response.headers.entries()]);
+
+        const result = await response.json();
+        console.log('Manual Points API result:', result);
+
+        if (response.ok && result.Status === 'Success') {
+            showNotification('Points API test berhasil! Points: ' + result.Data.total_event_points, 'is-success');
+
+            // Update display with result
+            userPointsData = result.Data;
+            updatePointsDisplay(result.Data.total_event_points || 0);
+            updateBuyButton();
+        } else {
+            showNotification('Points API test gagal: ' + (result.Response || result.Status), 'is-danger');
+        }
+    } catch (error) {
+        console.error('Manual Points API test error:', error);
+        showNotification('Points API test error: ' + error.message, 'is-danger');
+    }
+}
