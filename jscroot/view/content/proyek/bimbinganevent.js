@@ -409,8 +409,12 @@ function checkSidangEligibility() {
             console.log('📋 Eligibility data:', result.data);
 
             // Extract data from new endpoint response
-            // Backend returns: {status: "Success", data: {approved_count: 9, ...}}
-            const eligibilityData = result.data.data || result.data;
+            // Response structure: {status: 200, data: {status: "Success", data: {approved_count: 9, ...}}}
+            console.log('🔍 Full response structure:', result);
+            console.log('🔍 result.data:', result.data);
+            console.log('🔍 result.data.data:', result.data.data);
+
+            const eligibilityData = result.data.data;
             const approvedCount = eligibilityData.approved_count;
             const totalCount = eligibilityData.total_count;
             const pendingCount = eligibilityData.pending_count;
