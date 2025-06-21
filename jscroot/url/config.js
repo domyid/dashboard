@@ -54,6 +54,7 @@ export const backend = {
         status: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/weekly/status',
         pengajuan: 
         'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/pengajuan',
+        eligibility: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/eligibility',
         dosenpenguji: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/bimbingan/dosenpenguji',
         claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimcode',
         claimTimeEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claimcodetime',

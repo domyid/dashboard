@@ -19,8 +19,7 @@ export async function main(){
     checkSidangEligibility();
     setupPengajuanSidangModal();
 
-    // Add debug button for sidang eligibility
-    addSidangDebugButton();
+
 
     // Add new functionality for claim event - simplified
     setupClaimEventModal();
@@ -400,217 +399,70 @@ function checkApprovalButtonConditions() {
 // Function to check if student has enough bimbingan sessions to request sidang
 function checkSidangEligibility() {
     console.log('🔍 Starting sidang eligibility check...');
+    console.log('📡 Calling eligibility endpoint:', backend.bimbingan.eligibility);
 
-    // Start with the original endpoint that we know works
-    console.log('📡 Calling original endpoint:', backend.project.assessment);
-
-    getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
-        console.log('📊 Bimbingan data response:', result);
+    getJSON(backend.bimbingan.eligibility, 'login', getCookie('login'), function(result) {
+        console.log('📊 Eligibility data response:', result);
 
         if (result.status === 200) {
-            console.log('✅ Successfully got bimbingan data');
-            console.log('📋 Raw bimbingan data:', result.data);
+            console.log('✅ Successfully got eligibility data');
+            console.log('📋 Eligibility data:', result.data);
 
-            // Debug: Show structure of first bimbingan record
-            if (result.data.length > 0) {
-                console.log('🔍 First bimbingan record structure:', result.data[0]);
-                console.log('🔍 All keys in first record:', Object.keys(result.data[0]));
+            // Extract data from new endpoint response
+            const eligibilityData = result.data;
+            const approvedCount = eligibilityData.approved_count;
+            const totalCount = eligibilityData.total_count;
+            const pendingCount = eligibilityData.pending_count;
+            const eligibilityMet = eligibilityData.eligibility_met;
+            const requiredCount = eligibilityData.required_count;
 
-                // Check for different possible field names
-                const firstRecord = result.data[0];
-                console.log('🔍 Possible approved fields:');
-                console.log(`   approved: ${firstRecord.approved}`);
-                console.log(`   Approved: ${firstRecord.Approved}`);
-                console.log(`   isApproved: ${firstRecord.isApproved}`);
-                console.log(`   is_approved: ${firstRecord.is_approved}`);
-                console.log(`   status: ${firstRecord.status}`);
-                console.log(`   validasi: ${firstRecord.validasi}`);
+            console.log(`📈 Eligibility summary:`);
+            console.log(`   Total sessions: ${totalCount}`);
+            console.log(`   Approved sessions: ${approvedCount}`);
+            console.log(`   Pending sessions: ${pendingCount}`);
+            console.log(`   Required sessions: ${requiredCount}`);
+            console.log(`   Eligibility met: ${eligibilityMet}`);
 
-                // Check if this endpoint has approval data
-                const hasApprovalData = firstRecord.approved !== undefined ||
-                                      firstRecord.Approved !== undefined ||
-                                      firstRecord.isApproved !== undefined;
+            // Enable or disable the "Ajukan Sidang" button based on eligibility
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                console.log(`🔘 Button found, setting disabled = ${!eligibilityMet}`);
+                tombolPengajuanSidang.disabled = !eligibilityMet;
 
-                if (!hasApprovalData) {
-                    console.log('⚠️ Current endpoint does not have approval data, trying alternative endpoints...');
-
-                    // Try alternative endpoints that might have complete data
-                    const alternativeEndpoints = [
-                        { name: 'bimbingan.weekly', url: backend.bimbingan.weekly },
-                        { name: 'bimbingan.request', url: backend.bimbingan.request }
-                    ];
-
-                    let foundValidEndpoint = false;
-
-                    // Try each alternative endpoint
-                    for (let i = 0; i < alternativeEndpoints.length; i++) {
-                        const altEndpoint = alternativeEndpoints[i];
-                        console.log(`📡 Trying alternative endpoint ${i + 1}: ${altEndpoint.name} - ${altEndpoint.url}`);
-
-                        getJSON(altEndpoint.url, 'login', getCookie('login'), function(altResult) {
-                            console.log(`📊 ${altEndpoint.name} result:`, altResult);
-
-                            if (altResult.status === 200 && altResult.data && altResult.data.length > 0) {
-                                const altFirstRecord = altResult.data[0];
-                                console.log(`🔍 ${altEndpoint.name} first record:`, altFirstRecord);
-                                console.log(`🔍 ${altEndpoint.name} keys:`, Object.keys(altFirstRecord));
-
-                                // Check if this endpoint has approval data
-                                const altHasApprovalData = altFirstRecord.approved !== undefined ||
-                                                         altFirstRecord.Approved !== undefined ||
-                                                         altFirstRecord.isApproved !== undefined;
-
-                                console.log(`✅ ${altEndpoint.name} has approval data: ${altHasApprovalData}`);
-
-                                if (altHasApprovalData && !foundValidEndpoint) {
-                                    foundValidEndpoint = true;
-                                    console.log(`🎯 Found valid endpoint: ${altEndpoint.name}`);
-                                    processBimbinganData(altResult);
-                                    return;
-                                }
-                            }
-
-                            // If this is the last endpoint and no valid data found
-                            if (i === alternativeEndpoints.length - 1 && !foundValidEndpoint) {
-                                console.log('❌ No endpoint provides approval data - this is a backend issue!');
-                                console.log('💡 Suggestion: Check backend endpoint to ensure it returns complete bimbingan data with approval status');
-
-                                // For now, assume all bimbingan are approved if we have data but no approval field
-                                console.log('🔧 WORKAROUND: Assuming all bimbingan are approved since approval field is missing');
-
-                                // Create mock approved data
-                                const mockResult = {
-                                    status: 200,
-                                    data: result.data.map(bimbingan => ({
-                                        ...bimbingan,
-                                        approved: true // Assume approved for now
-                                    }))
-                                };
-
-                                processBimbinganData(mockResult);
-                            }
-                        });
+                // Add tooltip to explain why button is disabled
+                if (!eligibilityMet) {
+                    let tooltipMessage = `Anda memerlukan minimal ${requiredCount} sesi bimbingan yang sudah disetujui untuk mengajukan sidang.\n`;
+                    tooltipMessage += `Saat ini: ${approvedCount} approved`;
+                    if (pendingCount > 0) {
+                        tooltipMessage += `, ${pendingCount} pending approval`;
                     }
+                    tombolPengajuanSidang.setAttribute('title', tooltipMessage);
+                    console.log(`❌ Button disabled - not enough approved bimbingan (${approvedCount}/${requiredCount})`);
+                } else {
+                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                    console.log(`✅ Button should be enabled - checking existing pengajuan...`);
 
-                    // If no alternative endpoints available, use workaround
-                    if (alternativeEndpoints.length === 0) {
-                        console.log('🔧 WORKAROUND: No alternative endpoints, assuming all bimbingan are approved');
-                        const mockResult = {
-                            status: 200,
-                            data: result.data.map(bimbingan => ({
-                                ...bimbingan,
-                                approved: true // Assume approved for now
-                            }))
-                        };
-                        processBimbinganData(mockResult);
-                    }
-                    return;
-                }
-            }
-
-            // Process current result if it has approval data
-            processBimbinganData(result);
-        } else {
-            console.error('❌ Failed to get bimbingan data:', result);
-            console.log('🔧 Trying workaround: Check if user has enough bimbingan sessions regardless of approval status');
-
-            // Workaround: If we can't get approval data, check total bimbingan count
-            // This is a temporary solution until backend is fixed
-            if (result.data && result.data.length >= 8) {
-                console.log(`🔧 WORKAROUND: User has ${result.data.length} bimbingan sessions, assuming eligible`);
-
-                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-                if (tombolPengajuanSidang) {
-                    tombolPengajuanSidang.disabled = false;
-                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang (approval status tidak dapat diverifikasi)');
-                    console.log('✅ Button ENABLED via workaround - checking existing pengajuan...');
+                    // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
             } else {
-                // On error, disable button for safety
-                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-                if (tombolPengajuanSidang) {
-                    tombolPengajuanSidang.disabled = true;
-                    tombolPengajuanSidang.setAttribute('title', 'Error loading bimbingan data atau belum cukup sesi bimbingan');
-                    console.log('❌ Button disabled due to API error or insufficient sessions');
-                }
+                console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
+            }
+        } else {
+            console.error('❌ Failed to get eligibility data:', result);
+
+            // On error, disable button for safety
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = true;
+                tombolPengajuanSidang.setAttribute('title', 'Error loading eligibility data');
+                console.log('❌ Button disabled due to API error');
             }
         }
     });
 }
 
-// Separate function to process bimbingan data
-function processBimbinganData(result) {
-    if (result.status === 200) {
 
-        // Count only APPROVED bimbingan sessions
-        const approvedBimbingan = result.data.filter(bimbingan => {
-            console.log(`📝 Bimbingan ${bimbingan.bimbinganke || 'unknown'}:`);
-            console.log(`   approved (lowercase): ${bimbingan.approved} (type: ${typeof bimbingan.approved})`);
-            console.log(`   Approved (uppercase): ${bimbingan.Approved} (type: ${typeof bimbingan.Approved})`);
-
-            // Handle different field names and data types for approved field
-            const isApproved = bimbingan.Approved === true ||
-                             bimbingan.Approved === 'true' ||
-                             bimbingan.Approved === 1 ||
-                             bimbingan.Approved === '1' ||
-                             bimbingan.approved === true ||
-                             bimbingan.approved === 'true' ||
-                             bimbingan.approved === 1 ||
-                             bimbingan.approved === '1';
-
-            console.log(`   Final approved status: ${isApproved}`);
-            return isApproved;
-        });
-
-        const approvedCount = approvedBimbingan.length;
-        const totalCount = result.data.length;
-        const eligibilityMet = approvedCount >= 8;
-
-        console.log(`📈 Bimbingan summary:`);
-        console.log(`   Total sessions: ${totalCount}`);
-        console.log(`   Approved sessions: ${approvedCount}`);
-        console.log(`   Eligibility met (>=8): ${eligibilityMet}`);
-        console.log(`   Approved bimbingan list:`, approvedBimbingan);
-
-        // Enable or disable the "Ajukan Sidang" button based on eligibility
-        const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-        if (tombolPengajuanSidang) {
-            console.log(`🔘 Button found, setting disabled = ${!eligibilityMet}`);
-            tombolPengajuanSidang.disabled = !eligibilityMet;
-
-            // Add tooltip to explain why button is disabled
-            if (!eligibilityMet) {
-                const pendingCount = totalCount - approvedCount;
-                let tooltipMessage = `Anda memerlukan minimal 8 sesi bimbingan yang sudah disetujui untuk mengajukan sidang.\n`;
-                tooltipMessage += `Saat ini: ${approvedCount} approved`;
-                if (pendingCount > 0) {
-                    tooltipMessage += `, ${pendingCount} pending approval`;
-                }
-                tombolPengajuanSidang.setAttribute('title', tooltipMessage);
-                console.log(`❌ Button disabled - not enough approved bimbingan`);
-            } else {
-                tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-                console.log(`✅ Button should be enabled - checking existing pengajuan...`);
-
-                // Check if there's an existing pengajuan
-                checkExistingPengajuan();
-            }
-        } else {
-            console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
-        }
-    } else {
-        console.error('❌ Failed to process bimbingan data:', result);
-
-        // On error, disable button for safety
-        const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-        if (tombolPengajuanSidang) {
-            tombolPengajuanSidang.disabled = true;
-            tombolPengajuanSidang.setAttribute('title', 'Error processing bimbingan data');
-            console.log('❌ Button disabled due to processing error');
-        }
-    }
-}
 
 // Function to check if there's an existing pengajuan
 function checkExistingPengajuan() {
@@ -691,40 +543,8 @@ function checkExistingPengajuan() {
                 tombolPengajuanSidang.classList.remove('is-success', 'is-warning', 'is-danger');
                 tombolPengajuanSidang.classList.add('is-info');
 
-                // Check if button should be enabled based on eligibility
-                // Re-run eligibility check to make sure button state is correct
-                console.log('🔄 Re-checking eligibility to ensure correct button state...');
-
-                // Get fresh bimbingan data to double-check eligibility
-                getJSON(backend.project.assessment, 'login', getCookie('login'), function(bimbinganResult) {
-                    if (bimbinganResult.status === 200) {
-                        const approvedBimbingan = bimbinganResult.data.filter(bimbingan =>
-                            bimbingan.Approved === true ||
-                            bimbingan.Approved === 'true' ||
-                            bimbingan.Approved === 1 ||
-                            bimbingan.Approved === '1' ||
-                            bimbingan.approved === true ||
-                            bimbingan.approved === 'true' ||
-                            bimbingan.approved === 1 ||
-                            bimbingan.approved === '1'
-                        );
-                        const approvedCount = approvedBimbingan.length;
-                        const eligibilityMet = approvedCount >= 8;
-
-                        console.log(`🔍 Double-check eligibility: ${approvedCount} approved, eligible: ${eligibilityMet}`);
-
-                        if (eligibilityMet) {
-                            tombolPengajuanSidang.disabled = false;
-                            tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-                            console.log('✅ Button ENABLED - user is eligible and has no pending pengajuan');
-                        } else {
-                            tombolPengajuanSidang.disabled = true;
-                            const tooltipMessage = `Anda memerlukan minimal 8 sesi bimbingan yang sudah disetujui untuk mengajukan sidang. Saat ini: ${approvedCount} approved`;
-                            tombolPengajuanSidang.setAttribute('title', tooltipMessage);
-                            console.log('❌ Button DISABLED - user not eligible');
-                        }
-                    }
-                });
+                // Keep button enabled since user is eligible and has no pending pengajuan
+                console.log('✅ Button remains ENABLED - user is eligible and has no pending pengajuan');
             }
         } else {
             console.error('❌ Failed to check pengajuan:', result);
@@ -1053,139 +873,3 @@ function setupClaimTimeEventModal() {
     }
 }
 
-// Add debug button for sidang eligibility testing
-function addSidangDebugButton() {
-    const debugButton = document.createElement('button');
-    debugButton.className = 'button is-warning is-small';
-    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Sidang';
-    debugButton.style.position = 'fixed';
-    debugButton.style.top = '10px';
-    debugButton.style.left = '10px';
-    debugButton.style.zIndex = '9999';
-    debugButton.style.fontSize = '12px';
-    debugButton.style.padding = '5px 10px';
-
-    debugButton.addEventListener('click', function() {
-        console.log('🐛 === SIDANG DEBUG TEST ===');
-
-        // Test multiple bimbingan endpoints
-        console.log('📡 Testing multiple bimbingan endpoints...');
-
-        const testEndpoints = [
-            { name: 'project.assessment', url: backend.project.assessment },
-            { name: 'bimbingan.weekly', url: backend.bimbingan.weekly },
-            { name: 'bimbingan.request', url: backend.bimbingan.request }
-        ].filter(endpoint => endpoint.url); // Only test endpoints that exist
-
-        testEndpoints.forEach((endpoint, index) => {
-            console.log(`📡 Testing endpoint ${index + 1}: ${endpoint.name} - ${endpoint.url}`);
-
-            getJSON(endpoint.url, 'login', getCookie('login'), function(result) {
-                console.log(`📊 ${endpoint.name} Response:`, result);
-
-                if (result.status === 200) {
-                    if (result.data.length > 0) {
-                        const firstRecord = result.data[0];
-                        console.log(`🔍 ${endpoint.name} first record:`, firstRecord);
-                        console.log(`🔍 ${endpoint.name} keys:`, Object.keys(firstRecord));
-
-                        // Check for approval fields
-                        const hasApprovalData = firstRecord.approved !== undefined ||
-                                              firstRecord.Approved !== undefined ||
-                                              firstRecord.isApproved !== undefined;
-                        console.log(`✅ ${endpoint.name} has approval data: ${hasApprovalData}`);
-
-                        if (hasApprovalData) {
-                            const approvedBimbingan = result.data.filter(b =>
-                                b.Approved === true ||
-                                b.Approved === 'true' ||
-                                b.Approved === 1 ||
-                                b.Approved === '1' ||
-                                b.approved === true ||
-                                b.approved === 'true' ||
-                                b.approved === 1 ||
-                                b.approved === '1'
-                            );
-                            const totalCount = result.data.length;
-                            const approvedCount = approvedBimbingan.length;
-
-                            console.log(`📈 ${endpoint.name} Analysis:`);
-                            console.log(`   Total: ${totalCount}`);
-                            console.log(`   Approved: ${approvedCount}`);
-                            console.log(`   Eligible: ${approvedCount >= 8}`);
-                            console.log(`✅ ${endpoint.name} approved bimbingan:`, approvedBimbingan);
-                        }
-                    } else {
-                        console.log(`⚠️ ${endpoint.name} returned empty data`);
-                    }
-                } else {
-                    console.log(`❌ ${endpoint.name} failed:`, result);
-                }
-            });
-        });
-
-        // Test pengajuan data
-        setTimeout(() => {
-            console.log('📡 Testing pengajuan data fetch...');
-            getJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), function(pengajuanResult) {
-                console.log('📊 Pengajuan API Response:', pengajuanResult);
-
-                // Check button state
-                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-                if (tombolPengajuanSidang) {
-                    console.log('🔘 Button Current State:');
-                    console.log(`   Found: YES`);
-                    console.log(`   Disabled: ${tombolPengajuanSidang.disabled}`);
-                    console.log(`   Text: "${tombolPengajuanSidang.textContent}"`);
-                    console.log(`   Classes: ${tombolPengajuanSidang.className}`);
-                    console.log(`   Title: "${tombolPengajuanSidang.getAttribute('title')}"`);
-                } else {
-                    console.log('❌ Button NOT FOUND in DOM!');
-                }
-
-                // Manual re-check
-                console.log('🔄 Running manual eligibility check...');
-                checkSidangEligibility();
-            });
-        }, 2000); // Wait 2 seconds for all endpoint tests to complete
-
-        console.log('🐛 === END DEBUG TEST ===');
-    });
-
-    // Manual override button for testing
-    const overrideButton = document.createElement('button');
-    overrideButton.className = 'button is-success is-small';
-    overrideButton.innerHTML = '<i class="fas fa-unlock"></i> Force Enable';
-    overrideButton.style.position = 'fixed';
-    overrideButton.style.top = '50px';
-    overrideButton.style.left = '10px';
-    overrideButton.style.zIndex = '9999';
-    overrideButton.style.fontSize = '12px';
-    overrideButton.style.padding = '5px 10px';
-
-    overrideButton.addEventListener('click', function() {
-        console.log('🔓 === MANUAL OVERRIDE ===');
-
-        const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-        if (tombolPengajuanSidang) {
-            tombolPengajuanSidang.disabled = false;
-            tombolPengajuanSidang.textContent = 'Ajukan Sidang';
-            tombolPengajuanSidang.classList.remove('is-danger', 'is-warning', 'is-success');
-            tombolPengajuanSidang.classList.add('is-info');
-            tombolPengajuanSidang.setAttribute('title', 'Manual override - button force enabled for testing');
-
-            console.log('✅ Button manually enabled for testing');
-            console.log('🔘 Button state after override:');
-            console.log(`   disabled: ${tombolPengajuanSidang.disabled}`);
-            console.log(`   text: ${tombolPengajuanSidang.textContent}`);
-            console.log(`   classes: ${tombolPengajuanSidang.className}`);
-        } else {
-            console.log('❌ Button not found!');
-        }
-
-        console.log('🔓 === END OVERRIDE ===');
-    });
-
-    document.body.appendChild(debugButton);
-    document.body.appendChild(overrideButton);
-}
