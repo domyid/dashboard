@@ -409,12 +409,46 @@ function checkSidangEligibility() {
             console.log('📋 Eligibility data:', result.data);
 
             // Extract data from new endpoint response
-            // Response structure: {status: 200, data: {status: "Success", data: {approved_count: 9, ...}}}
             console.log('🔍 Full response structure:', result);
             console.log('🔍 result.data:', result.data);
             console.log('🔍 result.data.data:', result.data.data);
+            console.log('🔍 typeof result.data:', typeof result.data);
+            console.log('🔍 Object.keys(result.data):', Object.keys(result.data));
 
-            const eligibilityData = result.data.data;
+            // Try different possible structures
+            let eligibilityData = null;
+
+            if (result.data.data) {
+                console.log('✅ Using result.data.data');
+                eligibilityData = result.data.data;
+            } else if (result.data.approved_count !== undefined) {
+                console.log('✅ Using result.data directly');
+                eligibilityData = result.data;
+            } else {
+                console.log('❌ Cannot find eligibility data in response');
+                console.log('🔍 Available keys in result.data:', Object.keys(result.data));
+
+                // Try to find the data in any nested object
+                for (const key of Object.keys(result.data)) {
+                    const value = result.data[key];
+                    if (typeof value === 'object' && value !== null && value.approved_count !== undefined) {
+                        console.log(`✅ Found eligibility data in result.data.${key}`);
+                        eligibilityData = value;
+                        break;
+                    }
+                }
+            }
+
+            if (!eligibilityData) {
+                console.error('❌ Could not extract eligibility data from response');
+                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+                if (tombolPengajuanSidang) {
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Error: Could not parse eligibility data');
+                }
+                return;
+            }
+
             const approvedCount = eligibilityData.approved_count;
             const totalCount = eligibilityData.total_count;
             const pendingCount = eligibilityData.pending_count;
