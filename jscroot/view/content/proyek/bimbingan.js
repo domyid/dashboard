@@ -19,6 +19,9 @@ export async function main(){
     checkSidangEligibility();
     setupPengajuanSidangModal();
 
+    // Add debug button for sidang eligibility
+    addSidangDebugButton();
+
     // Add new functionality for claim event - simplified
     setupClaimEventModal();
     
@@ -396,19 +399,40 @@ function checkApprovalButtonConditions() {
 
 // Function to check if student has enough bimbingan sessions to request sidang
 function checkSidangEligibility() {
+    console.log('🔍 Starting sidang eligibility check...');
+    console.log('📡 Calling backend:', backend.project.assessment);
+
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
+        console.log('📊 Bimbingan data response:', result);
+
         if (result.status === 200) {
+            console.log('✅ Successfully got bimbingan data');
+            console.log('📋 Raw bimbingan data:', result.data);
+
             // Count only APPROVED bimbingan sessions
-            const approvedBimbingan = result.data.filter(bimbingan => bimbingan.approved === true);
+            const approvedBimbingan = result.data.filter(bimbingan => {
+                console.log(`📝 Bimbingan ${bimbingan.bimbinganke || 'unknown'}: approved = ${bimbingan.approved} (type: ${typeof bimbingan.approved})`);
+                // Handle different data types for approved field
+                return bimbingan.approved === true ||
+                       bimbingan.approved === 'true' ||
+                       bimbingan.approved === 1 ||
+                       bimbingan.approved === '1';
+            });
+
             const approvedCount = approvedBimbingan.length;
             const totalCount = result.data.length;
             const eligibilityMet = approvedCount >= 8;
 
-            console.log(`Bimbingan eligibility check: ${approvedCount} approved out of ${totalCount} total sessions`);
+            console.log(`📈 Bimbingan summary:`);
+            console.log(`   Total sessions: ${totalCount}`);
+            console.log(`   Approved sessions: ${approvedCount}`);
+            console.log(`   Eligibility met (>=8): ${eligibilityMet}`);
+            console.log(`   Approved bimbingan list:`, approvedBimbingan);
 
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
             if (tombolPengajuanSidang) {
+                console.log(`🔘 Button found, setting disabled = ${!eligibilityMet}`);
                 tombolPengajuanSidang.disabled = !eligibilityMet;
 
                 // Add tooltip to explain why button is disabled
@@ -420,21 +444,26 @@ function checkSidangEligibility() {
                         tooltipMessage += `, ${pendingCount} pending approval`;
                     }
                     tombolPengajuanSidang.setAttribute('title', tooltipMessage);
+                    console.log(`❌ Button disabled - not enough approved bimbingan`);
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                    console.log(`✅ Button should be enabled - checking existing pengajuan...`);
 
                     // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
+            } else {
+                console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
             }
         } else {
-            console.error('Failed to get bimbingan data:', result);
+            console.error('❌ Failed to get bimbingan data:', result);
 
             // On error, disable button for safety
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
             if (tombolPengajuanSidang) {
                 tombolPengajuanSidang.disabled = true;
                 tombolPengajuanSidang.setAttribute('title', 'Error loading bimbingan data');
+                console.log('❌ Button disabled due to API error');
             }
         }
     });
@@ -442,16 +471,22 @@ function checkSidangEligibility() {
 
 // Function to check if there's an existing pengajuan
 function checkExistingPengajuan() {
-    console.log('Checking existing pengajuan...');
+    console.log('🔍 Checking existing pengajuan...');
+    console.log('📡 Calling backend:', backend.bimbingan.pengajuan);
 
     getJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), function(result) {
-        console.log('Pengajuan check result:', result);
+        console.log('📊 Pengajuan check result:', result);
 
         const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
         if (!tombolPengajuanSidang) {
-            console.error('Tombol pengajuan sidang tidak ditemukan');
+            console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
             return;
         }
+
+        console.log('🔘 Button current state before pengajuan check:');
+        console.log(`   disabled: ${tombolPengajuanSidang.disabled}`);
+        console.log(`   text: ${tombolPengajuanSidang.textContent}`);
+        console.log(`   classes: ${tombolPengajuanSidang.className}`);
 
         // Check if response is successful
         if (result.status === 200) {
@@ -464,11 +499,14 @@ function checkExistingPengajuan() {
                 pengajuanData = result.data.data;
             }
 
-            console.log('Pengajuan data:', pengajuanData);
+            console.log('📋 Pengajuan data:', pengajuanData);
+            console.log(`📈 Found ${pengajuanData.length} existing pengajuan(s)`);
 
             if (pengajuanData.length > 0) {
                 // There's an existing pengajuan
                 const latestPengajuan = pengajuanData[pengajuanData.length - 1];
+                console.log('📝 Latest pengajuan:', latestPengajuan);
+                console.log(`📊 Latest pengajuan status: ${latestPengajuan.status}`);
 
                 // Update button based on status
                 if (latestPengajuan.status === 'pending') {
@@ -477,18 +515,21 @@ function checkExistingPengajuan() {
                     tombolPengajuanSidang.classList.add('is-warning');
                     tombolPengajuanSidang.disabled = true;
                     tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda sedang diproses');
+                    console.log('🟡 Button set to PENDING state');
                 } else if (latestPengajuan.status === 'approved') {
                     tombolPengajuanSidang.textContent = 'Pengajuan Sidang (Disetujui)';
                     tombolPengajuanSidang.classList.remove('is-info');
                     tombolPengajuanSidang.classList.add('is-success');
                     tombolPengajuanSidang.disabled = true;
                     tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda telah disetujui');
+                    console.log('🟢 Button set to APPROVED state');
                 } else if (latestPengajuan.status === 'rejected') {
                     tombolPengajuanSidang.textContent = 'Ajukan Sidang Kembali';
                     tombolPengajuanSidang.classList.remove('is-info');
                     tombolPengajuanSidang.classList.add('is-danger');
                     tombolPengajuanSidang.disabled = false;
                     tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda ditolak. Silakan ajukan kembali.');
+                    console.log('🔴 Button set to REJECTED state - ENABLED for resubmission');
                 } else {
                     // Default case - any other status, disable button
                     tombolPengajuanSidang.textContent = 'Sudah Mengajukan';
@@ -496,28 +537,63 @@ function checkExistingPengajuan() {
                     tombolPengajuanSidang.classList.add('is-success');
                     tombolPengajuanSidang.disabled = true;
                     tombolPengajuanSidang.setAttribute('title', 'Anda sudah mengajukan sidang');
+                    console.log('⚪ Button set to DEFAULT state (unknown status)');
                 }
 
-                console.log('Button disabled - user already submitted pengajuan with status:', latestPengajuan.status);
+                console.log('❌ Button disabled - user already submitted pengajuan with status:', latestPengajuan.status);
             } else {
-                // No existing pengajuan - enable the button (if eligible)
+                // No existing pengajuan - keep button state from eligibility check
+                console.log('✅ No existing pengajuan found - keeping eligibility state');
                 tombolPengajuanSidang.textContent = 'Ajukan Sidang';
                 tombolPengajuanSidang.classList.remove('is-success', 'is-warning', 'is-danger');
                 tombolPengajuanSidang.classList.add('is-info');
-                tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
 
-                // Keep disabled state from eligibility check
-                console.log('No existing pengajuan found - button state depends on eligibility');
+                // Check if button should be enabled based on eligibility
+                // Re-run eligibility check to make sure button state is correct
+                console.log('🔄 Re-checking eligibility to ensure correct button state...');
+
+                // Get fresh bimbingan data to double-check eligibility
+                getJSON(backend.project.assessment, 'login', getCookie('login'), function(bimbinganResult) {
+                    if (bimbinganResult.status === 200) {
+                        const approvedBimbingan = bimbinganResult.data.filter(bimbingan =>
+                            bimbingan.approved === true ||
+                            bimbingan.approved === 'true' ||
+                            bimbingan.approved === 1 ||
+                            bimbingan.approved === '1'
+                        );
+                        const approvedCount = approvedBimbingan.length;
+                        const eligibilityMet = approvedCount >= 8;
+
+                        console.log(`🔍 Double-check eligibility: ${approvedCount} approved, eligible: ${eligibilityMet}`);
+
+                        if (eligibilityMet) {
+                            tombolPengajuanSidang.disabled = false;
+                            tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                            console.log('✅ Button ENABLED - user is eligible and has no pending pengajuan');
+                        } else {
+                            tombolPengajuanSidang.disabled = true;
+                            const tooltipMessage = `Anda memerlukan minimal 8 sesi bimbingan yang sudah disetujui untuk mengajukan sidang. Saat ini: ${approvedCount} approved`;
+                            tombolPengajuanSidang.setAttribute('title', tooltipMessage);
+                            console.log('❌ Button DISABLED - user not eligible');
+                        }
+                    }
+                });
             }
         } else {
-            console.error('Failed to check pengajuan:', result);
+            console.error('❌ Failed to check pengajuan:', result);
             // On error, disable button for safety
             tombolPengajuanSidang.disabled = true;
             tombolPengajuanSidang.textContent = 'Error';
             tombolPengajuanSidang.classList.remove('is-info', 'is-success', 'is-warning');
             tombolPengajuanSidang.classList.add('is-danger');
             tombolPengajuanSidang.setAttribute('title', 'Error checking pengajuan status');
+            console.log('❌ Button disabled due to pengajuan check error');
         }
+
+        console.log('🔘 Button final state after pengajuan check:');
+        console.log(`   disabled: ${tombolPengajuanSidang.disabled}`);
+        console.log(`   text: ${tombolPengajuanSidang.textContent}`);
+        console.log(`   classes: ${tombolPengajuanSidang.className}`);
     });
 }
 
@@ -828,4 +904,72 @@ function setupClaimTimeEventModal() {
         if (!notificationModal) return;
         notificationModal.classList.add('is-hidden');
     }
+}
+
+// Add debug button for sidang eligibility testing
+function addSidangDebugButton() {
+    const debugButton = document.createElement('button');
+    debugButton.className = 'button is-warning is-small';
+    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Sidang';
+    debugButton.style.position = 'fixed';
+    debugButton.style.top = '10px';
+    debugButton.style.left = '10px';
+    debugButton.style.zIndex = '9999';
+    debugButton.style.fontSize = '12px';
+    debugButton.style.padding = '5px 10px';
+
+    debugButton.addEventListener('click', function() {
+        console.log('🐛 === SIDANG DEBUG TEST ===');
+
+        // Test bimbingan data
+        console.log('📡 Testing bimbingan data fetch...');
+        getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
+            console.log('📊 Bimbingan API Response:', result);
+
+            if (result.status === 200) {
+                const approvedBimbingan = result.data.filter(b =>
+                    b.approved === true ||
+                    b.approved === 'true' ||
+                    b.approved === 1 ||
+                    b.approved === '1'
+                );
+                const totalCount = result.data.length;
+                const approvedCount = approvedBimbingan.length;
+
+                console.log('📈 Bimbingan Analysis:');
+                console.log(`   Total: ${totalCount}`);
+                console.log(`   Approved: ${approvedCount}`);
+                console.log(`   Eligible: ${approvedCount >= 8}`);
+                console.log('📋 All bimbingan:', result.data);
+                console.log('✅ Approved bimbingan:', approvedBimbingan);
+
+                // Test pengajuan data
+                console.log('📡 Testing pengajuan data fetch...');
+                getJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), function(pengajuanResult) {
+                    console.log('📊 Pengajuan API Response:', pengajuanResult);
+
+                    // Check button state
+                    const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+                    if (tombolPengajuanSidang) {
+                        console.log('🔘 Button Current State:');
+                        console.log(`   Found: YES`);
+                        console.log(`   Disabled: ${tombolPengajuanSidang.disabled}`);
+                        console.log(`   Text: "${tombolPengajuanSidang.textContent}"`);
+                        console.log(`   Classes: ${tombolPengajuanSidang.className}`);
+                        console.log(`   Title: "${tombolPengajuanSidang.getAttribute('title')}"`);
+                    } else {
+                        console.log('❌ Button NOT FOUND in DOM!');
+                    }
+
+                    // Manual re-check
+                    console.log('🔄 Running manual eligibility check...');
+                    checkSidangEligibility();
+                });
+            }
+        });
+
+        console.log('🐛 === END DEBUG TEST ===');
+    });
+
+    document.body.appendChild(debugButton);
 }
