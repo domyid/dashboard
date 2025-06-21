@@ -124,8 +124,8 @@ generateTimeBtn.addEventListener('click', async () => {
     
     // Validate duration input
     const durationSeconds = parseInt(durationInput.value);
-    if (!durationSeconds || durationSeconds <= 0 || durationSeconds > 3600) {
-        showError('Durasi harus berupa angka antara 1-3600 detik');
+    if (!durationSeconds || durationSeconds <= 0) {
+        showError('Durasi harus berupa angka lebih dari 0 detik');
         return;
     }
     
@@ -370,11 +370,7 @@ createEventBtn.addEventListener('click', () => {
         return;
     }
 
-    // Validate deadline range
-    if (deadlineSeconds > 3600) {
-        showError('Deadline maksimal 3600 detik (1 jam)');
-        return;
-    }
+    // No maximum deadline validation - owner can set any deadline they want
 
     // Check if user is logged in
     const token = getCookie('login');
