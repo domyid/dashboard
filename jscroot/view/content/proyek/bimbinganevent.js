@@ -1,896 +1,884 @@
-import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
-import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+import { onClick,getValue,setValue,onInput,onChange,hide,show } from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.7/croot.js";
+import {validatePhoneNumber} from "https://cdn.jsdelivr.net/gh/jscroot/validate@0.0.2/croot.js";
+import {postJSON,getJSON} from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
+import {getCookie} from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
+import {addCSSIn} from "https://cdn.jsdelivr.net/gh/jscroot/element@0.1.5/croot.js";
+import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/src/sweetalert2.js';
+import { id,backend } from "/dashboard/jscroot/url/config.js";
 
-// Fallback postJSON function if the imported one fails
-async function postJSONFallback(url, headerName, headerValue, data) {
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                [headerName]: headerValue
-            },
-            body: JSON.stringify(data)
-        });
+export async function main(){    
+    onInput('phonenumber', validatePhoneNumber);
+    await addCSSIn("https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.css",id.content);
+    getJSON(backend.project.data,'login',getCookie('login'),getResponseFunction);
+    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
+    onClick('tombolmintaapproval', checkAndSubmit);
+    onChange('bimbingan-name', handleBimbinganChange);
+    fetchActivityScore();
+    
+    // Add new functionality for pengajuan sidang
+    checkSidangEligibility();
+    setupPengajuanSidangModal();
 
-        const result = await response.json();
-        return {
-            status: response.ok ? 200 : response.status,
-            data: result
-        };
-    } catch (error) {
-        console.error('Fallback postJSON error:', error);
-        throw error;
-    }
+
+
+    // Add new functionality for claim event - simplified
+    setupClaimEventModal();
+    
+    // Add new functionality for claim time event
+    setupClaimTimeEventModal();
 }
 
-// Backend URLs
-const backend = {
-    getAllEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/all',
-    claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
-    getUserClaims: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/myclaims',
-    checkExpired: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/checkexpired',
-    getUserPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/mypoints'
-};
+// Global variable to track current approval status
+let currentApprovalStatus = null;
 
-// Global variables
-let currentEvents = [];
-let currentClaims = [];
-let selectedEvent = null;
-let selectedClaim = null;
-let timers = {};
+function updateApprovalStatus(result) {
+    const statusElement = document.getElementById('approval-status');
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    
+    // Update global status
+    currentApprovalStatus = result;
 
-// DOM Elements
-const loadingSpinner = document.getElementById('loadingSpinner');
-const eventsContainer = document.getElementById('eventsContainer');
-const claimsContainer = document.getElementById('claimsContainer');
-const emptyEvents = document.getElementById('emptyEvents');
-const emptyClaims = document.getElementById('emptyClaims');
-
-// Note: Initialization moved to main() function for dashboard routing compatibility
-
-// Load all available events
-function loadEvents() {
-    try {
-        showLoading(true);
-        const token = getCookie('login');
-
-        if (!token) {
-            showNotification('Silakan login terlebih dahulu', 'is-warning');
-            showLoading(false);
-            return;
-        }
-
-        console.log('Loading events from:', backend.getAllEvents);
-        console.log('Token:', token);
-
-        getJSON(backend.getAllEvents, 'login', token, (result) => {
-            showLoading(false);
-
-            console.log('Events response:', result);
-
-            if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = [];
-                }
-
-                console.log('Processed events data:', responseData);
-                currentEvents = responseData || [];
-                displayEvents();
-
-                if (currentEvents.length === 0) {
-                    showNotification('Belum ada event yang tersedia', 'is-info');
-                }
-            } else {
-                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal memuat event';
-                showNotification('Error loading events: ' + errorMsg, 'is-danger');
-                console.error('Load events error:', result);
+    switch (result) {
+        case true:
+            statusElement.textContent = 'Disetujui';
+            statusElement.className = 'tag is-success';
+            // Disable tombol if already approved
+            if (tombolApproval) {
+                tombolApproval.disabled = true;
+                tombolApproval.textContent = 'Sudah Disetujui';
+                tombolApproval.classList.remove('is-primary');
+                tombolApproval.classList.add('is-success');
             }
-        });
-    } catch (error) {
-        showLoading(false);
-        console.error('Error loading events:', error);
-        showNotification('Gagal memuat data event: ' + error.message, 'is-danger');
-    }
-}
-
-// Load user's event claims
-function loadUserClaims() {
-    try {
-        const token = getCookie('login');
-
-        if (!token) {
-            currentClaims = [];
-            displayClaims();
-            return;
-        }
-
-        console.log('Loading user claims from:', backend.getUserClaims);
-
-        getJSON(backend.getUserClaims, 'login', token, (result) => {
-            console.log('Claims response:', result);
-
-            if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = [];
-                }
-
-                console.log('Processed claims data:', responseData);
-                currentClaims = responseData || [];
-                displayClaims();
-            } else {
-                console.log('No claims found or error:', result);
-                currentClaims = [];
-                displayClaims();
+            break;
+        case false:
+            statusElement.textContent = 'Belum Disetujui';
+            statusElement.className = 'tag is-danger';
+            // Enable tombol if not approved
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
             }
-        });
-    } catch (error) {
-        console.error('Error loading claims:', error);
-        currentClaims = [];
-        displayClaims();
+            break;
+        default:
+            statusElement.textContent = '';
+            statusElement.className = '';
+            // Reset tombol to default state
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+                tombolApproval.classList.remove('is-success');
+                tombolApproval.classList.add('is-primary');
+            }
     }
 }
 
-// Display available events
-function displayEvents() {
-    eventsContainer.innerHTML = '';
+// Function to clear approval status
+function clearApprovalStatus() {
+    const statusElement = document.getElementById('approval-status');
+    const tombolApproval = document.getElementById('tombolmintaapproval');
     
-    if (currentEvents.length === 0) {
-        emptyEvents.style.display = 'block';
-        return;
+    statusElement.textContent = '';
+    statusElement.className = '';
+    currentApprovalStatus = null;
+    
+    // Reset tombol to default state
+    if (tombolApproval) {
+        tombolApproval.disabled = false;
+        tombolApproval.textContent = 'Minta Approval';
+        tombolApproval.classList.remove('is-success');
+        tombolApproval.classList.add('is-primary');
     }
-    
-    emptyEvents.style.display = 'none';
-    
-    currentEvents.forEach(event => {
-        const eventCard = createEventCard(event);
-        eventsContainer.appendChild(eventCard);
-    });
 }
 
-// Create event card HTML
-function createEventCard(event) {
-    const div = document.createElement('div');
-    div.className = 'column is-one-third';
+function handleBimbinganChange(target) {
+    const id = target.value; // Ini _id nya
+    const defaultValue = 'x'.repeat(10);
 
-    let cardClass = '';
-    let statusBadge = '';
-    let claimButton = '';
-
-    if (event.is_claimed_by_any) {
-        // Event sudah di-claim user lain
-        cardClass = 'has-background-light';
-        statusBadge = '<span class="status-expired">Sudah Diklaim User Lain</span>';
-        claimButton = '<p class="has-text-grey"><i class="fas fa-lock"></i> Event sudah diklaim user lain</p>';
+    if (id === defaultValue) {
+        // When "Bimbingan Minggu ini" is selected
+        fetchActivityScore();
+        // Clear the approval status when selecting the default option
+        clearApprovalStatus();
     } else {
-        // Event tersedia untuk di-claim
-        cardClass = '';
-        statusBadge = '<span class="tag is-success">Tersedia</span>';
-        claimButton = `<button class="button is-primary is-fullwidth" onclick="openClaimModal('${event._id}')">
-                         <i class="fas fa-hand-paper"></i> Claim Event
-                       </button>`;
+        const url = `${backend.project.assessment}/${id}`;
+        getJSON(url, 'login', getCookie('login'), function(result) {
+            handleActivityScoreResponse(result);
+            
+            // Only update approval status for specific bimbingan entries
+            if (result.status === 200 && result.data.approved !== undefined) {
+                updateApprovalStatus(result.data.approved);
+            }
+        });
     }
-
-    div.innerHTML = `
-        <div class="card event-card ${cardClass}">
-            <div class="card-content">
-                <div class="media">
-                    <div class="media-content">
-                        <p class="title is-5">${event.name}</p>
-                        <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
-                            <span class="event-points">${event.points} Poin</span>
-                            ${statusBadge}
-                        </div>
-                        <div class="mb-2">
-                            <span class="tag is-light">⏱️ ${event.deadline_seconds} detik</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="content">
-                    <p>${event.description}</p>
-                    <div class="mt-4">
-                        ${claimButton}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    return div;
 }
 
-// Display user claims
-function displayClaims() {
-    claimsContainer.innerHTML = '';
-    
-    if (currentClaims.length === 0) {
-        emptyClaims.style.display = 'block';
+function getBimbinganList(result) {
+    if (result.status === 200) {
+        result.data.forEach((bimbingan) => {
+            console.log({ bimbingan });
+            const option = document.createElement('option');
+            option.value = bimbingan._id;
+
+            const bimbinganText = 'Bimbingan Ke-';
+            option.textContent = bimbinganText + (bimbingan.bimbinganke ?? 1);
+            document.getElementById('bimbingan-name').appendChild(option);
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status,
+            text: result.data.response,
+        });
+    }
+}
+
+function checkAndSubmit() {
+    // Check if already approved
+    if (currentApprovalStatus === true) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Sudah Disetujui',
+            text: 'Bimbingan ini sudah disetujui dan tidak perlu diajukan lagi.',
+            confirmButtonText: 'OK'
+        });
         return;
     }
     
-    emptyClaims.style.display = 'none';
-    
-    currentClaims.forEach(claim => {
-        const claimCard = createClaimCard(claim);
-        claimsContainer.appendChild(claimCard);
-    });
-}
-
-// Create claim card HTML
-function createClaimCard(claim) {
-    const div = document.createElement('div');
-    div.className = 'column is-half';
-    
-    const now = new Date();
-    const deadline = new Date(claim.deadline);
-    const isExpired = now > deadline && claim.status === 'claimed';
-    
-    let statusBadge = '';
-    let actionButton = '';
-    
-    switch (claim.status) {
-        case 'claimed':
-            if (isExpired) {
-                statusBadge = '<span class="status-expired">Expired</span>';
-                actionButton = '<p class="has-text-grey">Waktu habis, event tersedia untuk user lain</p>';
-            } else {
-                statusBadge = '<span class="claimed-badge">Diklaim</span>';
-                actionButton = `
-                    <div class="timer-display" id="timer-${claim.claim_id}">
-                        Loading timer...
-                    </div>
-                    <button class="button is-success is-fullwidth" onclick="openSubmitModal('${claim.claim_id}')">
-                        <i class="fas fa-upload"></i> Submit Tugas
-                    </button>
-                `;
-            }
-            break;
-        case 'submitted':
-            statusBadge = '<span class="status-submitted">Menunggu Approval</span>';
-
-            // Get approval deadline dari backend response atau calculate manual
-            let approvalDeadline;
-            if (claim.approval_deadline) {
-                approvalDeadline = new Date(claim.approval_deadline);
-            } else {
-                // Fallback: calculate manual jika backend belum update
-                const submittedTime = new Date(claim.submitted_at);
-                approvalDeadline = new Date(submittedTime.getTime() + (86400 * 1000)); // 24 jam dari submit
-            }
-
-            const approvalCountdownId = `approval-countdown-${claim.claim_id}`;
-
-            actionButton = `
-                <div class="notification is-info">
-                    <p><strong>Tugas sudah disubmit!</strong></p>
-                    <p>Link: <a href="${claim.task_link}" target="_blank">${claim.task_link}</a></p>
-                    <p>Menunggu approval dari owner...</p>
-                    <div class="mt-3">
-                        <p><strong>⏰ Sisa waktu approval:</strong></p>
-                        <p id="${approvalCountdownId}" class="has-text-weight-bold has-text-primary" style="font-size: 1.2em;">
-                            Menghitung...
-                        </p>
-                        <p class="is-size-7 has-text-grey">
-                            Jika tidak di-approve dalam 24 jam, event akan tersedia lagi untuk user lain
-                        </p>
-                    </div>
-                </div>
-            `;
-
-            // Start approval countdown setelah DOM ready
-            setTimeout(() => {
-                startApprovalCountdown(approvalCountdownId, approvalDeadline, claim.claim_id);
-            }, 100);
-            break;
-        case 'approved':
-            statusBadge = '<span class="status-approved">Approved</span>';
-            actionButton = `
-                <div class="notification is-success">
-                    <p><strong>Selamat! Tugas Anda telah disetujui</strong></p>
-                    <p>Anda mendapat ${claim.event.points} poin</p>
-                </div>
-            `;
-            break;
+    // Disable tombol immediately to prevent double-click
+    const tombolApproval = document.getElementById('tombolmintaapproval');
+    if (tombolApproval) {
+        tombolApproval.disabled = true;
+        tombolApproval.textContent = 'Memproses...';
     }
     
-    div.innerHTML = `
-        <div class="card event-card">
-            <div class="card-content">
-                <div class="media">
-                    <div class="media-content">
-                        <p class="title is-5">${claim.event.name}</p>
-                        <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
-                            <span class="event-points">${claim.event.points} Poin</span>
-                            ${statusBadge}
-                        </div>
-                    </div>
-                </div>
-                <div class="content">
-                    <p>${claim.event.description}</p>
-                    <div class="mt-4">
-                        ${actionButton}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    // Check the conditions first
+    const conditions = checkApprovalButtonConditions();
     
-    // Start timer if needed
-    if (claim.status === 'claimed' && !isExpired) {
-        setTimeout(() => startTimer(claim.claim_id, deadline), 100);
+    if (!conditions.isValid) {
+        // Create message about what's missing
+        let missingItems = [];
+        
+        if (!conditions.sponsordata) missingItems.push("Data Sponsor");
+        if (!conditions.stravakm) missingItems.push("Strava");
+        if (!conditions.iqresult) missingItems.push("Test IQ");
+        if (!conditions.pomokitsesi) missingItems.push("Pomokit");
+        if (!conditions.trackerdata) missingItems.push("Web Tracker");
+        if (!conditions.gtmetrixresult) missingItems.push("GTMetrix");
+        if (!conditions.webhookpush) missingItems.push("WebHook");
+        if (!conditions.presensihari) missingItems.push("Presensi");
+        
+        // Show alert with missing items
+        Swal.fire({
+            icon: 'warning',
+            title: 'Belum Lengkap',
+            html: `<p>Item berikut masih kurang:</p><ul>${missingItems.map(item => `<li>${item}</li>`).join('')}</ul>`,
+            confirmButtonText: 'Mengerti'
+        }).then(() => {
+            // Re-enable tombol after alert is closed
+            if (tombolApproval) {
+                tombolApproval.disabled = false;
+                tombolApproval.textContent = 'Minta Approval';
+            }
+        });
+        
+        return; // Stop here
     }
     
-    return div;
+    // If all conditions are met, proceed with the action
+    actionfunctionname();
 }
 
-// Start countdown timer
-function startTimer(claimId, deadline) {
-    const timerElement = document.getElementById(`timer-${claimId}`);
-    if (!timerElement) return;
-
-    const updateTimer = () => {
-        const now = new Date();
-        const timeLeft = deadline - now;
-
-        if (timeLeft <= 0) {
-            timerElement.innerHTML = 'Waktu Habis!';
-            timerElement.classList.add('timer-expired');
-            clearInterval(timers[claimId]);
-
-            // Refresh data to update UI
-            setTimeout(() => {
-                loadEvents();
-                loadUserClaims();
-            }, 1000);
-            return;
-        }
-
-        const seconds = Math.floor(timeLeft / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-
-        let display = '';
-        if (hours > 0) {
-            display = `${hours}j ${minutes % 60}m ${seconds % 60}s`;
-        } else if (minutes > 0) {
-            display = `${minutes}m ${seconds % 60}s`;
-        } else {
-            display = `${seconds}s`;
-        }
-
-        timerElement.innerHTML = `⏰ Sisa waktu: ${display}`;
+function actionfunctionname(){
+    let idprjusr = {
+        // _id: getValue('project-name'),
+        asesor: {
+            phonenumber: getValue('phonenumber'),
+        },
     };
-
-    updateTimer();
-    timers[claimId] = setInterval(updateTimer, 1000);
+    if (getCookie("login")===""){
+        redirect("/signin");
+    }else{
+        const bimbinganLanjutan = backend.project.assessment + "/lanjutan"
+        postJSON(bimbinganLanjutan,"login",getCookie("login"),idprjusr,postResponseFunction);
+        // hide("tombolbuatproyek");    
+    }
 }
 
-// Start approval countdown timer (24 jam)
-function startApprovalCountdown(countdownId, approvalDeadline, claimId) {
-    const countdownElement = document.getElementById(countdownId);
-    if (!countdownElement) return;
+function getResponseFunction(result){
+    if (result.status===200){
+        result.data.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project._id;
+            option.textContent = project.name;
+            document.getElementById('project-name').appendChild(option);
+        });
 
-    const updateCountdown = () => {
-        const now = new Date();
-        const timeLeft = approvalDeadline - now;
-
-        if (timeLeft <= 0) {
-            countdownElement.innerHTML = '⏰ Waktu approval habis!';
-            countdownElement.classList.add('has-text-danger');
-            clearInterval(timers[`approval-${claimId}`]);
-
-            // Show notification
-            showNotification('Waktu approval habis! Event akan tersedia lagi untuk user lain.', 'is-warning');
-
-            // Refresh data to update UI
-            setTimeout(() => {
-                loadEvents();
-                loadUserClaims();
-            }, 2000);
-            return;
-        }
-
-        const totalSeconds = Math.floor(timeLeft / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        let display = '';
-        if (hours > 0) {
-            display = `${hours} jam ${minutes} menit`;
-        } else if (minutes > 0) {
-            display = `${minutes} menit ${seconds} detik`;
-        } else {
-            display = `${seconds} detik`;
-        }
-
-        // Change color based on time left
-        if (hours < 1) {
-            countdownElement.classList.remove('has-text-primary');
-            countdownElement.classList.add('has-text-warning');
-        }
-        if (minutes < 30 && hours === 0) {
-            countdownElement.classList.remove('has-text-warning');
-            countdownElement.classList.add('has-text-danger');
-        }
-
-        countdownElement.innerHTML = display;
-    };
-
-    updateCountdown();
-    timers[`approval-${claimId}`] = setInterval(updateCountdown, 1000);
+    }else{
+        Swal.fire({
+            icon: "error",
+            title: result.data.status,
+            text: result.data.response,
+          });
+    }
 }
 
-// Show/hide loading spinner
-function showLoading(show) {
-    loadingSpinner.style.display = show ? 'block' : 'none';
-}
-
-// Show notification
-function showNotification(message, type = 'is-info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type} is-fixed-top`;
-    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;';
-    notification.innerHTML = `
-        <button class="delete"></button>
-        ${message}
-    `;
+function postResponseFunction(result){
+    const tombolApproval = document.getElementById('tombolmintaapproval');
     
-    document.body.appendChild(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 5000);
-    
-    // Add click to close
-    notification.querySelector('.delete').addEventListener('click', () => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    });
-}
-
-// Check for expired claims - call backend untuk recovery 24 jam timeout
-function checkExpiredClaims() {
-    try {
-        // Call backend endpoint untuk check dan recovery expired approvals
-        fetch(backend.checkExpired)
-            .then(response => response.json())
-            .then(result => {
-                console.log('Check expired response:', result);
-
-                // Jika ada recovery, refresh data untuk update UI
-                if (result.Status === 'Success' && result.Data && result.Data.processed > 0) {
-                    console.log(`✅ Recovered ${result.Data.processed} expired events`);
-
-                    // Refresh events dan claims untuk show recovered events
-                    setTimeout(() => {
-                        loadEvents();
-                        loadUserClaims();
-                    }, 1000);
+    if(result.status === 200){
+        // const katakata = "Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.";
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Selamat! Anda telah berhasil mengajukan permohonan penilaian proyek. Silakan tunggu konfirmasi dari asesor.',
+            didClose: () => {
+                setValue('phonenumber', '');
+                // Update button state to show it's been submitted
+                if (tombolApproval) {
+                    tombolApproval.disabled = true;
+                    tombolApproval.textContent = 'Menunggu Approval';
+                    tombolApproval.classList.remove('is-primary');
+                    tombolApproval.classList.add('is-warning');
                 }
-            })
-            .catch(error => {
-                console.error('Error checking expired claims:', error);
-                // Silent fail - tidak mengganggu user experience
+            },
+        });
+    }else if (result.data.status.startsWith("Info : ")) {
+        Swal.fire({
+            icon: 'info',
+            title: result.data.status,
+            text: result.data.response,
+            didClose: () => {
+                // Re-enable button if info message
+                if (tombolApproval) {
+                    tombolApproval.disabled = false;
+                    tombolApproval.textContent = 'Minta Approval';
+                }
+            }
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: result.data.status,
+            text: result.data.response,
+            didClose: () => {
+                // Re-enable button if error
+                if (tombolApproval) {
+                    tombolApproval.disabled = false;
+                    tombolApproval.textContent = 'Minta Approval';
+                }
+            }
+        });
+        // show("tombolmintaapproval");
+    }
+    console.log(result);
+}
+
+// Global variables to store activity data
+let activityData = {
+    sponsordata: 0,
+    stravakm: 0,
+    iqresult: 0,
+    pomokitsesi: 0,
+    mbc: 0,
+    rupiah: 0,
+    trackerdata: 0,
+    bukukatalog: 0,
+    jurnalcount: 0,
+    gtmetrixresult: '', // Changed to empty string as default
+    webhookpush: 0,
+    presensihari: 0,
+    rvn: 0
+};
+
+function fetchActivityScore() {
+    getJSON(backend.activityscore.weekly, 'login', getCookie('login'), handleActivityScoreResponse);
+}
+
+function handleActivityScoreResponse(result) {
+    if (result.status === 200) {
+        // Update the global activity data
+        activityData = {
+            sponsordata: result.data.sponsordata || 0,
+            stravakm: result.data.stravakm || 0,
+            iqresult: result.data.iqresult || 0,
+            pomokitsesi: result.data.pomokitsesi || 0,
+            mbc: result.data.mbc || 0,
+            rupiah: result.data.rupiah || 0,
+            trackerdata: result.data.trackerdata || 0,
+            bukukatalog: result.data.bukukatalog || 0,
+            jurnalcount: result.data.jurnalcount || 0,
+            gtmetrixresult: result.data.gtmetrixresult || '', // Accept as string
+            webhookpush: result.data.webhookpush || 0,
+            presensihari: result.data.presensihari || 0,
+            rvn: result.data.rvn || 0
+        };
+
+        updateTableRow(0, result.data.sponsordata, result.data.sponsor);
+        updateTableRow(1, result.data.stravakm, result.data.strava);
+        updateTableRow(2, result.data.iqresult, result.data.iq);
+        updateTableRow(3, result.data.pomokitsesi, result.data.pomokit);
+        updateTableRow(4, result.data.mbc, result.data.mbcPoints || result.data.blockchain); 
+        updateTableRow(5, result.data.rupiah, result.data.qrisPoints || result.data.qris);     
+        updateTableRow(6, result.data.trackerdata, result.data.tracker);
+        updateTableRow(7, result.data.bukukatalog, result.data.bukped);
+        updateTableRow(8, result.data.jurnalcount || 0, result.data.jurnal || 0);  // Added jurnal row
+        updateTableRow(9, result.data.gtmetrixresult, result.data.gtmetrix);
+        updateTableRow(10, result.data.webhookpush, result.data.webhook);
+        updateTableRow(11, result.data.presensihari, result.data.presensi);
+        updateTableRow(12, result.data.rvn, result.data.ravencoinPoints || 0);
+        
+        // Check conditions and update button status
+        checkApprovalButtonConditions();
+    } else {
+        console.log(result.data.message);
+    }
+}
+
+function updateTableRow(rowIndex, quantity, points) {
+    const tableRows = document.querySelectorAll('table.table tbody tr');
+    const row = tableRows[rowIndex]; // Ambil baris berdasarkan indeks
+    if (row) {
+        const quantityCell = row.querySelector('td:nth-child(3)');
+        const pointsCell = row.querySelector('td:nth-child(4)');
+
+        if (quantityCell && pointsCell) {
+            quantityCell.textContent = quantity || 0;
+            pointsCell.textContent = points || 0;
+        }
+    }
+}
+
+// Function to check conditions and update button status
+function checkApprovalButtonConditions() {
+    // Extract values from activityData
+    const {
+        sponsordata, stravakm, iqresult, pomokitsesi, mbc, rupiah,
+        trackerdata, bukukatalog, jurnalcount, gtmetrixresult, webhookpush, presensihari, rvn
+    } = activityData;
+    
+    // Check if gtmetrixresult has a value (not empty string)
+    const hasGtmetrixResult = gtmetrixresult && gtmetrixresult.trim() !== '';
+    
+    // Check if all required activities have quantity > 0
+    // Now excluding buku (bukukatalog), jurnal (jurnalcount), QRIS (rupiah), MBC (mbc), and RVN (rvn)
+    const requiredActivitiesPositive = 
+        sponsordata > 0 && 
+        stravakm > 0 && 
+        iqresult > 0 && 
+        pomokitsesi > 0 && 
+        trackerdata > 0 && 
+        hasGtmetrixResult && // Changed condition for gtmetrixresult
+        webhookpush > 0 && 
+        presensihari > 0;
+    
+    // All conditions are now just the required activities
+    // QRIS, MBC, RVN are now optional like buku and jurnal
+    const allConditionsMet = requiredActivitiesPositive;
+    
+    return {
+        isValid: allConditionsMet,
+        sponsordata: sponsordata > 0,
+        stravakm: stravakm > 0,
+        iqresult: iqresult > 0,
+        pomokitsesi: pomokitsesi > 0,
+        trackerdata: trackerdata > 0,
+        gtmetrixresult: hasGtmetrixResult,
+        webhookpush: webhookpush > 0,
+        presensihari: presensihari > 0,
+        // Optional activities - not checked for approval
+        rupiah: rupiah > 0,
+        mbc: mbc > 0,
+        rvn: rvn > 0,
+        bukukatalog: bukukatalog > 0,
+        jurnalcount: jurnalcount > 0
+    };
+}
+
+// Function to check if student has enough bimbingan sessions to request sidang
+function checkSidangEligibility() {
+    console.log('🔍 Starting sidang eligibility check...');
+    console.log('📡 Calling eligibility endpoint:', backend.bimbingan.eligibility);
+
+    getJSON(backend.bimbingan.eligibility, 'login', getCookie('login'), function(result) {
+        console.log('📊 Eligibility data response:', result);
+
+        if (result.status === 200) {
+            console.log('✅ Successfully got eligibility data');
+            console.log('📋 Eligibility data:', result.data);
+
+            // Extract data from new endpoint response
+            // Backend returns: {status: "Success", data: {approved_count: 9, ...}}
+            const eligibilityData = result.data.data || result.data;
+            const approvedCount = eligibilityData.approved_count;
+            const totalCount = eligibilityData.total_count;
+            const pendingCount = eligibilityData.pending_count;
+            const eligibilityMet = eligibilityData.eligibility_met;
+            const requiredCount = eligibilityData.required_count;
+
+            console.log('🔍 Raw eligibility data structure:', eligibilityData);
+            console.log('🔍 Extracted values:');
+            console.log(`   approvedCount: ${approvedCount}`);
+            console.log(`   totalCount: ${totalCount}`);
+            console.log(`   pendingCount: ${pendingCount}`);
+            console.log(`   eligibilityMet: ${eligibilityMet}`);
+            console.log(`   requiredCount: ${requiredCount}`);
+
+            console.log(`📈 Eligibility summary:`);
+            console.log(`   Total sessions: ${totalCount}`);
+            console.log(`   Approved sessions: ${approvedCount}`);
+            console.log(`   Pending sessions: ${pendingCount}`);
+            console.log(`   Required sessions: ${requiredCount}`);
+            console.log(`   Eligibility met: ${eligibilityMet}`);
+
+            // Enable or disable the "Ajukan Sidang" button based on eligibility
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                console.log(`🔘 Button found, setting disabled = ${!eligibilityMet}`);
+                tombolPengajuanSidang.disabled = !eligibilityMet;
+
+                // Add tooltip to explain why button is disabled
+                if (!eligibilityMet) {
+                    let tooltipMessage = `Anda memerlukan minimal ${requiredCount} sesi bimbingan yang sudah disetujui untuk mengajukan sidang.\n`;
+                    tooltipMessage += `Saat ini: ${approvedCount} approved`;
+                    if (pendingCount > 0) {
+                        tooltipMessage += `, ${pendingCount} pending approval`;
+                    }
+                    tombolPengajuanSidang.setAttribute('title', tooltipMessage);
+                    console.log(`❌ Button disabled - not enough approved bimbingan (${approvedCount}/${requiredCount})`);
+                } else {
+                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
+                    console.log(`✅ Button should be enabled - checking existing pengajuan...`);
+
+                    // Check if there's an existing pengajuan
+                    checkExistingPengajuan();
+                }
+            } else {
+                console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
+            }
+        } else {
+            console.error('❌ Failed to get eligibility data:', result);
+
+            // On error, disable button for safety
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = true;
+                tombolPengajuanSidang.setAttribute('title', 'Error loading eligibility data');
+                console.log('❌ Button disabled due to API error');
+            }
+        }
+    });
+}
+
+
+
+// Function to check if there's an existing pengajuan
+function checkExistingPengajuan() {
+    console.log('🔍 Checking existing pengajuan...');
+    console.log('📡 Calling backend:', backend.bimbingan.pengajuan);
+
+    getJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), function(result) {
+        console.log('📊 Pengajuan check result:', result);
+
+        const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+        if (!tombolPengajuanSidang) {
+            console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
+            return;
+        }
+
+        console.log('🔘 Button current state before pengajuan check:');
+        console.log(`   disabled: ${tombolPengajuanSidang.disabled}`);
+        console.log(`   text: ${tombolPengajuanSidang.textContent}`);
+        console.log(`   classes: ${tombolPengajuanSidang.className}`);
+
+        // Check if response is successful
+        if (result.status === 200) {
+            let pengajuanData = [];
+
+            // Handle different response structures
+            if (result.data && Array.isArray(result.data)) {
+                pengajuanData = result.data;
+            } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
+                pengajuanData = result.data.data;
+            }
+
+            console.log('📋 Pengajuan data:', pengajuanData);
+            console.log(`📈 Found ${pengajuanData.length} existing pengajuan(s)`);
+
+            if (pengajuanData.length > 0) {
+                // There's an existing pengajuan
+                const latestPengajuan = pengajuanData[pengajuanData.length - 1];
+                console.log('📝 Latest pengajuan:', latestPengajuan);
+                console.log(`📊 Latest pengajuan status: ${latestPengajuan.status}`);
+
+                // Update button based on status
+                if (latestPengajuan.status === 'pending') {
+                    tombolPengajuanSidang.textContent = 'Pengajuan Sidang (Pending)';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-warning');
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda sedang diproses');
+                    console.log('🟡 Button set to PENDING state');
+                } else if (latestPengajuan.status === 'approved') {
+                    tombolPengajuanSidang.textContent = 'Pengajuan Sidang (Disetujui)';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-success');
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda telah disetujui');
+                    console.log('🟢 Button set to APPROVED state');
+                } else if (latestPengajuan.status === 'rejected') {
+                    tombolPengajuanSidang.textContent = 'Ajukan Sidang Kembali';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-danger');
+                    tombolPengajuanSidang.disabled = false;
+                    tombolPengajuanSidang.setAttribute('title', 'Pengajuan sidang Anda ditolak. Silakan ajukan kembali.');
+                    console.log('🔴 Button set to REJECTED state - ENABLED for resubmission');
+                } else {
+                    // Default case - any other status, disable button
+                    tombolPengajuanSidang.textContent = 'Sudah Mengajukan';
+                    tombolPengajuanSidang.classList.remove('is-info');
+                    tombolPengajuanSidang.classList.add('is-success');
+                    tombolPengajuanSidang.disabled = true;
+                    tombolPengajuanSidang.setAttribute('title', 'Anda sudah mengajukan sidang');
+                    console.log('⚪ Button set to DEFAULT state (unknown status)');
+                }
+
+                console.log('❌ Button disabled - user already submitted pengajuan with status:', latestPengajuan.status);
+            } else {
+                // No existing pengajuan - keep button state from eligibility check
+                console.log('✅ No existing pengajuan found - keeping eligibility state');
+                tombolPengajuanSidang.textContent = 'Ajukan Sidang';
+                tombolPengajuanSidang.classList.remove('is-success', 'is-warning', 'is-danger');
+                tombolPengajuanSidang.classList.add('is-info');
+
+                // Keep button enabled since user is eligible and has no pending pengajuan
+                console.log('✅ Button remains ENABLED - user is eligible and has no pending pengajuan');
+            }
+        } else {
+            console.error('❌ Failed to check pengajuan:', result);
+            // On error, disable button for safety
+            tombolPengajuanSidang.disabled = true;
+            tombolPengajuanSidang.textContent = 'Error';
+            tombolPengajuanSidang.classList.remove('is-info', 'is-success', 'is-warning');
+            tombolPengajuanSidang.classList.add('is-danger');
+            tombolPengajuanSidang.setAttribute('title', 'Error checking pengajuan status');
+            console.log('❌ Button disabled due to pengajuan check error');
+        }
+
+        console.log('🔘 Button final state after pengajuan check:');
+        console.log(`   disabled: ${tombolPengajuanSidang.disabled}`);
+        console.log(`   text: ${tombolPengajuanSidang.textContent}`);
+        console.log(`   classes: ${tombolPengajuanSidang.className}`);
+    });
+}
+
+// Handle modal interactions for pengajuan sidang
+function setupPengajuanSidangModal() {
+    const modal = document.getElementById('modal-pengajuan-sidang');
+    const tombolPengajuan = document.getElementById('tombolpengajuansidang');
+    const closeModalBtn = document.getElementById('close-modal');
+    const cancelBtn = document.getElementById('cancel-pengajuan');
+    const submitBtn = document.getElementById('submit-pengajuan');
+    const closeNotificationBtn = document.getElementById('close-notification');
+    const notification = document.getElementById('notification-pengajuan');
+    
+    // Load the list of available dosen penguji on modal open
+    tombolPengajuan.addEventListener('click', function() {
+        modal.classList.add('is-active');
+        // Fetch the list of dosen penguji
+        fetchDosenPenguji();
+    });
+    
+    // Close modal functions
+    function closeModal() {
+        modal.classList.remove('is-active');
+        // Reset form
+        document.getElementById('dosen-penguji').value = '';
+        document.getElementById('nomor-kelompok').value = '';
+    }
+    
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Handle submission
+    submitBtn.addEventListener('click', function() {
+        const dosenPengujiSelect = document.getElementById('dosen-penguji');
+        const nomorKelompok = document.getElementById('nomor-kelompok').value;
+
+        if (!dosenPengujiSelect.value || !nomorKelompok) {
+            showNotification('Mohon lengkapi semua field', 'is-danger');
+            return;
+        }
+
+        // Get the selected dosen penguji phone number from the data attribute
+        const dosenPengujiPhone = dosenPengujiSelect.options[dosenPengujiSelect.selectedIndex].getAttribute('data-phone');
+
+        const pengajuanData = {
+            dosenPengujiPhone: dosenPengujiPhone,
+            nomorKelompok: nomorKelompok
+        };
+
+        console.log('Submitting pengajuan with data:', pengajuanData);
+        console.log('Backend URL:', backend.bimbingan.pengajuan);
+        
+        postJSON(backend.bimbingan.pengajuan, 'login', getCookie('login'), pengajuanData, function(result) {
+            closeModal();
+            if (result.status === 200) {
+                showNotification('Pengajuan sidang berhasil dikirim', 'is-success');
+                // Update button state
+                setTimeout(checkExistingPengajuan, 1000);
+            } else {
+                // Handle specific error messages
+                let errorMessage = 'Gagal mengirim pengajuan';
+                if (result.data?.response) {
+                    errorMessage = result.data.response;
+                } else if (result.response) {
+                    errorMessage = result.response;
+                } else if (result.status) {
+                    errorMessage = `Error ${result.status}: ${result.info || 'Unknown error'}`;
+                }
+
+                showNotification(`Error: ${errorMessage}`, 'is-danger');
+                console.error('Pengajuan error:', result);
+            }
+        });
+    });
+    
+    // Close notification
+    closeNotificationBtn.addEventListener('click', function() {
+        notification.classList.add('is-hidden');
+    });
+}
+
+// Function to fetch and populate dosen penguji dropdown
+function fetchDosenPenguji() {
+    getJSON(backend.bimbingan.dosenpenguji, 'login', getCookie('login'), function(result) {
+        if (result.status === 200) {
+            const dosenPengujiSelect = document.getElementById('dosen-penguji');
+            
+            // Clear existing options except the first one
+            while (dosenPengujiSelect.options.length > 1) {
+                dosenPengujiSelect.remove(1);
+            }
+            
+            // Add new options
+            result.data.forEach(dosen => {
+                const option = document.createElement('option');
+                option.value = dosen._id;
+                option.textContent = dosen.name;
+                option.setAttribute('data-phone', dosen.phonenumber);
+                dosenPengujiSelect.appendChild(option);
             });
-    } catch (error) {
-        console.error('Error in checkExpiredClaims:', error);
-    }
+        } else {
+            showNotification('Gagal mengambil data dosen penguji', 'is-danger');
+        }
+    });
 }
 
-// Load user event points
-function loadUserPoints() {
-    try {
-        const token = getCookie('login');
-        if (!token) {
-            console.log('No login token found for loadUserPoints');
+// Show notification function
+function showNotification(message, type) {
+    const notification = document.getElementById('notification-pengajuan');
+    const notificationMessage = document.getElementById('notification-message');
+    
+    // Remove all notification types
+    notification.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info');
+    // Add the specific type
+    notification.classList.add(type);
+    // Set the message
+    notificationMessage.textContent = message;
+    // Show the notification
+    notification.classList.remove('is-hidden');
+    
+    // Auto hide after 5 seconds
+    setTimeout(function() {
+        notification.classList.add('is-hidden');
+    }, 5000);
+}
+
+// Event Claim Modal Logic - Simplified (No claim status check)
+function setupClaimEventModal() {
+    const modal = document.getElementById('modal-claim-event');
+    const tombolClaimEvent = document.getElementById('tombolclaimevent');
+    const closeModalBtn = document.getElementById('close-modal-claim');
+    const cancelBtn = document.getElementById('cancel-claim-code');
+    const submitBtn = document.getElementById('submit-claim-code');
+    const eventCodeInput = document.getElementById('event-code-input');
+
+    const notificationModal = document.getElementById('notification-claim-event-modal');
+    const notificationMessageModal = document.getElementById('notification-message-claim-modal');
+    const closeNotificationModalBtn = document.getElementById('close-notification-claim-modal');
+
+    if (!modal || !tombolClaimEvent || !closeModalBtn || !cancelBtn || !submitBtn || !eventCodeInput) {
+        console.error("One or more elements for claim event modal not found.");
+        return;
+    }
+
+    // Button is always enabled and ready to use
+    tombolClaimEvent.textContent = 'Claim Code Referral Event';
+    tombolClaimEvent.disabled = false;
+    tombolClaimEvent.classList.remove('is-success');
+    tombolClaimEvent.classList.add('is-warning');
+    tombolClaimEvent.setAttribute('title', 'Click to claim an event referral code');
+
+    tombolClaimEvent.addEventListener('click', function() {
+        eventCodeInput.value = ''; 
+        hideEventNotificationModal();
+        modal.classList.add('is-active');
+    });
+
+    function closeEventModal() {
+        modal.classList.remove('is-active');
+    }
+
+    closeModalBtn.addEventListener('click', closeEventModal);
+    cancelBtn.addEventListener('click', closeEventModal);
+    if(closeNotificationModalBtn) {
+        closeNotificationModalBtn.addEventListener('click', hideEventNotificationModal);
+    }
+
+    submitBtn.addEventListener('click', function() {
+        const code = eventCodeInput.value.trim();
+        if (!code) {
+            showEventNotificationModal('Please enter an event code.', 'is-danger');
             return;
         }
 
-        console.log('Loading user points from:', backend.getUserPoints);
+        hideEventNotificationModal();
+        submitBtn.classList.add('is-loading');
 
-        getJSON(backend.getUserPoints, 'login', token, (result) => {
-            console.log('User points response:', result);
-            console.log('Response status:', result.status);
-            console.log('Response data:', result.data);
+        const claimData = { code: code };
 
-            // Check for both possible response structures
-            if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
-                // Handle both response structures
-                const pointsData = result.data.Data || result.data.data;
-                console.log('Points data:', pointsData);
-                console.log('Total event points:', pointsData.total_event_points);
-                updatePointsDisplay(pointsData.total_event_points || 0);
-            } else {
-                console.error('Failed to load user points:', result);
-                console.error('Status:', result.status);
-                console.error('Data:', result.data);
-                // Set default 0 if failed
-                updatePointsDisplay(0);
-            }
-        });
-    } catch (error) {
-        console.error('Error loading user points:', error);
-        updatePointsDisplay(0);
-    }
-}
-
-// Update points display in UI
-function updatePointsDisplay(totalPoints) {
-    // Update points di header atau sidebar jika ada
-    const pointsElement = document.getElementById('userEventPoints');
-    if (pointsElement) {
-        pointsElement.textContent = totalPoints;
-    }
-
-    // Update points di stats card jika ada
-    const statsElement = document.getElementById('totalEventPoints');
-    if (statsElement) {
-        statsElement.textContent = `${totalPoints} Poin`;
-    }
-}
-
-// Modal functions
-window.openClaimModal = function(eventId) {
-    const event = currentEvents.find(e => e._id === eventId);
-    if (!event) return;
-
-    // Check if event is available for claim (hanya cek user lain)
-    if (event.is_claimed_by_any) {
-        showNotification('Event ini sudah diklaim oleh user lain', 'is-warning');
-        return;
-    }
-
-    selectedEvent = event;
-
-    document.getElementById('modalEventName').textContent = event.name;
-    document.getElementById('modalEventDescription').textContent = event.description;
-    document.getElementById('modalEventPoints').textContent = event.points + ' Poin';
-
-    document.getElementById('claimModal').classList.add('is-active');
-};
-
-window.closeClaimModal = function() {
-    document.getElementById('claimModal').classList.remove('is-active');
-    selectedEvent = null;
-};
-
-window.confirmClaim = function() {
-    if (!selectedEvent) return;
-
-    const confirmBtn = document.getElementById('confirmClaimBtn');
-    const originalText = confirmBtn.innerHTML;
-
-    try {
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Claiming...';
-        confirmBtn.disabled = true;
-
-        const token = getCookie('login');
-        const requestData = {
-            event_id: selectedEvent._id
-        };
-
-        console.log('Claiming event:', requestData);
-
-        postJSON(backend.claimEvent, 'login', token, requestData, (result) => {
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
-
-            console.log('Claim response:', result);
-
+        postJSON(backend.bimbingan.claimEvent, 'login', getCookie('login'), claimData, function(result) {
+            submitBtn.classList.remove('is-loading');
             if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = result;
-                }
-
-                if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    const message = responseData.message || `Event berhasil di-claim! Silakan cek deadline di card Anda.`;
-                    showNotification(message, 'is-success');
-                    closeClaimModal();
-
-                    // Refresh data
-                    loadEvents();
-                    loadUserClaims();
-                } else {
-                    const errorMsg = responseData.response || responseData.status || 'Gagal claim event';
-                    showNotification('Error: ' + errorMsg, 'is-danger');
-                }
+                closeEventModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: result.data.response || 'Event code claimed successfully! Your bimbingan has been added.',
+                    confirmButtonText: 'Great!'
+                }).then(() => {
+                    fetchActivityScore(); // Refresh activity score table
+                    // Refresh bimbingan list dropdown
+                    const bimbinganSelect = document.getElementById('bimbingan-name');
+                    if (bimbinganSelect) {
+                        while (bimbinganSelect.options.length > 1) { // Keep the default option
+                            bimbinganSelect.remove(1);
+                        }
+                    }
+                    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
+                    checkSidangEligibility(); // Re-check sidang eligibility as bimbingan count changed
+                });
             } else {
-                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal claim event';
-                showNotification('Error: ' + errorMsg, 'is-danger');
-                console.error('Claim event error:', result);
+                 showEventNotificationModal(result.data?.response || 'Failed to claim event code.', 'is-danger');
             }
         });
-    } catch (error) {
-        confirmBtn.innerHTML = originalText;
-        confirmBtn.disabled = false;
-        console.error('Error claiming event:', error);
-        showNotification('Gagal claim event: ' + error.message, 'is-danger');
-    }
-};
-
-window.openSubmitModal = function(claimId) {
-    const claim = currentClaims.find(c => c.claim_id === claimId);
-    if (!claim) return;
-
-    selectedClaim = claim;
-
-    document.getElementById('submitEventName').textContent = claim.event.name;
-    document.getElementById('taskLinkInput').value = '';
-
-    document.getElementById('submitModal').classList.add('is-active');
-};
-
-window.closeSubmitModal = function() {
-    document.getElementById('submitModal').classList.remove('is-active');
-    selectedClaim = null;
-};
-
-window.confirmSubmit = function() {
-    if (!selectedClaim) return;
-
-    const taskLink = document.getElementById('taskLinkInput').value.trim();
-    if (!taskLink) {
-        showNotification('Silakan masukkan link tugas', 'is-warning');
-        return;
-    }
-
-    // Validate URL format
-    try {
-        new URL(taskLink);
-    } catch (e) {
-        showNotification('Format link tidak valid', 'is-warning');
-        return;
-    }
-
-    const confirmBtn = document.getElementById('confirmSubmitBtn');
-    const originalText = confirmBtn.innerHTML;
-
-    try {
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-        confirmBtn.disabled = true;
-
-        const token = getCookie('login');
-        const requestData = {
-            claim_id: selectedClaim.claim_id,
-            task_link: taskLink
-        };
-
-        console.log('Submitting task:', requestData);
-
-        postJSON(backend.submitTask, 'login', token, requestData, (result) => {
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
-
-            console.log('Submit response:', result);
-
-            if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = result;
-                }
-
-                if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner dalam 24 jam. Countdown akan muncul di card Anda.', 'is-success');
-                    closeSubmitModal();
-
-                    // Refresh data
-                    loadUserClaims();
-                    loadUserPoints(); // Refresh points juga
-                } else {
-                    const errorMsg = responseData.response || responseData.status || 'Gagal submit tugas';
-                    showNotification('Error: ' + errorMsg, 'is-danger');
-                }
-            } else {
-                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal submit tugas';
-                showNotification('Error: ' + errorMsg, 'is-danger');
-                console.error('Submit task error:', result);
-            }
-        });
-    } catch (error) {
-        confirmBtn.innerHTML = originalText;
-        confirmBtn.disabled = false;
-        console.error('Error submitting task:', error);
-        showNotification('Gagal submit tugas: ' + error.message, 'is-danger');
-    }
-};
-
-// Close modals when clicking background
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-background')) {
-        closeClaimModal();
-        closeSubmitModal();
-    }
-});
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeClaimModal();
-        closeSubmitModal();
-    }
-});
-
-// Cleanup timers when page unloads
-window.addEventListener('beforeunload', function() {
-    Object.values(timers).forEach(timer => clearInterval(timer));
-});
-
-// Add CSS for countdown styling
-function addCountdownCSS() {
-    if (document.getElementById('countdown-css')) return; // Prevent duplicate
-
-    const style = document.createElement('style');
-    style.id = 'countdown-css';
-    style.textContent = `
-        .approval-countdown {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            text-align: center;
-            font-weight: bold;
-            margin: 8px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-
-        .approval-countdown.has-text-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-        }
-
-        .approval-countdown.has-text-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Main function required by dashboard routing system
-export function main() {
-    console.log('Bimbinganevent main function called');
-    console.log('Backend URLs:', backend);
-
-    // Add countdown CSS
-    addCountdownCSS();
-
-    // Check if user is logged in
-    const token = getCookie('login');
-    console.log('Login token:', token ? 'Found' : 'Not found');
-
-    if (!token) {
-        showNotification('Silakan login terlebih dahulu', 'is-warning');
-        return;
-    }
-
-    // Initialize the page
-    console.log('Initializing bimbinganevent page...');
-    loadEvents();
-    loadUserClaims();
-    loadUserPoints();
-
-    // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
-    setInterval(checkExpiredClaims, 30000);
-
-    // Refresh data every 6 seconds
-    setInterval(() => {
-        console.log('Auto-refreshing data...');
-        loadEvents();
-        loadUserClaims();
-        loadUserPoints();
-    }, 6000);
-
-    // Add manual test button for debugging
-    addDebugButton();
-}
-
-// Add debug button for manual testing
-function addDebugButton() {
-    const debugButton = document.createElement('button');
-    debugButton.className = 'button is-info is-small';
-    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Test';
-    debugButton.style.position = 'fixed';
-    debugButton.style.top = '10px';
-    debugButton.style.right = '10px';
-    debugButton.style.zIndex = '9999';
-
-    debugButton.addEventListener('click', function() {
-        console.log('=== DEBUG TEST ===');
-        console.log('Current events:', currentEvents);
-        console.log('Current claims:', currentClaims);
-        console.log('Backend URLs:', backend);
-        console.log('Login token:', getCookie('login'));
-
-        // Manual API test
-        testAPIManually();
     });
 
-    document.body.appendChild(debugButton);
-}
+    function showEventNotificationModal(message, type) {
+        if (!notificationModal || !notificationMessageModal) return;
+        notificationMessageModal.textContent = message;
+        notificationModal.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+        notificationModal.classList.add(type);
+    }
 
-// Manual API test function
-async function testAPIManually() {
-    const token = getCookie('login');
-    console.log('Testing API manually...');
-
-    try {
-        // Test getUserPoints endpoint
-        console.log('Testing getUserPoints endpoint:', backend.getUserPoints);
-        const pointsResponse = await fetch(backend.getUserPoints, {
-            method: 'GET',
-            headers: {
-                'login': token
-            }
-        });
-
-        console.log('Points API response status:', pointsResponse.status);
-        const pointsResult = await pointsResponse.json();
-        console.log('Points API result:', pointsResult);
-
-        if (pointsResponse.ok) {
-            showNotification('Points API test berhasil! Check console untuk detail.', 'is-success');
-
-            // Update points display with result - handle both response structures
-            if ((pointsResult.Status === 'Success' || pointsResult.status === 'Success')) {
-                const pointsData = pointsResult.Data || pointsResult.data;
-                console.log('Updating points display with:', pointsData.total_event_points);
-                updatePointsDisplay(pointsData.total_event_points || 0);
-            }
-        } else {
-            showNotification('Points API test gagal: ' + pointsResult.Status, 'is-danger');
-        }
-
-        // Test getAllEvents endpoint
-        const response = await fetch(backend.getAllEvents, {
-            method: 'GET',
-            headers: {
-                'login': token
-            }
-        });
-
-        console.log('Events API test response status:', response.status);
-        const result = await response.json();
-        console.log('Events API test result:', result);
-
-        if (response.ok) {
-            showNotification('Events API test berhasil! Check console untuk detail.', 'is-success');
-        } else {
-            showNotification('Events API test gagal: ' + result.status, 'is-danger');
-        }
-    } catch (error) {
-        console.error('Manual API test error:', error);
-        showNotification('API test error: ' + error.message, 'is-danger');
+    function hideEventNotificationModal() {
+        if (!notificationModal) return;
+        notificationModal.classList.add('is-hidden');
     }
 }
+
+// Time Event Claim Modal Logic
+function setupClaimTimeEventModal() {
+    const modal = document.getElementById('modal-claim-time-event');
+    const tombolClaimTimeEvent = document.getElementById('tombolclaimtimeevent');
+    const closeModalBtn = document.getElementById('close-modal-claim-time');
+    const cancelBtn = document.getElementById('cancel-claim-time-code');
+    const submitBtn = document.getElementById('submit-claim-time-code');
+    const timeEventCodeInput = document.getElementById('time-event-code-input');
+
+    const notificationModal = document.getElementById('notification-claim-time-event-modal');
+    const notificationMessageModal = document.getElementById('notification-message-claim-time-modal');
+    const closeNotificationModalBtn = document.getElementById('close-notification-claim-time-modal');
+
+    if (!modal || !tombolClaimTimeEvent || !closeModalBtn || !cancelBtn || !submitBtn || !timeEventCodeInput) {
+        console.error("One or more elements for claim time event modal not found.");
+        return;
+    }
+
+    // Button is always enabled and ready to use
+    tombolClaimTimeEvent.textContent = 'Claim Code Event Time';
+    tombolClaimTimeEvent.disabled = false;
+    tombolClaimTimeEvent.classList.remove('is-success');
+    tombolClaimTimeEvent.classList.add('is-danger');
+    tombolClaimTimeEvent.setAttribute('title', 'Click to claim a time-limited event code');
+
+    tombolClaimTimeEvent.addEventListener('click', function() {
+        timeEventCodeInput.value = ''; 
+        hideTimeEventNotificationModal();
+        modal.classList.add('is-active');
+    });
+
+    function closeTimeEventModal() {
+        modal.classList.remove('is-active');
+    }
+
+    closeModalBtn.addEventListener('click', closeTimeEventModal);
+    cancelBtn.addEventListener('click', closeTimeEventModal);
+    if(closeNotificationModalBtn) {
+        closeNotificationModalBtn.addEventListener('click', hideTimeEventNotificationModal);
+    }
+
+    submitBtn.addEventListener('click', function() {
+        const code = timeEventCodeInput.value.trim();
+        if (!code) {
+            showTimeEventNotificationModal('Please enter a time event code.', 'is-danger');
+            return;
+        }
+
+        hideTimeEventNotificationModal();
+        submitBtn.classList.add('is-loading');
+
+        const claimData = { code: code };
+
+        postJSON(backend.bimbingan.claimTimeEvent, 'login', getCookie('login'), claimData, function(result) {
+            submitBtn.classList.remove('is-loading');
+            if (result.status === 200) {
+                closeTimeEventModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: result.data.response || 'Time event code claimed successfully! Your bimbingan has been added.',
+                    confirmButtonText: 'Great!'
+                }).then(() => {
+                    fetchActivityScore(); // Refresh activity score table
+                    // Refresh bimbingan list dropdown
+                    const bimbinganSelect = document.getElementById('bimbingan-name');
+                    if (bimbinganSelect) {
+                        while (bimbinganSelect.options.length > 1) { // Keep the default option
+                            bimbinganSelect.remove(1);
+                        }
+                    }
+                    getJSON(backend.project.assessment,'login',getCookie('login'),getBimbinganList);
+                    checkSidangEligibility(); // Re-check sidang eligibility as bimbingan count changed
+                });
+            } else {
+                 showTimeEventNotificationModal(result.data?.response || 'Failed to claim time event code.', 'is-danger');
+            }
+        });
+    });
+
+    function showTimeEventNotificationModal(message, type) {
+        if (!notificationModal || !notificationMessageModal) return;
+        notificationMessageModal.textContent = message;
+        notificationModal.classList.remove('is-success', 'is-danger', 'is-warning', 'is-info', 'is-hidden');
+        notificationModal.classList.add(type);
+    }
+
+    function hideTimeEventNotificationModal() {
+        if (!notificationModal) return;
+        notificationModal.classList.add('is-hidden');
+    }
+}
+
