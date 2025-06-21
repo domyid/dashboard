@@ -176,97 +176,9 @@ window.copyCode = function() {
     });
 };
 
-// Test buy endpoint manually
-async function testBuyEndpoint() {
-    const token = getCookie('login');
-    console.log('Testing buy endpoint manually...');
 
-    // Test both endpoints to see which one works
-    const endpoints = [
-        'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/store/buy-bimbingan-code',
-        'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/buy-bimbingan-code'
-    ];
 
-    for (const endpoint of endpoints) {
-        console.log(`Testing endpoint: ${endpoint}`);
 
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'login': token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-
-            console.log(`${endpoint} - Status:`, response.status);
-            console.log(`${endpoint} - Headers:`, [...response.headers.entries()]);
-
-            const result = await response.json();
-            console.log(`${endpoint} - Result:`, result);
-
-            if (response.ok) {
-                showNotification(`✅ ${endpoint} - WORKS!`, 'is-success');
-            } else {
-                showNotification(`❌ ${endpoint} - ${response.status}: ${result.response}`, 'is-danger');
-            }
-        } catch (error) {
-            console.error(`${endpoint} - Error:`, error);
-            showNotification(`❌ ${endpoint} - Error: ${error.message}`, 'is-danger');
-        }
-    }
-}
-
-// Add debug button
-function addDebugButton() {
-    const debugButton = document.createElement('button');
-    debugButton.className = 'button is-info is-small';
-    debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug';
-    debugButton.style.position = 'fixed';
-    debugButton.style.top = '10px';
-    debugButton.style.right = '10px';
-    debugButton.style.zIndex = '9999';
-
-    debugButton.addEventListener('click', function() {
-        console.log('=== STORE DEBUG ===');
-        console.log('Backend URLs:', backend);
-        console.log('Login token:', getCookie('login'));
-        console.log('User points data:', userPointsData);
-
-        // Test points loading
-        loadUserPoints();
-
-        // Test buy endpoint
-        testBuyEndpoint();
-    });
-
-    document.body.appendChild(debugButton);
-
-    // Add hard refresh button
-    const refreshButton = document.createElement('button');
-    refreshButton.className = 'button is-warning is-small';
-    refreshButton.innerHTML = '<i class="fas fa-sync"></i> Hard Refresh';
-    refreshButton.style.position = 'fixed';
-    refreshButton.style.top = '50px';
-    refreshButton.style.right = '10px';
-    refreshButton.style.zIndex = '9999';
-
-    refreshButton.addEventListener('click', function() {
-        console.log('Hard refreshing page...');
-        // Clear all caches and reload
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (let name of names) {
-                    caches.delete(name);
-                }
-            });
-        }
-        location.reload(true);
-    });
-
-    document.body.appendChild(refreshButton);
-}
 
 // Main function (required by dashboard routing)
 export function main() {
@@ -284,14 +196,6 @@ export function main() {
 
     console.log('Initializing bimbinganstore page...');
     loadUserPoints();
-
-    // Add debug button
-    addDebugButton();
-
-    // Add cache info
-    console.log('=== CACHE DEBUG ===');
-    console.log('Script loaded at:', new Date().toISOString());
-    console.log('Buy endpoint:', backend.buyBimbinganCode);
 }
 
 // Auto-refresh points every 6 seconds
