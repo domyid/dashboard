@@ -409,14 +409,40 @@ function checkSidangEligibility() {
             console.log('✅ Successfully got bimbingan data');
             console.log('📋 Raw bimbingan data:', result.data);
 
+            // Debug: Show structure of first bimbingan record
+            if (result.data.length > 0) {
+                console.log('🔍 First bimbingan record structure:', result.data[0]);
+                console.log('🔍 All keys in first record:', Object.keys(result.data[0]));
+
+                // Check for different possible field names
+                const firstRecord = result.data[0];
+                console.log('🔍 Possible approved fields:');
+                console.log(`   approved: ${firstRecord.approved}`);
+                console.log(`   Approved: ${firstRecord.Approved}`);
+                console.log(`   isApproved: ${firstRecord.isApproved}`);
+                console.log(`   is_approved: ${firstRecord.is_approved}`);
+                console.log(`   status: ${firstRecord.status}`);
+                console.log(`   validasi: ${firstRecord.validasi}`);
+            }
+
             // Count only APPROVED bimbingan sessions
             const approvedBimbingan = result.data.filter(bimbingan => {
-                console.log(`📝 Bimbingan ${bimbingan.bimbinganke || 'unknown'}: approved = ${bimbingan.approved} (type: ${typeof bimbingan.approved})`);
-                // Handle different data types for approved field
-                return bimbingan.approved === true ||
-                       bimbingan.approved === 'true' ||
-                       bimbingan.approved === 1 ||
-                       bimbingan.approved === '1';
+                console.log(`📝 Bimbingan ${bimbingan.bimbinganke || 'unknown'}:`);
+                console.log(`   approved (lowercase): ${bimbingan.approved} (type: ${typeof bimbingan.approved})`);
+                console.log(`   Approved (uppercase): ${bimbingan.Approved} (type: ${typeof bimbingan.Approved})`);
+
+                // Handle different field names and data types for approved field
+                const isApproved = bimbingan.Approved === true ||
+                                 bimbingan.Approved === 'true' ||
+                                 bimbingan.Approved === 1 ||
+                                 bimbingan.Approved === '1' ||
+                                 bimbingan.approved === true ||
+                                 bimbingan.approved === 'true' ||
+                                 bimbingan.approved === 1 ||
+                                 bimbingan.approved === '1';
+
+                console.log(`   Final approved status: ${isApproved}`);
+                return isApproved;
             });
 
             const approvedCount = approvedBimbingan.length;
@@ -556,6 +582,10 @@ function checkExistingPengajuan() {
                 getJSON(backend.project.assessment, 'login', getCookie('login'), function(bimbinganResult) {
                     if (bimbinganResult.status === 200) {
                         const approvedBimbingan = bimbinganResult.data.filter(bimbingan =>
+                            bimbingan.Approved === true ||
+                            bimbingan.Approved === 'true' ||
+                            bimbingan.Approved === 1 ||
+                            bimbingan.Approved === '1' ||
                             bimbingan.approved === true ||
                             bimbingan.approved === 'true' ||
                             bimbingan.approved === 1 ||
@@ -928,6 +958,10 @@ function addSidangDebugButton() {
 
             if (result.status === 200) {
                 const approvedBimbingan = result.data.filter(b =>
+                    b.Approved === true ||
+                    b.Approved === 'true' ||
+                    b.Approved === 1 ||
+                    b.Approved === '1' ||
                     b.approved === true ||
                     b.approved === 'true' ||
                     b.approved === 1 ||
