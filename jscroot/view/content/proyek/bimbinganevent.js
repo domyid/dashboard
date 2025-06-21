@@ -1,358 +1,413 @@
 import { getJSON, postJSON } from "https://cdn.jsdelivr.net/gh/jscroot/api@0.0.7/croot.js";
 import { getCookie } from "https://cdn.jsdelivr.net/gh/jscroot/cookie@0.0.1/croot.js";
 
-// Fallback postJSON function if the imported one fails
-async function postJSONFallback(url, headerName, headerValue, data) {
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                [headerName]: headerValue
-            },
-            body: JSON.stringify(data)
-        });
+// API Configuration
+const API_BASE = 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event';
+const endpoints = {
+    getAllEvents: `${API_BASE}/all`,
+    claimEvent: `${API_BASE}/claim`,
+    submitTask: `${API_BASE}/submit`,
+    getUserClaims: `${API_BASE}/myclaims`,
+    getUserPoints: `${API_BASE}/mypoints`,
+    checkExpired: `${API_BASE}/checkexpired`
+};
 
-        const result = await response.json();
-        return {
-            status: response.ok ? 200 : response.status,
-            data: result
-        };
+// Application State
+const state = {
+    events: [],
+    claims: [],
+    userStats: {
+        totalPoints: 0,
+        claimedCount: 0,
+        completedCount: 0
+    },
+    selectedEvent: null,
+    selectedClaim: null,
+    timers: new Map(),
+    isLoading: false
+};
+
+// DOM Elements Cache
+const elements = {
+    // Stats
+    userTotalPoints: null,
+    userClaimedCount: null,
+    userCompletedCount: null,
+    
+    // Events
+    eventsGrid: null,
+    eventsLoading: null,
+    eventsEmpty: null,
+    
+    // Claims
+    claimsGrid: null,
+    claimsLoading: null,
+    claimsEmpty: null,
+    
+    // Modals
+    claimModal: null,
+    submitModal: null
+};
+
+// Initialize Application
+export function main() {
+    console.log('🚀 Initializing Event Bimbingan v2...');
+    
+    // Check authentication
+    const token = getCookie('login');
+    if (!token) {
+        showNotification('Silakan login terlebih dahulu', 'is-warning');
+        return;
+    }
+
+    // Initialize DOM elements
+    initializeElements();
+    
+    // Load initial data
+    setTimeout(() => {
+        loadAllData();
+    }, 100);
+
+    // Setup auto-refresh
+    setupAutoRefresh();
+    
+    // Setup expired claims checker
+    setupExpiredChecker();
+    
+    console.log('✅ Event Bimbingan v2 initialized successfully');
+}
+
+// Initialize DOM Elements
+function initializeElements() {
+    // Stats elements
+    elements.userTotalPoints = document.getElementById('userTotalPoints');
+    elements.userClaimedCount = document.getElementById('userClaimedCount');
+    elements.userCompletedCount = document.getElementById('userCompletedCount');
+    
+    // Events elements
+    elements.eventsGrid = document.getElementById('eventsGrid');
+    elements.eventsLoading = document.getElementById('eventsLoading');
+    elements.eventsEmpty = document.getElementById('eventsEmpty');
+    
+    // Claims elements
+    elements.claimsGrid = document.getElementById('claimsGrid');
+    elements.claimsLoading = document.getElementById('claimsLoading');
+    elements.claimsEmpty = document.getElementById('claimsEmpty');
+    
+    // Modal elements
+    elements.claimModal = document.getElementById('claimModal');
+    elements.submitModal = document.getElementById('submitModal');
+    
+    console.log('DOM elements initialized');
+}
+
+// Load All Data
+async function loadAllData() {
+    console.log('Loading all data...');
+    
+    try {
+        // Load data in parallel
+        await Promise.all([
+            loadEvents(),
+            loadUserClaims(),
+            loadUserPoints()
+        ]);
+        
+        console.log('✅ All data loaded successfully');
     } catch (error) {
-        console.error('Fallback postJSON error:', error);
-        throw error;
+        console.error('❌ Error loading data:', error);
+        showNotification('Gagal memuat data. Silakan refresh halaman.', 'is-danger');
     }
 }
 
-// Backend URLs
-const backend = {
-    getAllEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/all',
-    claimEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim',
-    submitTask: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/submit',
-    getUserClaims: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/myclaims',
-    checkExpired: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/checkexpired',
-    getUserPoints: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/mypoints'
-};
-
-// Global variables
-let currentEvents = [];
-let currentClaims = [];
-let selectedEvent = null;
-let selectedClaim = null;
-let timers = {};
-
-// DOM Elements
-const loadingSpinner = document.getElementById('loadingSpinner');
-const eventsContainer = document.getElementById('eventsContainer');
-const claimsContainer = document.getElementById('claimsContainer');
-const emptyEvents = document.getElementById('emptyEvents');
-const emptyClaims = document.getElementById('emptyClaims');
-
-// Note: Initialization moved to main() function for dashboard routing compatibility
-
-// Load all available events
-function loadEvents() {
+// Load Available Events
+async function loadEvents() {
+    if (!elements.eventsGrid) return;
+    
     try {
-        showLoading(true);
+        showEventsLoading(true);
+        
         const token = getCookie('login');
-
-        if (!token) {
-            showNotification('Silakan login terlebih dahulu', 'is-warning');
-            showLoading(false);
-            return;
-        }
-
-        console.log('Loading events from:', backend.getAllEvents);
-        console.log('Token:', token);
-
-        getJSON(backend.getAllEvents, 'login', token, (result) => {
-            showLoading(false);
-
+        console.log('Loading events from:', endpoints.getAllEvents);
+        
+        getJSON(endpoints.getAllEvents, 'login', token, (result) => {
+            showEventsLoading(false);
             console.log('Events response:', result);
-
+            
             if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = [];
+                let events = [];
+                
+                // Handle different response formats
+                if (result.data?.data && Array.isArray(result.data.data)) {
+                    events = result.data.data;
+                } else if (result.data && Array.isArray(result.data)) {
+                    events = result.data;
                 }
-
-                console.log('Processed events data:', responseData);
-                currentEvents = responseData || [];
-                displayEvents();
-
-                if (currentEvents.length === 0) {
-                    showNotification('Belum ada event yang tersedia', 'is-info');
-                }
+                
+                state.events = events;
+                renderEvents();
+                console.log(`✅ Loaded ${events.length} events`);
             } else {
-                const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal memuat event';
-                showNotification('Error loading events: ' + errorMsg, 'is-danger');
-                console.error('Load events error:', result);
+                console.log('No events found');
+                state.events = [];
+                renderEvents();
             }
         });
     } catch (error) {
-        showLoading(false);
         console.error('Error loading events:', error);
-        showNotification('Gagal memuat data event: ' + error.message, 'is-danger');
+        showEventsLoading(false);
+        state.events = [];
+        renderEvents();
     }
 }
 
-// Load user's event claims
-function loadUserClaims() {
+// Load User Claims
+async function loadUserClaims() {
+    if (!elements.claimsGrid) return;
+    
     try {
+        showClaimsLoading(true);
+        
         const token = getCookie('login');
-
-        if (!token) {
-            currentClaims = [];
-            displayClaims();
-            return;
-        }
-
-        console.log('Loading user claims from:', backend.getUserClaims);
-
-        getJSON(backend.getUserClaims, 'login', token, (result) => {
+        console.log('Loading user claims from:', endpoints.getUserClaims);
+        
+        getJSON(endpoints.getUserClaims, 'login', token, (result) => {
+            showClaimsLoading(false);
             console.log('Claims response:', result);
-
+            
             if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data && Array.isArray(result.data.data)) {
-                    responseData = result.data.data;
+                let claims = [];
+                
+                // Handle different response formats
+                if (result.data?.data && Array.isArray(result.data.data)) {
+                    claims = result.data.data;
                 } else if (result.data && Array.isArray(result.data)) {
-                    responseData = result.data;
-                } else {
-                    responseData = [];
+                    claims = result.data;
                 }
-
-                console.log('Processed claims data:', responseData);
-                currentClaims = Array.isArray(responseData) ? responseData : [];
-                displayClaims();
+                
+                state.claims = claims;
+                renderClaims();
+                updateUserStats();
+                console.log(`✅ Loaded ${claims.length} claims`);
             } else {
-                console.log('No claims found or error:', result);
-                currentClaims = [];
-                displayClaims();
+                console.log('No claims found');
+                state.claims = [];
+                renderClaims();
+                updateUserStats();
             }
         });
     } catch (error) {
         console.error('Error loading claims:', error);
-        currentClaims = [];
-        displayClaims();
+        showClaimsLoading(false);
+        state.claims = [];
+        renderClaims();
     }
 }
 
-// Display available events
-function displayEvents() {
-    if (!eventsContainer) {
-        console.log('Events container not found in DOM yet');
+// Load User Points
+async function loadUserPoints() {
+    try {
+        const token = getCookie('login');
+        console.log('Loading user points from:', endpoints.getUserPoints);
+        
+        getJSON(endpoints.getUserPoints, 'login', token, (result) => {
+            console.log('Points response:', result);
+            
+            if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
+                const pointsData = result.data.Data || result.data.data;
+                state.userStats.totalPoints = pointsData?.total_event_points || 0;
+                updateStatsDisplay();
+                console.log(`✅ User has ${state.userStats.totalPoints} points`);
+            } else {
+                console.log('Failed to load points, setting to 0');
+                state.userStats.totalPoints = 0;
+                updateStatsDisplay();
+            }
+        });
+    } catch (error) {
+        console.error('Error loading user points:', error);
+        state.userStats.totalPoints = 0;
+        updateStatsDisplay();
+    }
+}
+
+// Render Events
+function renderEvents() {
+    if (!elements.eventsGrid) return;
+    
+    elements.eventsGrid.innerHTML = '';
+    
+    if (state.events.length === 0) {
+        showEventsEmpty(true);
         return;
     }
-
-    eventsContainer.innerHTML = '';
-
-    if (!Array.isArray(currentEvents) || currentEvents.length === 0) {
-        if (emptyEvents) {
-            emptyEvents.style.display = 'block';
-        }
-        return;
-    }
-
-    if (emptyEvents) {
-        emptyEvents.style.display = 'none';
-    }
-
-    currentEvents.forEach(event => {
+    
+    showEventsEmpty(false);
+    
+    state.events.forEach(event => {
         const eventCard = createEventCard(event);
-        eventsContainer.appendChild(eventCard);
+        elements.eventsGrid.appendChild(eventCard);
     });
 }
 
-// Create event card HTML
+// Render Claims
+function renderClaims() {
+    if (!elements.claimsGrid) return;
+    
+    elements.claimsGrid.innerHTML = '';
+    
+    if (state.claims.length === 0) {
+        showClaimsEmpty(true);
+        return;
+    }
+    
+    showClaimsEmpty(false);
+    
+    state.claims.forEach(claim => {
+        const claimCard = createClaimCard(claim);
+        elements.claimsGrid.appendChild(claimCard);
+    });
+}
+
+// Create Event Card
 function createEventCard(event) {
     const div = document.createElement('div');
     div.className = 'column is-one-third';
-
-    let cardClass = '';
-    let statusBadge = '';
-    let claimButton = '';
-
-    if (event.is_claimed_by_any) {
-        // Event sudah di-claim user lain
-        cardClass = 'has-background-light';
-        statusBadge = '<span class="status-expired">Sudah Diklaim User Lain</span>';
-        claimButton = '<p class="has-text-grey"><i class="fas fa-lock"></i> Event sudah diklaim user lain</p>';
-    } else {
-        // Event tersedia untuk di-claim
-        cardClass = '';
-        statusBadge = '<span class="tag is-success">Tersedia</span>';
-        claimButton = `<button class="button is-primary is-fullwidth" onclick="openClaimModal('${event._id}')">
-                         <i class="fas fa-hand-paper"></i> Claim Event
-                       </button>`;
-    }
-
+    
+    const isAvailable = !event.is_claimed_by_any;
+    const statusClass = isAvailable ? 'status-available' : 'status-expired';
+    const statusText = isAvailable ? 'Tersedia' : 'Sudah Diklaim';
+    const buttonContent = isAvailable 
+        ? `<button class="button is-success is-fullwidth btn-claim" onclick="openClaimModal('${event._id}')">
+             <i class="fas fa-hand-paper"></i> Claim Event
+           </button>`
+        : `<p class="has-text-grey has-text-centered">
+             <i class="fas fa-lock"></i> Event sudah diklaim user lain
+           </p>`;
+    
     div.innerHTML = `
-        <div class="card event-card ${cardClass}">
+        <div class="card event-card ${isAvailable ? '' : 'has-background-light'}">
             <div class="card-content">
                 <div class="media">
                     <div class="media-content">
                         <p class="title is-5">${event.name}</p>
-                        <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
-                            <span class="event-points">${event.points} Poin</span>
-                            ${statusBadge}
-                        </div>
-                        <div class="mb-2">
-                            <span class="tag is-light">⏱️ ${event.deadline_seconds} detik</span>
+                        <div class="level is-mobile">
+                            <div class="level-left">
+                                <span class="event-points">${event.points} Poin</span>
+                            </div>
+                            <div class="level-right">
+                                <span class="${statusClass}">${statusText}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="content">
                     <p>${event.description}</p>
+                    <div class="tags">
+                        <span class="tag is-light">
+                            <i class="fas fa-clock"></i> ${event.deadline_seconds}s
+                        </span>
+                    </div>
                     <div class="mt-4">
-                        ${claimButton}
+                        ${buttonContent}
                     </div>
                 </div>
             </div>
         </div>
     `;
-
+    
     return div;
 }
 
-// Display user claims
-function displayClaims() {
-    if (!claimsContainer) {
-        console.log('Claims container not found in DOM yet');
-        return;
-    }
-
-    claimsContainer.innerHTML = '';
-
-    if (!Array.isArray(currentClaims) || currentClaims.length === 0) {
-        if (emptyClaims) {
-            emptyClaims.style.display = 'block';
-        }
-        return;
-    }
-
-    if (emptyClaims) {
-        emptyClaims.style.display = 'none';
-    }
-
-    currentClaims.forEach(claim => {
-        const claimCard = createClaimCard(claim);
-        claimsContainer.appendChild(claimCard);
-    });
-}
-
-// Create claim card HTML
+// Create Claim Card
 function createClaimCard(claim) {
     const div = document.createElement('div');
     div.className = 'column is-half';
-    
+
     const now = new Date();
     const deadline = new Date(claim.deadline);
     const isExpired = now > deadline && claim.status === 'claimed';
-    
-    let statusBadge = '';
-    let actionButton = '';
-    
+
+    let statusClass = '';
+    let statusText = '';
+    let actionContent = '';
+
     switch (claim.status) {
         case 'claimed':
             if (isExpired) {
-                statusBadge = '<span class="status-expired">Expired</span>';
-                actionButton = '<p class="has-text-grey">Waktu habis, event tersedia untuk user lain</p>';
+                statusClass = 'status-expired';
+                statusText = 'Expired';
+                actionContent = '<p class="has-text-grey">Waktu habis, event tersedia untuk user lain</p>';
             } else {
-                statusBadge = '<span class="claimed-badge">Diklaim</span>';
-                actionButton = `
+                statusClass = 'status-claimed';
+                statusText = 'Diklaim';
+                actionContent = `
                     <div class="timer-display" id="timer-${claim.claim_id}">
                         Loading timer...
                     </div>
-                    <button class="button is-success is-fullwidth" onclick="openSubmitModal('${claim.claim_id}')">
+                    <button class="button is-primary is-fullwidth btn-submit" onclick="openSubmitModal('${claim.claim_id}')">
                         <i class="fas fa-upload"></i> Submit Tugas
                     </button>
                 `;
+                // Start timer
+                setTimeout(() => startTimer(claim.claim_id, deadline), 100);
             }
             break;
+
         case 'submitted':
-            statusBadge = '<span class="status-submitted">Menunggu Approval</span>';
-
-            // Get approval deadline dari backend response atau calculate manual
-            let approvalDeadline;
-            if (claim.approval_deadline) {
-                approvalDeadline = new Date(claim.approval_deadline);
-            } else {
-                // Fallback: calculate manual jika backend belum update
-                const submittedTime = new Date(claim.submitted_at);
-                approvalDeadline = new Date(submittedTime.getTime() + (86400 * 1000)); // 24 jam dari submit
-            }
-
-            const approvalCountdownId = `approval-countdown-${claim.claim_id}`;
-
-            actionButton = `
+            statusClass = 'status-submitted';
+            statusText = 'Menunggu Approval';
+            actionContent = `
                 <div class="notification is-info">
                     <p><strong>Tugas sudah disubmit!</strong></p>
-                    <p>Link: <a href="${claim.task_link}" target="_blank">${claim.task_link}</a></p>
+                    <p>Link: <a href="${claim.task_link}" target="_blank" class="has-text-link">${claim.task_link}</a></p>
                     <p>Menunggu approval dari owner...</p>
-                    <div class="mt-3">
-                        <p><strong>⏰ Sisa waktu approval:</strong></p>
-                        <p id="${approvalCountdownId}" class="has-text-weight-bold has-text-primary" style="font-size: 1.2em;">
-                            Menghitung...
-                        </p>
-                        <p class="is-size-7 has-text-grey">
-                            Jika tidak di-approve dalam 24 jam, event akan tersedia lagi untuk user lain
-                        </p>
-                    </div>
                 </div>
             `;
-
-            // Start approval countdown setelah DOM ready
-            setTimeout(() => {
-                startApprovalCountdown(approvalCountdownId, approvalDeadline, claim.claim_id);
-            }, 100);
             break;
+
         case 'approved':
-            statusBadge = '<span class="status-approved">Approved</span>';
-            actionButton = `
+            statusClass = 'status-approved';
+            statusText = 'Approved';
+            actionContent = `
                 <div class="notification is-success">
-                    <p><strong>Selamat! Tugas Anda telah disetujui</strong></p>
-                    <p>Anda mendapat ${claim.event.points} poin</p>
+                    <p><strong>🎉 Selamat! Tugas Anda telah disetujui</strong></p>
+                    <p>Anda mendapat <strong>${claim.event.points} poin</strong></p>
                 </div>
             `;
             break;
     }
-    
+
     div.innerHTML = `
         <div class="card event-card">
             <div class="card-content">
                 <div class="media">
                     <div class="media-content">
                         <p class="title is-5">${claim.event.name}</p>
-                        <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
-                            <span class="event-points">${claim.event.points} Poin</span>
-                            ${statusBadge}
+                        <div class="level is-mobile">
+                            <div class="level-left">
+                                <span class="event-points">${claim.event.points} Poin</span>
+                            </div>
+                            <div class="level-right">
+                                <span class="${statusClass}">${statusText}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="content">
                     <p>${claim.event.description}</p>
                     <div class="mt-4">
-                        ${actionButton}
+                        ${actionContent}
                     </div>
                 </div>
             </div>
         </div>
     `;
-    
-    // Start timer if needed
-    if (claim.status === 'claimed' && !isExpired) {
-        setTimeout(() => startTimer(claim.claim_id, deadline), 100);
-    }
-    
+
     return div;
 }
 
-// Start countdown timer
+// Start Timer
 function startTimer(claimId, deadline) {
     const timerElement = document.getElementById(`timer-${claimId}`);
     if (!timerElement) return;
@@ -362,11 +417,16 @@ function startTimer(claimId, deadline) {
         const timeLeft = deadline - now;
 
         if (timeLeft <= 0) {
-            timerElement.innerHTML = 'Waktu Habis!';
+            timerElement.innerHTML = '⏰ Waktu Habis!';
             timerElement.classList.add('timer-expired');
-            clearInterval(timers[claimId]);
 
-            // Refresh data to update UI
+            // Clear timer
+            if (state.timers.has(claimId)) {
+                clearInterval(state.timers.get(claimId));
+                state.timers.delete(claimId);
+            }
+
+            // Refresh data
             setTimeout(() => {
                 loadEvents();
                 loadUserClaims();
@@ -391,90 +451,78 @@ function startTimer(claimId, deadline) {
     };
 
     updateTimer();
-    timers[claimId] = setInterval(updateTimer, 1000);
+    const intervalId = setInterval(updateTimer, 1000);
+    state.timers.set(claimId, intervalId);
 }
 
-// Start approval countdown timer (24 jam)
-function startApprovalCountdown(countdownId, approvalDeadline, claimId) {
-    const countdownElement = document.getElementById(countdownId);
-    if (!countdownElement) return;
+// Update User Stats
+function updateUserStats() {
+    const claimedCount = state.claims.filter(c => ['claimed', 'submitted', 'approved'].includes(c.status)).length;
+    const completedCount = state.claims.filter(c => c.status === 'approved').length;
 
-    const updateCountdown = () => {
-        const now = new Date();
-        const timeLeft = approvalDeadline - now;
+    state.userStats.claimedCount = claimedCount;
+    state.userStats.completedCount = completedCount;
 
-        if (timeLeft <= 0) {
-            countdownElement.innerHTML = '⏰ Waktu approval habis!';
-            countdownElement.classList.add('has-text-danger');
-            clearInterval(timers[`approval-${claimId}`]);
-
-            // Show notification
-            showNotification('Waktu approval habis! Event akan tersedia lagi untuk user lain.', 'is-warning');
-
-            // Refresh data to update UI
-            setTimeout(() => {
-                loadEvents();
-                loadUserClaims();
-            }, 2000);
-            return;
-        }
-
-        const totalSeconds = Math.floor(timeLeft / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        let display = '';
-        if (hours > 0) {
-            display = `${hours} jam ${minutes} menit`;
-        } else if (minutes > 0) {
-            display = `${minutes} menit ${seconds} detik`;
-        } else {
-            display = `${seconds} detik`;
-        }
-
-        // Change color based on time left
-        if (hours < 1) {
-            countdownElement.classList.remove('has-text-primary');
-            countdownElement.classList.add('has-text-warning');
-        }
-        if (minutes < 30 && hours === 0) {
-            countdownElement.classList.remove('has-text-warning');
-            countdownElement.classList.add('has-text-danger');
-        }
-
-        countdownElement.innerHTML = display;
-    };
-
-    updateCountdown();
-    timers[`approval-${claimId}`] = setInterval(updateCountdown, 1000);
+    updateStatsDisplay();
 }
 
-// Show/hide loading spinner
-function showLoading(show) {
-    loadingSpinner.style.display = show ? 'block' : 'none';
+// Update Stats Display
+function updateStatsDisplay() {
+    if (elements.userTotalPoints) {
+        elements.userTotalPoints.textContent = state.userStats.totalPoints;
+    }
+    if (elements.userClaimedCount) {
+        elements.userClaimedCount.textContent = state.userStats.claimedCount;
+    }
+    if (elements.userCompletedCount) {
+        elements.userCompletedCount.textContent = state.userStats.completedCount;
+    }
 }
 
-// Show notification
+// Show/Hide Loading States
+function showEventsLoading(show) {
+    if (elements.eventsLoading) {
+        elements.eventsLoading.style.display = show ? 'block' : 'none';
+    }
+}
+
+function showClaimsLoading(show) {
+    if (elements.claimsLoading) {
+        elements.claimsLoading.style.display = show ? 'block' : 'none';
+    }
+}
+
+function showEventsEmpty(show) {
+    if (elements.eventsEmpty) {
+        elements.eventsEmpty.style.display = show ? 'block' : 'none';
+    }
+}
+
+function showClaimsEmpty(show) {
+    if (elements.claimsEmpty) {
+        elements.claimsEmpty.style.display = show ? 'block' : 'none';
+    }
+}
+
+// Show Notification
 function showNotification(message, type = 'is-info') {
-    // Create notification element
     const notification = document.createElement('div');
-    notification.className = `notification ${type} is-fixed-top`;
+    notification.className = `notification ${type}`;
     notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;';
     notification.innerHTML = `
         <button class="delete"></button>
         ${message}
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
         }
     }, 5000);
-    
+
     // Add click to close
     notification.querySelector('.delete').addEventListener('click', () => {
         if (notification.parentNode) {
@@ -483,114 +531,84 @@ function showNotification(message, type = 'is-info') {
     });
 }
 
-// Check for expired claims - call backend untuk recovery 24 jam timeout
-function checkExpiredClaims() {
-    try {
-        // Call backend endpoint untuk check dan recovery expired approvals
-        fetch(backend.checkExpired)
-            .then(response => response.json())
-            .then(result => {
-                console.log('Check expired response:', result);
-
-                // Jika ada recovery, refresh data untuk update UI
-                if (result.Status === 'Success' && result.Data && result.Data.processed > 0) {
-                    console.log(`✅ Recovered ${result.Data.processed} expired events`);
-
-                    // Refresh events dan claims untuk show recovered events
-                    setTimeout(() => {
-                        loadEvents();
-                        loadUserClaims();
-                    }, 1000);
-                }
-            })
-            .catch(error => {
-                console.error('Error checking expired claims:', error);
-                // Silent fail - tidak mengganggu user experience
-            });
-    } catch (error) {
-        console.error('Error in checkExpiredClaims:', error);
-    }
-}
-
-// Load user event points
-function loadUserPoints() {
-    try {
-        const token = getCookie('login');
-        if (!token) {
-            console.log('No login token found for loadUserPoints');
-            return;
+// Setup Auto Refresh
+function setupAutoRefresh() {
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && !state.isLoading) {
+            console.log('Auto-refreshing data...');
+            loadAllData();
         }
+    }, 15000); // Every 15 seconds
+}
 
-        console.log('Loading user points from:', backend.getUserPoints);
+// Setup Expired Claims Checker
+function setupExpiredChecker() {
+    setInterval(() => {
+        checkExpiredClaims();
+    }, 30000); // Every 30 seconds
+}
 
-        getJSON(backend.getUserPoints, 'login', token, (result) => {
-            console.log('User points response:', result);
-            console.log('Response status:', result.status);
-            console.log('Response data:', result.data);
+// Check Expired Claims
+async function checkExpiredClaims() {
+    try {
+        const response = await fetch(endpoints.checkExpired);
+        const result = await response.json();
 
-            // Check for both possible response structures
-            if (result.status === 200 && (result.data?.Status === 'Success' || result.data?.status === 'Success')) {
-                // Handle both response structures
-                const pointsData = result.data.Data || result.data.data;
-                console.log('Points data:', pointsData);
-                console.log('Total event points:', pointsData.total_event_points);
-                updatePointsDisplay(pointsData.total_event_points || 0);
-            } else {
-                console.error('Failed to load user points:', result);
-                console.error('Status:', result.status);
-                console.error('Data:', result.data);
-                // Set default 0 if failed
-                updatePointsDisplay(0);
-            }
-        });
+        console.log('Check expired response:', result);
+
+        if (result.Status === 'Success' && result.Data && result.Data.processed > 0) {
+            console.log(`✅ Recovered ${result.Data.processed} expired events`);
+            setTimeout(() => {
+                loadEvents();
+                loadUserClaims();
+            }, 1000);
+        }
     } catch (error) {
-        console.error('Error loading user points:', error);
-        updatePointsDisplay(0);
+        console.error('Error checking expired claims:', error);
     }
 }
 
-// Update points display in UI
-function updatePointsDisplay(totalPoints) {
-    // Update points di header atau sidebar jika ada
-    const pointsElement = document.getElementById('userEventPoints');
-    if (pointsElement) {
-        pointsElement.textContent = totalPoints;
-    }
+// Global Functions for HTML onclick handlers
+window.refreshData = function() {
+    console.log('Manual refresh triggered');
+    loadAllData();
+};
 
-    // Update points di stats card jika ada
-    const statsElement = document.getElementById('totalEventPoints');
-    if (statsElement) {
-        statsElement.textContent = `${totalPoints} Poin`;
-    }
-}
-
-// Modal functions
 window.openClaimModal = function(eventId) {
-    const event = currentEvents.find(e => e._id === eventId);
-    if (!event) return;
+    const event = state.events.find(e => e._id === eventId);
+    if (!event) {
+        showNotification('Event tidak ditemukan', 'is-danger');
+        return;
+    }
 
-    // Check if event is available for claim (hanya cek user lain)
     if (event.is_claimed_by_any) {
         showNotification('Event ini sudah diklaim oleh user lain', 'is-warning');
         return;
     }
 
-    selectedEvent = event;
+    state.selectedEvent = event;
 
+    // Update modal content
     document.getElementById('modalEventName').textContent = event.name;
     document.getElementById('modalEventDescription').textContent = event.description;
     document.getElementById('modalEventPoints').textContent = event.points + ' Poin';
+    document.getElementById('modalEventDeadline').textContent = event.deadline_seconds + ' detik';
 
-    document.getElementById('claimModal').classList.add('is-active');
+    // Show modal
+    if (elements.claimModal) {
+        elements.claimModal.classList.add('is-active');
+    }
 };
 
 window.closeClaimModal = function() {
-    document.getElementById('claimModal').classList.remove('is-active');
-    selectedEvent = null;
+    if (elements.claimModal) {
+        elements.claimModal.classList.remove('is-active');
+    }
+    state.selectedEvent = null;
 };
 
 window.confirmClaim = function() {
-    if (!selectedEvent) return;
+    if (!state.selectedEvent) return;
 
     const confirmBtn = document.getElementById('confirmClaimBtn');
     const originalText = confirmBtn.innerHTML;
@@ -601,35 +619,30 @@ window.confirmClaim = function() {
 
         const token = getCookie('login');
         const requestData = {
-            event_id: selectedEvent._id
+            event_id: state.selectedEvent._id
         };
 
         console.log('Claiming event:', requestData);
 
-        postJSON(backend.claimEvent, 'login', token, requestData, (result) => {
+        postJSON(endpoints.claimEvent, 'login', token, requestData, (result) => {
             confirmBtn.innerHTML = originalText;
             confirmBtn.disabled = false;
 
             console.log('Claim response:', result);
 
             if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = result;
-                }
+                const responseData = result.data || result;
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    const message = responseData.message || `Event berhasil di-claim! Silakan cek deadline di card Anda.`;
+                    const message = responseData.message || 'Event berhasil di-claim! Silakan cek di bagian Event Saya.';
                     showNotification(message, 'is-success');
                     closeClaimModal();
 
                     // Refresh data
-                    loadEvents();
-                    loadUserClaims();
+                    setTimeout(() => {
+                        loadEvents();
+                        loadUserClaims();
+                    }, 1000);
                 } else {
                     const errorMsg = responseData.response || responseData.status || 'Gagal claim event';
                     showNotification('Error: ' + errorMsg, 'is-danger');
@@ -637,48 +650,56 @@ window.confirmClaim = function() {
             } else {
                 const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal claim event';
                 showNotification('Error: ' + errorMsg, 'is-danger');
-                console.error('Claim event error:', result);
             }
         });
     } catch (error) {
         confirmBtn.innerHTML = originalText;
         confirmBtn.disabled = false;
         console.error('Error claiming event:', error);
-        showNotification('Gagal claim event: ' + error.message, 'is-danger');
+        showNotification('Error: ' + error.message, 'is-danger');
     }
 };
 
 window.openSubmitModal = function(claimId) {
-    const claim = currentClaims.find(c => c.claim_id === claimId);
-    if (!claim) return;
-
-    selectedClaim = claim;
-
-    document.getElementById('submitEventName').textContent = claim.event.name;
-    document.getElementById('taskLinkInput').value = '';
-
-    document.getElementById('submitModal').classList.add('is-active');
-};
-
-window.closeSubmitModal = function() {
-    document.getElementById('submitModal').classList.remove('is-active');
-    selectedClaim = null;
-};
-
-window.confirmSubmit = function() {
-    if (!selectedClaim) return;
-
-    const taskLink = document.getElementById('taskLinkInput').value.trim();
-    if (!taskLink) {
-        showNotification('Silakan masukkan link tugas', 'is-warning');
+    const claim = state.claims.find(c => c.claim_id === claimId);
+    if (!claim) {
+        showNotification('Claim tidak ditemukan', 'is-danger');
         return;
     }
 
-    // Validate URL format
+    state.selectedClaim = claim;
+
+    // Update modal content
+    document.getElementById('submitEventName').textContent = claim.event.name;
+    document.getElementById('taskLinkInput').value = '';
+
+    // Show modal
+    if (elements.submitModal) {
+        elements.submitModal.classList.add('is-active');
+    }
+};
+
+window.closeSubmitModal = function() {
+    if (elements.submitModal) {
+        elements.submitModal.classList.remove('is-active');
+    }
+    state.selectedClaim = null;
+};
+
+window.confirmSubmit = function() {
+    if (!state.selectedClaim) return;
+
+    const taskLink = document.getElementById('taskLinkInput').value.trim();
+    if (!taskLink) {
+        showNotification('Mohon masukkan link tugas', 'is-warning');
+        return;
+    }
+
+    // Validate URL
     try {
         new URL(taskLink);
     } catch (e) {
-        showNotification('Format link tidak valid', 'is-warning');
+        showNotification('Format URL tidak valid', 'is-warning');
         return;
     }
 
@@ -691,35 +712,30 @@ window.confirmSubmit = function() {
 
         const token = getCookie('login');
         const requestData = {
-            claim_id: selectedClaim.claim_id,
+            claim_id: state.selectedClaim.claim_id,
             task_link: taskLink
         };
 
         console.log('Submitting task:', requestData);
 
-        postJSON(backend.submitTask, 'login', token, requestData, (result) => {
+        postJSON(endpoints.submitTask, 'login', token, requestData, (result) => {
             confirmBtn.innerHTML = originalText;
             confirmBtn.disabled = false;
 
             console.log('Submit response:', result);
 
             if (result.status === 200) {
-                let responseData;
-                if (result.data && result.data.data) {
-                    responseData = result.data.data;
-                } else if (result.data) {
-                    responseData = result.data;
-                } else {
-                    responseData = result;
-                }
+                const responseData = result.data || result;
 
                 if (responseData.status === 'Success' || result.data?.status === 'Success') {
-                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner dalam 24 jam. Countdown akan muncul di card Anda.', 'is-success');
+                    showNotification('Tugas berhasil disubmit! Menunggu approval dari owner.', 'is-success');
                     closeSubmitModal();
 
                     // Refresh data
-                    loadUserClaims();
-                    loadUserPoints(); // Refresh points juga
+                    setTimeout(() => {
+                        loadUserClaims();
+                        loadUserPoints();
+                    }, 1000);
                 } else {
                     const errorMsg = responseData.response || responseData.status || 'Gagal submit tugas';
                     showNotification('Error: ' + errorMsg, 'is-danger');
@@ -727,114 +743,23 @@ window.confirmSubmit = function() {
             } else {
                 const errorMsg = result.data?.response || result.data?.status || result.message || 'Gagal submit tugas';
                 showNotification('Error: ' + errorMsg, 'is-danger');
-                console.error('Submit task error:', result);
             }
         });
     } catch (error) {
         confirmBtn.innerHTML = originalText;
         confirmBtn.disabled = false;
         console.error('Error submitting task:', error);
-        showNotification('Gagal submit tugas: ' + error.message, 'is-danger');
+        showNotification('Error: ' + error.message, 'is-danger');
     }
 };
 
-// Close modals when clicking background
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-background')) {
-        closeClaimModal();
-        closeSubmitModal();
-    }
+// Cleanup function
+window.addEventListener('beforeunload', () => {
+    // Clear all timers
+    state.timers.forEach((intervalId) => {
+        clearInterval(intervalId);
+    });
+    state.timers.clear();
 });
 
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeClaimModal();
-        closeSubmitModal();
-    }
-});
-
-// Cleanup timers when page unloads
-window.addEventListener('beforeunload', function() {
-    Object.values(timers).forEach(timer => clearInterval(timer));
-});
-
-// Add CSS for countdown styling
-function addCountdownCSS() {
-    if (document.getElementById('countdown-css')) return; // Prevent duplicate
-
-    const style = document.createElement('style');
-    style.id = 'countdown-css';
-    style.textContent = `
-        .approval-countdown {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            text-align: center;
-            font-weight: bold;
-            margin: 8px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-
-        .approval-countdown.has-text-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-        }
-
-        .approval-countdown.has-text-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Main function required by dashboard routing system
-export function main() {
-    console.log('Bimbinganevent main function called');
-    console.log('Backend URLs:', backend);
-
-    // Add countdown CSS
-    addCountdownCSS();
-
-    // Check if user is logged in
-    const token = getCookie('login');
-    console.log('Login token:', token ? 'Found' : 'Not found');
-
-    if (!token) {
-        showNotification('Silakan login terlebih dahulu', 'is-warning');
-        return;
-    }
-
-    // Initialize the page
-    console.log('Initializing bimbinganevent page...');
-
-    // Add small delay to ensure DOM is ready
-    setTimeout(() => {
-        loadEvents();
-        loadUserClaims();
-        loadUserPoints();
-    }, 100);
-
-    // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
-    setInterval(checkExpiredClaims, 30000);
-
-    // Refresh data every 6 seconds
-    setInterval(() => {
-        console.log('Auto-refreshing data...');
-        loadEvents();
-        loadUserClaims();
-        loadUserPoints();
-    }, 6000);
-
-    // Debug button removed - auto-refresh is sufficient
-}
-
-
+console.log('✅ Event Bimbingan v2 module loaded');

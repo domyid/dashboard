@@ -1,225 +1,282 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Bimbingan</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .event-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            height: 100%;
-        }
-        .event-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        .event-points {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 20px;
-            padding: 5px 15px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        .claimed-badge {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 3px 10px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        .timer-display {
-            background: #ff6b6b;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .timer-expired {
-            background: #95a5a6;
-        }
-        .submit-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-        .loading-spinner {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .status-submitted {
-            background: #3498db;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-        }
-        .status-approved {
-            background: #27ae60;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-        }
-        .status-expired {
-            background: #95a5a6;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-        }
-        .has-background-info-light {
-            background-color: #e3f2fd !important;
-            border: 2px solid #2196f3;
-        }
-        .tag.is-success {
-            background: #27ae60;
-            color: white;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="section">
-            <div class="columns is-vcentered">
-                <div class="column">
-                    <h1 class="title has-text-centered">
-                        <i class="fas fa-calendar-star"></i> Event Bimbingan
-                    </h1>
-                    <p class="subtitle has-text-centered">
-                        Pilih event dan dapatkan poin dengan menyelesaikan tugas
-                    </p>
-                </div>
-                <div class="column is-narrow">
-                    <div class="box has-background-primary-light">
-                        <div class="has-text-centered">
-                            <p class="heading has-text-primary">Total Poin Event</p>
-                            <p class="title is-4 has-text-primary" id="totalEventPoints">0 Poin</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Loading Spinner -->
-            <div class="loading-spinner" id="loadingSpinner">
-                <div class="has-text-centered">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p class="mt-3">Memuat data event...</p>
-                </div>
-            </div>
-
-            <!-- Available Events Section -->
-            <div class="box" id="eventsSection">
-                <h2 class="title is-4">
-                    <i class="fas fa-star"></i> Event Tersedia
-                </h2>
-                <div class="columns is-multiline" id="eventsContainer">
-                    <!-- Events will be loaded here -->
-                </div>
-                <div class="empty-state" id="emptyEvents" style="display: none;">
-                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                    <p>Tidak ada event yang tersedia saat ini</p>
-                </div>
-            </div>
-
-            <!-- My Claims Section -->
-            <div class="box" id="claimsSection">
-                <h2 class="title is-4">
-                    <i class="fas fa-tasks"></i> Event Saya
-                </h2>
-                <div class="columns is-multiline" id="claimsContainer">
-                    <!-- User claims will be loaded here -->
-                </div>
-                <div class="empty-state" id="emptyClaims" style="display: none;">
-                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                    <p>Anda belum mengambil event apapun</p>
-                </div>
+<!-- Event Bimbingan Page -->
+<div class="container">
+    <!-- Page Header -->
+    <div class="hero is-info is-small">
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <h1 class="title is-2">
+                    <i class="fas fa-calendar-check"></i> Event Bimbingan
+                </h1>
+                <p class="subtitle is-5">Claim event dan kumpulkan poin untuk mendapatkan kode bimbingan gratis</p>
             </div>
         </div>
     </div>
 
-    <!-- Claim Event Modal -->
-    <div class="modal" id="claimModal">
-        <div class="modal-background"></div>
-        <div class="modal-card">
-            <header class="modal-card-head">
-                <p class="modal-card-title">
-                    <i class="fas fa-hand-paper"></i> Claim Event
-                </p>
-                <button class="delete" aria-label="close" onclick="closeClaimModal()"></button>
-            </header>
-            <section class="modal-card-body">
-                <div class="content">
-                    <h4 id="modalEventName"></h4>
-                    <p id="modalEventDescription"></p>
-                    <div class="notification is-warning">
-                        <strong>⚠️ Perhatian:</strong>
-                        <p>Setelah claim event, Anda memiliki waktu sesuai yang ditentukan untuk menyelesaikan tugas.
-                        Jika melewati batas waktu, event akan tersedia kembali untuk user lain.</p>
-                    </div>
-                    <div class="field">
-                        <label class="label">Poin yang akan didapat:</label>
-                        <div class="control">
-                            <span class="event-points" id="modalEventPoints"></span>
+    <!-- Main Content -->
+    <section class="section">
+        <!-- User Stats -->
+        <div class="columns is-centered mb-6">
+            <div class="column is-8">
+                <div class="box has-background-gradient">
+                    <div class="level">
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading has-text-white">Total Poin Event</p>
+                                <p class="title has-text-white" id="userTotalPoints">0</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading has-text-white">Event Diklaim</p>
+                                <p class="title has-text-white" id="userClaimedCount">0</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading has-text-white">Event Selesai</p>
+                                <p class="title has-text-white" id="userCompletedCount">0</p>
+                            </div>
                         </div>
                     </div>
-
                 </div>
-            </section>
-            <footer class="modal-card-foot">
-                <button class="button is-primary" id="confirmClaimBtn" onclick="confirmClaim()">
-                    <i class="fas fa-check"></i> Ya, Claim Event
-                </button>
-                <button class="button" onclick="closeClaimModal()">Batal</button>
-            </footer>
+            </div>
         </div>
-    </div>
 
-    <!-- Submit Task Modal -->
-    <div class="modal" id="submitModal">
-        <div class="modal-background"></div>
-        <div class="modal-card">
-            <header class="modal-card-head">
-                <p class="modal-card-title">
-                    <i class="fas fa-upload"></i> Submit Tugas
-                </p>
-                <button class="delete" aria-label="close" onclick="closeSubmitModal()"></button>
-            </header>
-            <section class="modal-card-body">
-                <div class="content">
-                    <h4 id="submitEventName"></h4>
-                    <div class="field">
-                        <label class="label">Link Tugas yang Sudah Dikerjakan</label>
-                        <div class="control">
-                            <input class="input" type="url" id="taskLinkInput" 
-                                   placeholder="https://example.com/tugas-saya" required>
-                        </div>
-                        <p class="help">Masukkan link tugas yang sudah Anda kerjakan (GitHub, Google Drive, dll)</p>
+        <!-- Available Events -->
+        <div class="mb-6">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h2 class="title is-4">
+                            <i class="fas fa-fire"></i> Event Tersedia
+                        </h2>
                     </div>
                 </div>
-            </section>
-            <footer class="modal-card-foot">
-                <button class="button is-success" id="confirmSubmitBtn" onclick="confirmSubmit()">
-                    <i class="fas fa-paper-plane"></i> Submit Tugas
-                </button>
-                <button class="button" onclick="closeSubmitModal()">Batal</button>
-            </footer>
-        </div>
-    </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <button class="button is-info is-small" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="eventsLoading" class="has-text-centered py-6" style="display: none;">
+                <div class="is-size-4 mb-3">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                </div>
+                <p>Memuat event tersedia...</p>
+            </div>
 
-    <script type="module" src="bimbinganevent.js"></script>
-</body>
-</html>
+            <!-- Empty State -->
+            <div id="eventsEmpty" class="has-text-centered py-6" style="display: none;">
+                <div class="is-size-1 mb-4">
+                    <i class="fas fa-calendar-times has-text-grey-light"></i>
+                </div>
+                <h3 class="title is-5 has-text-grey">Tidak Ada Event Tersedia</h3>
+                <p class="has-text-grey">Belum ada event yang bisa di-claim saat ini.</p>
+            </div>
+
+            <!-- Events Grid -->
+            <div id="eventsGrid" class="columns is-multiline">
+                <!-- Event cards will be inserted here -->
+            </div>
+        </div>
+
+        <!-- My Claims -->
+        <div class="mb-6">
+            <h2 class="title is-4">
+                <i class="fas fa-tasks"></i> Event Saya
+            </h2>
+            
+            <!-- Loading State -->
+            <div id="claimsLoading" class="has-text-centered py-6" style="display: none;">
+                <div class="is-size-4 mb-3">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                </div>
+                <p>Memuat event Anda...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="claimsEmpty" class="has-text-centered py-6" style="display: none;">
+                <div class="is-size-1 mb-4">
+                    <i class="fas fa-inbox has-text-grey-light"></i>
+                </div>
+                <h3 class="title is-5 has-text-grey">Belum Ada Event yang Diklaim</h3>
+                <p class="has-text-grey">Claim event di atas untuk mulai mengumpulkan poin!</p>
+            </div>
+
+            <!-- Claims Grid -->
+            <div id="claimsGrid" class="columns is-multiline">
+                <!-- Claim cards will be inserted here -->
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Claim Event Modal -->
+<div class="modal" id="claimModal">
+    <div class="modal-background" onclick="closeClaimModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <i class="fas fa-hand-paper"></i> Claim Event
+            </p>
+            <button class="delete" onclick="closeClaimModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="content">
+                <h4 id="modalEventName" class="title is-5"></h4>
+                <p id="modalEventDescription" class="mb-4"></p>
+                <div class="notification is-info">
+                    <p><strong>Poin:</strong> <span id="modalEventPoints"></span></p>
+                    <p><strong>Deadline:</strong> <span id="modalEventDeadline"></span></p>
+                    <p><strong>Perhatian:</strong> Setelah claim, Anda memiliki waktu terbatas untuk menyelesaikan tugas.</p>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" id="confirmClaimBtn" onclick="confirmClaim()">
+                <i class="fas fa-check"></i> Ya, Claim Event
+            </button>
+            <button class="button" onclick="closeClaimModal()">Batal</button>
+        </footer>
+    </div>
+</div>
+
+<!-- Submit Task Modal -->
+<div class="modal" id="submitModal">
+    <div class="modal-background" onclick="closeSubmitModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">
+                <i class="fas fa-upload"></i> Submit Tugas
+            </p>
+            <button class="delete" onclick="closeSubmitModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="content">
+                <h4 id="submitEventName" class="title is-5"></h4>
+                <div class="field">
+                    <label class="label">Link Tugas yang Sudah Dikerjakan</label>
+                    <div class="control">
+                        <input class="input" type="url" id="taskLinkInput" 
+                               placeholder="https://example.com/tugas-saya" required>
+                    </div>
+                    <p class="help">Masukkan link tugas yang sudah Anda kerjakan (GitHub, Google Drive, dll)</p>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" id="confirmSubmitBtn" onclick="confirmSubmit()">
+                <i class="fas fa-paper-plane"></i> Submit Tugas
+            </button>
+            <button class="button" onclick="closeSubmitModal()">Batal</button>
+        </footer>
+    </div>
+</div>
+
+<style>
+.has-background-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.event-card {
+    transition: all 0.3s ease;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.event-points {
+    background: linear-gradient(45deg, #ff6b6b, #ffa726);
+    color: white;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status-available {
+    background: #4caf50;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-claimed {
+    background: #2196f3;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-submitted {
+    background: #ff9800;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-approved {
+    background: #4caf50;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-expired {
+    background: #f44336;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.timer-display {
+    background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+    border: 2px solid #2196f3;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    text-align: center;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.timer-expired {
+    background: linear-gradient(45deg, #ffebee, #ffcdd2);
+    border-color: #f44336;
+    color: #c62828;
+}
+
+.btn-claim {
+    background: linear-gradient(45deg, #4caf50, #45a049);
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+
+.btn-submit {
+    background: linear-gradient(45deg, #2196f3, #1976d2);
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+</style>
