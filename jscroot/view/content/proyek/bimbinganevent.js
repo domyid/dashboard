@@ -804,13 +804,13 @@ export function main() {
     // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
     setInterval(checkExpiredClaims, 30000);
 
-    // Refresh data every 60 seconds
+    // Refresh data every 6 seconds
     setInterval(() => {
         console.log('Auto-refreshing data...');
         loadEvents();
         loadUserClaims();
         loadUserPoints();
-    }, 60000);
+    }, 6000);
 
     // Add manual test button for debugging
     addDebugButton();

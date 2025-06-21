@@ -294,10 +294,11 @@ export function main() {
     console.log('Buy endpoint:', backend.buyBimbinganCode);
 }
 
-// Auto-refresh points every 60 seconds
+// Auto-refresh points every 6 seconds
 setInterval(() => {
     if (document.visibilityState === 'visible') {
         console.log('Auto-refreshing user points...');
         loadUserPoints();
     }
-}, 60000);
+// }, 60000);
+}, 6000);
