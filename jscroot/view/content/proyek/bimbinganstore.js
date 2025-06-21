@@ -71,9 +71,14 @@ function updatePointsDisplay(points) {
 // Update buy button state
 function updateBuyButton() {
     const buyBtn = document.getElementById('buyCodeBtn');
+    if (!buyBtn) {
+        console.log('Buy button not found in DOM yet');
+        return;
+    }
+
     const currentPoints = userPointsData?.total_event_points || 0;
     const requiredPoints = 15;
-    
+
     if (currentPoints >= requiredPoints) {
         buyBtn.disabled = false;
         buyBtn.innerHTML = '<span class="icon"><i class="fas fa-shopping-cart"></i></span><span>Beli Sekarang</span>';
@@ -195,7 +200,11 @@ export function main() {
     }
 
     console.log('Initializing bimbinganstore page...');
-    loadUserPoints();
+
+    // Add small delay to ensure DOM is ready
+    setTimeout(() => {
+        loadUserPoints();
+    }, 100);
 }
 
 // Auto-refresh points every 6 seconds

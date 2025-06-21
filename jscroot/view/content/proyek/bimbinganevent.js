@@ -118,16 +118,16 @@ function loadUserClaims() {
 
             if (result.status === 200) {
                 let responseData;
-                if (result.data && result.data.data) {
+                if (result.data && result.data.data && Array.isArray(result.data.data)) {
                     responseData = result.data.data;
-                } else if (result.data) {
+                } else if (result.data && Array.isArray(result.data)) {
                     responseData = result.data;
                 } else {
                     responseData = [];
                 }
 
                 console.log('Processed claims data:', responseData);
-                currentClaims = responseData || [];
+                currentClaims = Array.isArray(responseData) ? responseData : [];
                 displayClaims();
             } else {
                 console.log('No claims found or error:', result);
@@ -144,15 +144,24 @@ function loadUserClaims() {
 
 // Display available events
 function displayEvents() {
-    eventsContainer.innerHTML = '';
-    
-    if (currentEvents.length === 0) {
-        emptyEvents.style.display = 'block';
+    if (!eventsContainer) {
+        console.log('Events container not found in DOM yet');
         return;
     }
-    
-    emptyEvents.style.display = 'none';
-    
+
+    eventsContainer.innerHTML = '';
+
+    if (!Array.isArray(currentEvents) || currentEvents.length === 0) {
+        if (emptyEvents) {
+            emptyEvents.style.display = 'block';
+        }
+        return;
+    }
+
+    if (emptyEvents) {
+        emptyEvents.style.display = 'none';
+    }
+
     currentEvents.forEach(event => {
         const eventCard = createEventCard(event);
         eventsContainer.appendChild(eventCard);
@@ -212,15 +221,24 @@ function createEventCard(event) {
 
 // Display user claims
 function displayClaims() {
-    claimsContainer.innerHTML = '';
-    
-    if (currentClaims.length === 0) {
-        emptyClaims.style.display = 'block';
+    if (!claimsContainer) {
+        console.log('Claims container not found in DOM yet');
         return;
     }
-    
-    emptyClaims.style.display = 'none';
-    
+
+    claimsContainer.innerHTML = '';
+
+    if (!Array.isArray(currentClaims) || currentClaims.length === 0) {
+        if (emptyClaims) {
+            emptyClaims.style.display = 'block';
+        }
+        return;
+    }
+
+    if (emptyClaims) {
+        emptyClaims.style.display = 'none';
+    }
+
     currentClaims.forEach(claim => {
         const claimCard = createClaimCard(claim);
         claimsContainer.appendChild(claimCard);
@@ -797,9 +815,13 @@ export function main() {
 
     // Initialize the page
     console.log('Initializing bimbinganevent page...');
-    loadEvents();
-    loadUserClaims();
-    loadUserPoints();
+
+    // Add small delay to ensure DOM is ready
+    setTimeout(() => {
+        loadEvents();
+        loadUserClaims();
+        loadUserPoints();
+    }, 100);
 
     // Check for expired claims setiap 30 detik untuk recovery 24 jam timeout
     setInterval(checkExpiredClaims, 30000);
