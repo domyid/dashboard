@@ -398,26 +398,44 @@ function checkApprovalButtonConditions() {
 function checkSidangEligibility() {
     getJSON(backend.project.assessment, 'login', getCookie('login'), function(result) {
         if (result.status === 200) {
-            const bimbinganCount = result.data.length;
-            const eligibilityMet = bimbinganCount >= 8;
-            
+            // Count only APPROVED bimbingan sessions
+            const approvedBimbingan = result.data.filter(bimbingan => bimbingan.approved === true);
+            const approvedCount = approvedBimbingan.length;
+            const totalCount = result.data.length;
+            const eligibilityMet = approvedCount >= 8;
+
+            console.log(`Bimbingan eligibility check: ${approvedCount} approved out of ${totalCount} total sessions`);
+
             // Enable or disable the "Ajukan Sidang" button based on eligibility
             const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
             if (tombolPengajuanSidang) {
                 tombolPengajuanSidang.disabled = !eligibilityMet;
-                
+
                 // Add tooltip to explain why button is disabled
                 if (!eligibilityMet) {
-                    tombolPengajuanSidang.setAttribute('title', `Anda memerlukan minimal 8 sesi bimbingan untuk mengajukan sidang. Saat ini: ${bimbinganCount}`);
+                    const pendingCount = totalCount - approvedCount;
+                    let tooltipMessage = `Anda memerlukan minimal 8 sesi bimbingan yang sudah disetujui untuk mengajukan sidang.\n`;
+                    tooltipMessage += `Saat ini: ${approvedCount} approved`;
+                    if (pendingCount > 0) {
+                        tooltipMessage += `, ${pendingCount} pending approval`;
+                    }
+                    tombolPengajuanSidang.setAttribute('title', tooltipMessage);
                 } else {
                     tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-                    
+
                     // Check if there's an existing pengajuan
                     checkExistingPengajuan();
                 }
             }
         } else {
             console.error('Failed to get bimbingan data:', result);
+
+            // On error, disable button for safety
+            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+            if (tombolPengajuanSidang) {
+                tombolPengajuanSidang.disabled = true;
+                tombolPengajuanSidang.setAttribute('title', 'Error loading bimbingan data');
+            }
         }
     });
 }
