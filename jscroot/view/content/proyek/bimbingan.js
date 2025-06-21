@@ -409,12 +409,21 @@ function checkSidangEligibility() {
             console.log('📋 Eligibility data:', result.data);
 
             // Extract data from new endpoint response
-            const eligibilityData = result.data;
+            // Backend returns: {status: "Success", data: {approved_count: 9, ...}}
+            const eligibilityData = result.data.data || result.data;
             const approvedCount = eligibilityData.approved_count;
             const totalCount = eligibilityData.total_count;
             const pendingCount = eligibilityData.pending_count;
             const eligibilityMet = eligibilityData.eligibility_met;
             const requiredCount = eligibilityData.required_count;
+
+            console.log('🔍 Raw eligibility data structure:', eligibilityData);
+            console.log('🔍 Extracted values:');
+            console.log(`   approvedCount: ${approvedCount}`);
+            console.log(`   totalCount: ${totalCount}`);
+            console.log(`   pendingCount: ${pendingCount}`);
+            console.log(`   eligibilityMet: ${eligibilityMet}`);
+            console.log(`   requiredCount: ${requiredCount}`);
 
             console.log(`📈 Eligibility summary:`);
             console.log(`   Total sessions: ${totalCount}`);
@@ -872,4 +881,3 @@ function setupClaimTimeEventModal() {
         notificationModal.classList.add('is-hidden');
     }
 }
-
