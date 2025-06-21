@@ -399,114 +399,20 @@ function checkApprovalButtonConditions() {
 // Function to check if student has enough bimbingan sessions to request sidang
 function checkSidangEligibility() {
     console.log('🔍 Starting sidang eligibility check...');
-    console.log('📡 Calling eligibility endpoint:', backend.bimbingan.eligibility);
+    console.log('💡 Enabling button - validation will be done on backend during submit');
 
-    getJSON(backend.bimbingan.eligibility, 'login', getCookie('login'), function(result) {
-        console.log('📊 Eligibility data response:', result);
+    // Enable the "Ajukan Sidang" button - let backend validate on submit
+    const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
+    if (tombolPengajuanSidang) {
+        tombolPengajuanSidang.disabled = false;
+        tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang (validasi akan dilakukan saat submit)');
+        console.log('✅ Button enabled - checking existing pengajuan...');
 
-        if (result.status === 200) {
-            console.log('✅ Successfully got eligibility data');
-            console.log('📋 Eligibility data:', result.data);
-
-            // Extract data from new endpoint response
-            console.log('🔍 Full response structure:', result);
-            console.log('🔍 result.data:', result.data);
-            console.log('🔍 result.data.data:', result.data.data);
-            console.log('🔍 typeof result.data:', typeof result.data);
-            console.log('🔍 Object.keys(result.data):', Object.keys(result.data));
-
-            // Try different possible structures
-            let eligibilityData = null;
-
-            if (result.data.data) {
-                console.log('✅ Using result.data.data');
-                eligibilityData = result.data.data;
-            } else if (result.data.approved_count !== undefined) {
-                console.log('✅ Using result.data directly');
-                eligibilityData = result.data;
-            } else {
-                console.log('❌ Cannot find eligibility data in response');
-                console.log('🔍 Available keys in result.data:', Object.keys(result.data));
-
-                // Try to find the data in any nested object
-                for (const key of Object.keys(result.data)) {
-                    const value = result.data[key];
-                    if (typeof value === 'object' && value !== null && value.approved_count !== undefined) {
-                        console.log(`✅ Found eligibility data in result.data.${key}`);
-                        eligibilityData = value;
-                        break;
-                    }
-                }
-            }
-
-            if (!eligibilityData) {
-                console.error('❌ Could not extract eligibility data from response');
-                const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-                if (tombolPengajuanSidang) {
-                    tombolPengajuanSidang.disabled = true;
-                    tombolPengajuanSidang.setAttribute('title', 'Error: Could not parse eligibility data');
-                }
-                return;
-            }
-
-            const approvedCount = eligibilityData.approved_count;
-            const totalCount = eligibilityData.total_count;
-            const pendingCount = eligibilityData.pending_count;
-            const eligibilityMet = eligibilityData.eligibility_met;
-            const requiredCount = eligibilityData.required_count;
-
-            console.log('🔍 Raw eligibility data structure:', eligibilityData);
-            console.log('🔍 Extracted values:');
-            console.log(`   approvedCount: ${approvedCount}`);
-            console.log(`   totalCount: ${totalCount}`);
-            console.log(`   pendingCount: ${pendingCount}`);
-            console.log(`   eligibilityMet: ${eligibilityMet}`);
-            console.log(`   requiredCount: ${requiredCount}`);
-
-            console.log(`📈 Eligibility summary:`);
-            console.log(`   Total sessions: ${totalCount}`);
-            console.log(`   Approved sessions: ${approvedCount}`);
-            console.log(`   Pending sessions: ${pendingCount}`);
-            console.log(`   Required sessions: ${requiredCount}`);
-            console.log(`   Eligibility met: ${eligibilityMet}`);
-
-            // Enable or disable the "Ajukan Sidang" button based on eligibility
-            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-            if (tombolPengajuanSidang) {
-                console.log(`🔘 Button found, setting disabled = ${!eligibilityMet}`);
-                tombolPengajuanSidang.disabled = !eligibilityMet;
-
-                // Add tooltip to explain why button is disabled
-                if (!eligibilityMet) {
-                    let tooltipMessage = `Anda memerlukan minimal ${requiredCount} sesi bimbingan yang sudah disetujui untuk mengajukan sidang.\n`;
-                    tooltipMessage += `Saat ini: ${approvedCount} approved`;
-                    if (pendingCount > 0) {
-                        tooltipMessage += `, ${pendingCount} pending approval`;
-                    }
-                    tombolPengajuanSidang.setAttribute('title', tooltipMessage);
-                    console.log(`❌ Button disabled - not enough approved bimbingan (${approvedCount}/${requiredCount})`);
-                } else {
-                    tombolPengajuanSidang.setAttribute('title', 'Klik untuk mengajukan sidang');
-                    console.log(`✅ Button should be enabled - checking existing pengajuan...`);
-
-                    // Check if there's an existing pengajuan
-                    checkExistingPengajuan();
-                }
-            } else {
-                console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
-            }
-        } else {
-            console.error('❌ Failed to get eligibility data:', result);
-
-            // On error, disable button for safety
-            const tombolPengajuanSidang = document.getElementById('tombolpengajuansidang');
-            if (tombolPengajuanSidang) {
-                tombolPengajuanSidang.disabled = true;
-                tombolPengajuanSidang.setAttribute('title', 'Error loading eligibility data');
-                console.log('❌ Button disabled due to API error');
-            }
-        }
-    });
+        // Check if there's an existing pengajuan
+        checkExistingPengajuan();
+    } else {
+        console.error('❌ Tombol pengajuan sidang tidak ditemukan di DOM!');
+    }
 }
 
 
