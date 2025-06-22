@@ -29,7 +29,7 @@ const backend = {
     generateCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecode',
     generateTimeCode: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/generatecodetime',
     createEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/create',
-    getAllEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/all',
+    getAllEvents: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/allevents',
     getAllClaims: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/allclaims',
     deleteEvent: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/delete',
     deleteClaim: 'https://asia-southeast2-awangga.cloudfunctions.net/domyid/api/event/claim/delete'
@@ -621,8 +621,16 @@ function loadAllEvents(token) {
     return new Promise((resolve) => {
         getJSON(backend.getAllEvents, 'login', token, (result) => {
             console.log('Events response:', result);
-            if (result.status === 200 && result.data) {
-                resolve({ success: true, data: result.data });
+            if (result.status === 200) {
+                // Handle nested data structure
+                let events = [];
+                if (result.data && result.data.data && Array.isArray(result.data.data)) {
+                    events = result.data.data;
+                } else if (result.data && Array.isArray(result.data)) {
+                    events = result.data;
+                }
+                console.log('Parsed events:', events);
+                resolve({ success: true, data: events });
             } else {
                 resolve({ success: false, error: result.data?.response || 'Gagal memuat events' });
             }
@@ -634,8 +642,18 @@ function loadAllClaims(token) {
     return new Promise((resolve) => {
         getJSON(backend.getAllClaims, 'login', token, (result) => {
             console.log('Claims response:', result);
-            if (result.status === 200 && result.data) {
-                resolve({ success: true, data: result.data });
+            if (result.status === 200) {
+                // Handle nested data structure
+                let claims = [];
+                if (result.data && result.data.data && Array.isArray(result.data.data)) {
+                    claims = result.data.data;
+                } else if (result.data && Array.isArray(result.data)) {
+                    claims = result.data;
+                } else if (result.data === null) {
+                    claims = []; // No claims found
+                }
+                console.log('Parsed claims:', claims);
+                resolve({ success: true, data: claims });
             } else {
                 resolve({ success: false, error: result.data?.response || 'Gagal memuat claims' });
             }
