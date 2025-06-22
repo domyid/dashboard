@@ -858,7 +858,7 @@ async function deleteEvent(eventId, token) {
 
 async function deleteClaim(claimId, token) {
     return new Promise((resolve) => {
-        // Use DELETE method
+        // Use DELETE method c
         fetch(`${backend.deleteClaim}/${claimId}`, {
             method: 'DELETE',
             headers: {
