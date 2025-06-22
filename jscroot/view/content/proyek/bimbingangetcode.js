@@ -715,16 +715,24 @@ function displayClaims(claims) {
         html += `
             <div class="claim-card">
                 <h4><strong>${claim.eventname || 'Unknown Event'}</strong> <span class="status-badge ${statusClass}">${statusText}</span></h4>
-                <p><strong>User:</strong> ${claim.userphone}</p>
-                <p><strong>Points:</strong> ${claim.eventpoints || 0}</p>
-                <p><strong>Claimed:</strong> ${new Date(claim.claimedat).toLocaleString('id-ID')}</p>
-                <p><strong>Deadline:</strong> ${new Date(claim.deadline).toLocaleString('id-ID')}</p>
-                ${claim.tasklink ? `<p><strong>Task Link:</strong> <a href="${claim.tasklink}" target="_blank">${claim.tasklink}</a></p>` : ''}
-                ${claim.submittedat ? `<p><strong>Submitted:</strong> ${new Date(claim.submittedat).toLocaleString('id-ID')}</p>` : ''}
-                ${claim.approvedat ? `<p><strong>Approved:</strong> ${new Date(claim.approvedat).toLocaleString('id-ID')}</p>` : ''}
-                <p><strong>Claim ID:</strong> <code>${claim._id}</code></p>
+                <div class="columns is-mobile">
+                    <div class="column">
+                        <p><strong>👤 Nama:</strong> ${claim.username || 'N/A'}</p>
+                        <p><strong>🎓 NPM:</strong> ${claim.usernpm || 'N/A'}</p>
+                        <p><strong>📱 Phone:</strong> ${claim.userphone}</p>
+                    </div>
+                    <div class="column">
+                        <p><strong>🎯 Points:</strong> ${claim.eventpoints || 0}</p>
+                        <p><strong>📅 Claimed:</strong> ${new Date(claim.claimedat).toLocaleString('id-ID')}</p>
+                        <p><strong>⏰ Deadline:</strong> ${new Date(claim.deadline).toLocaleString('id-ID')}</p>
+                    </div>
+                </div>
+                ${claim.tasklink ? `<p><strong>🔗 Task Link:</strong> <a href="${claim.tasklink}" target="_blank" class="has-text-link">${claim.tasklink}</a></p>` : ''}
+                ${claim.submittedat ? `<p><strong>📤 Submitted:</strong> ${new Date(claim.submittedat).toLocaleString('id-ID')}</p>` : ''}
+                ${claim.approvedat ? `<p><strong>✅ Approved:</strong> ${new Date(claim.approvedat).toLocaleString('id-ID')}</p>` : ''}
+                <p><strong>🆔 Claim ID:</strong> <code>${claim._id}</code></p>
                 <div class="claim-actions">
-                    <button class="button is-danger is-small delete-claim-btn" data-id="${claim._id}" data-event="${claim.eventname || 'Unknown'}" data-user="${claim.userphone}">
+                    <button class="button is-danger is-small delete-claim-btn" data-id="${claim._id}" data-event="${claim.eventname || 'Unknown'}" data-user="${claim.username || claim.userphone}">
                         <i class="fas fa-trash"></i> Delete Claim
                     </button>
                 </div>
